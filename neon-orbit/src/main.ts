@@ -94,15 +94,117 @@ function resizeCanvas() {
 window.addEventListener('resize', resizeCanvas);
 resizeCanvas();
 
-// Input Listeners
+let isAutoFire = false;
+let isManualAiming = false;
+
+// Input Listeners (Mouse & Keyboard)
 window.addEventListener('mousemove', (e) => {
+  isManualAiming = true;
   mousePos.x = e.clientX;
   mousePos.y = e.clientY;
 });
-window.addEventListener('mousedown', () => isShooting = true);
-window.addEventListener('mouseup', () => isShooting = false);
+
+window.addEventListener('mousedown', (e) => {
+  // Prevent shooting if clicking UI controls or menus
+  const target = e.target as HTMLElement;
+  if (target && target.closest('#ui-layer')) return;
+  isManualAiming = true;
+  mousePos.x = e.clientX;
+  mousePos.y = e.clientY;
+  isShooting = true;
+});
+
+window.addEventListener('mouseup', () => {
+  if (!isAutoFire) isShooting = false;
+});
+
 window.addEventListener('keydown', (e) => keys[e.key.toLowerCase()] = true);
 window.addEventListener('keyup', (e) => keys[e.key.toLowerCase()] = false);
+
+// Direct Canvas Touch Aiming & Shooting for Mobile
+canvas.addEventListener('touchstart', (e: TouchEvent) => {
+  if (e.touches.length > 0) {
+    isManualAiming = true;
+    mousePos.x = e.touches[0].clientX;
+    mousePos.y = e.touches[0].clientY;
+    isShooting = true;
+  }
+}, { passive: true });
+
+canvas.addEventListener('touchmove', (e: TouchEvent) => {
+  if (e.touches.length > 0) {
+    isManualAiming = true;
+    mousePos.x = e.touches[0].clientX;
+    mousePos.y = e.touches[0].clientY;
+  }
+}, { passive: true });
+
+const handleTouchEnd = (e: TouchEvent) => {
+  if (e.touches.length === 0) {
+    isManualAiming = false;
+    if (!isAutoFire) isShooting = false;
+  }
+};
+canvas.addEventListener('touchend', handleTouchEnd, { passive: true });
+canvas.addEventListener('touchcancel', handleTouchEnd, { passive: true });
+
+// Virtual Mobile Controls Bindings (Thumb controls)
+const btnLeft = document.getElementById('btn-orbit-left');
+const btnRight = document.getElementById('btn-orbit-right');
+const btnFire = document.getElementById('btn-fire');
+const btnAutoFire = document.getElementById('btn-autofire');
+
+function bindHoldButton(el: HTMLElement | null, key: string) {
+  if (!el) return;
+  const press = (e: Event) => {
+    e.preventDefault();
+    e.stopPropagation();
+    keys[key] = true;
+    el.classList.add('active');
+  };
+  const release = (e: Event) => {
+    e.preventDefault();
+    e.stopPropagation();
+    keys[key] = false;
+    el.classList.remove('active');
+  };
+  el.addEventListener('pointerdown', press);
+  el.addEventListener('pointerup', release);
+  el.addEventListener('pointercancel', release);
+  el.addEventListener('pointerleave', release);
+}
+
+bindHoldButton(btnLeft, 'a');
+bindHoldButton(btnRight, 'd');
+
+if (btnFire) {
+  const startFire = (e: Event) => {
+    e.preventDefault();
+    e.stopPropagation();
+    isShooting = true;
+    btnFire.classList.add('active');
+  };
+  const stopFire = (e: Event) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isAutoFire) isShooting = false;
+    btnFire.classList.remove('active');
+  };
+  btnFire.addEventListener('pointerdown', startFire);
+  btnFire.addEventListener('pointerup', stopFire);
+  btnFire.addEventListener('pointercancel', stopFire);
+  btnFire.addEventListener('pointerleave', stopFire);
+}
+
+if (btnAutoFire) {
+  btnAutoFire.addEventListener('click', (e: Event) => {
+    e.preventDefault();
+    e.stopPropagation();
+    isAutoFire = !isAutoFire;
+    btnAutoFire.classList.toggle('active', isAutoFire);
+    btnAutoFire.innerText = isAutoFire ? 'AUTO: ON ⚡' : 'AUTO';
+  });
+}
 
 
 function addToTerminal(msg: string, type: string) {
@@ -235,8 +337,30 @@ function update(dt: number, time: number) {
   player.position.x = core.position.x + Math.cos(playerOrbitAngle) * ORBIT_RADIUS;
   player.position.y = core.position.y + Math.sin(playerOrbitAngle) * ORBIT_RADIUS;
   
-  // Player aiming
-  player.updateAngle(mousePos.x, mousePos.y);
+  // Player aiming logic (Manual touch/mouse drag OR smart auto-targeting)
+  if (isManualAiming) {
+    player.updateAngle(mousePos.x, mousePos.y);
+  } else {
+    // Intelligent auto-lock onto nearest threat for mobile thumb play
+    let closestEnemy: (Enemy | AtomicBoss) | null = null;
+    let minDist = Infinity;
+    for (const e of enemies) {
+      if (e.markedForDeletion) continue;
+      const d = e.position.sub(player.position).mag();
+      if (d < minDist) {
+        minDist = d;
+        closestEnemy = e;
+      }
+    }
+    if (closestEnemy) {
+      mousePos = new Vector2(closestEnemy.position.x, closestEnemy.position.y);
+    } else {
+      // Default aim: outwards from core through player
+      const outward = player.position.sub(core.position).normalize();
+      mousePos = player.position.add(outward.mult(200));
+    }
+    player.updateAngle(mousePos.x, mousePos.y);
+  }
   
   if (isInfiniteMode && time - lastLotteryTime > 1000) {
     lastLotteryTime = time;
@@ -250,7 +374,7 @@ function update(dt: number, time: number) {
   }
   
   // Shooting
-  if (isShooting && time - lastShootTime > SHOOT_DELAY) {
+  if ((isShooting || isAutoFire) && time - lastShootTime > SHOOT_DELAY) {
     const dir = mousePos.sub(player.position).normalize();
     const projVel = dir.mult(600); // Projectile speed
     projectiles.push(new Projectile(player.position.x, player.position.y, projVel));

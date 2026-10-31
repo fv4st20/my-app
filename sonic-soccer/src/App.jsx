@@ -88,6 +88,63 @@ function App() {
     handleAudioFile(e.target.files[0]);
   };
 
+  const startDemoBeat = () => {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    const ctx = new AudioContext();
+    audioCtxRef.current = ctx;
+    const analyser = ctx.createAnalyser();
+    
+    // Electronic dance rhythm generator
+    const bpm = 124;
+    const interval = (60 / bpm) * 1000 / 2;
+    let step = 0;
+    
+    const timer = setInterval(() => {
+      if (ctx.state === 'closed') {
+        clearInterval(timer);
+        return;
+      }
+      try {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        
+        if (step % 4 === 0) {
+          // Punchy 808 kick
+          osc.frequency.setValueAtTime(140, ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(38, ctx.currentTime + 0.15);
+          gain.gain.setValueAtTime(1.0, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.22);
+        } else if (step % 4 === 2) {
+          // Snare snap
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(280, ctx.currentTime);
+          gain.gain.setValueAtTime(0.65, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.14);
+        } else {
+          // Electro synth pulse
+          osc.type = 'sawtooth';
+          const notes = [110, 130, 164, 196, 220];
+          osc.frequency.setValueAtTime(notes[step % notes.length], ctx.currentTime);
+          gain.gain.setValueAtTime(0.35, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+        }
+        
+        osc.connect(gain);
+        gain.connect(analyser);
+        gain.connect(ctx.destination);
+        
+        osc.start();
+        osc.stop(ctx.currentTime + 0.25);
+        step = (step + 1) % 16;
+      } catch (e) {
+        clearInterval(timer);
+      }
+    }, interval);
+    
+    setMode('synth');
+    initGame(analyser);
+  };
+
   const handleDragOver = (e) => {
     e.preventDefault();
     if (!started) setIsDragging(true);
@@ -158,6 +215,13 @@ function App() {
                 <input type="file" accept="audio/*" onChange={startMp3} style={{display: 'none'}} />
               </label>
             </div>
+
+            <div className="option-card">
+              <Music size={48} color="var(--neon-green)" />
+              <h3>Instant Demo Beat</h3>
+              <p>Perfect for Mobile! Starts a generated synth electro track immediately.</p>
+              <button className="btn" onClick={startDemoBeat}>Play Demo Beat ⚡</button>
+            </div>
           </div>
         </div>
       )}
@@ -183,7 +247,26 @@ function App() {
         </div>
       )}
 
-      {started && <canvas ref={canvasRef} style={{ display: 'block', width: '100vw', height: '100vh' }} />}
+      {mode === 'synth' && started && (
+        <div className="audio-player">
+           <div style={{display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--neon-green)'}}>
+             <Music size={20} /> Playing Synth Beat Rhythm ⚡ (Tap field to kick ball)
+           </div>
+        </div>
+      )}
+
+      {started && (
+        <canvas 
+          ref={canvasRef} 
+          onClick={(e) => engineRef.current?.touchKick(e.clientX, e.clientY)}
+          onTouchStart={(e) => {
+            if (e.touches && e.touches[0]) {
+              engineRef.current?.touchKick(e.touches[0].clientX, e.touches[0].clientY);
+            }
+          }}
+          style={{ display: 'block', width: '100vw', height: '100vh', touchAction: 'none' }} 
+        />
+      )}
     </div>
   );
 }

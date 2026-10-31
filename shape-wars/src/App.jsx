@@ -44,6 +44,17 @@ function App() {
     window.speechSynthesis.speak(u);
   };
 
+  const handleCanvasTap = (e) => {
+    if (!engineRef.current) return;
+    const clientX = e.clientX ?? (e.touches && e.touches[0] ? e.touches[0].clientX : null);
+    const clientY = e.clientY ?? (e.touches && e.touches[0] ? e.touches[0].clientY : null);
+    if (clientX == null || clientY == null) return;
+    
+    // Tap left side: Blue Cubes, Tap right side: Red Circles
+    const team = clientX < window.innerWidth / 2 ? 'blue' : 'red';
+    engineRef.current.spawnAt(team, clientX, clientY, 2);
+  };
+
   return (
     <>
       {!started && (
@@ -87,11 +98,19 @@ function App() {
             <button className="btn-bomb" onClick={() => engineRef.current?.mathBomb()}>
               <Bomb size={16} /> Deploy Math Bomb
             </button>
+            <p style={{textAlign: 'center', fontSize: '0.75rem', color: '#94a3b8', margin: '4px 0 0'}}>
+              ✨ Tap anywhere on screen to spawn units directly!
+            </p>
           </div>
         </div>
       )}
 
-      <canvas ref={canvasRef} style={{ display: 'block', width: '100vw', height: '100vh' }} />
+      <canvas 
+        ref={canvasRef} 
+        onClick={handleCanvasTap}
+        onTouchStart={handleCanvasTap}
+        style={{ display: 'block', width: '100vw', height: '100vh', touchAction: 'none' }} 
+      />
     </>
   );
 }

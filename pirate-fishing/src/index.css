@@ -211,6 +211,8 @@ body {
   box-shadow: 0 8px 0 #b45309, 0 12px 18px rgba(0,0,0,0.4);
   transition: all 0.1s;
   text-transform: uppercase;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 .cast-btn:active {
   transform: translateY(8px);

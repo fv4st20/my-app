@@ -47,6 +47,7 @@ canvas {
   top: 0;
   left: 0;
   z-index: 1;
+  touch-action: none;
 }
 
 #ui-layer {
@@ -234,18 +235,103 @@ canvas {
     display: none; /* Hide heavy terminal stream on small mobile screens to keep gameplay smooth */
   }
   #nerd-stats {
-    top: auto;
-    bottom: 50px;
+    top: 60px;
+    bottom: auto;
     left: 10px;
-    width: calc(100vw - 20px);
-    max-height: 120px;
+    width: min(240px, 60vw);
+    max-height: 90px;
     overflow-y: auto;
-    font-size: 0.7rem;
-    padding: 8px 12px;
+    font-size: 0.65rem;
+    padding: 6px 10px;
   }
   #score-display {
     font-size: 1.1rem;
     top: 10px;
     left: 10px;
+  }
+}
+
+/* Mobile Touch Controls */
+.mobile-controls-cluster {
+  position: absolute;
+  bottom: max(22px, env(safe-area-inset-bottom, 22px));
+  left: max(16px, env(safe-area-inset-left, 16px));
+  display: flex;
+  gap: 12px;
+  z-index: 100;
+  pointer-events: auto;
+}
+
+.mobile-controls-cluster.right {
+  left: auto;
+  right: max(16px, env(safe-area-inset-right, 16px));
+  align-items: center;
+}
+
+.mobile-touch-btn {
+  width: 62px;
+  height: 62px;
+  border-radius: 50%;
+  background: rgba(5, 5, 16, 0.7);
+  border: 2px solid var(--neon-blue);
+  color: var(--neon-blue);
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.4rem;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 15px rgba(0, 243, 255, 0.25), inset 0 0 10px rgba(0, 243, 255, 0.1);
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.mobile-touch-btn:active, .mobile-touch-btn.active {
+  background: var(--neon-blue);
+  color: var(--bg-dark);
+  box-shadow: 0 0 25px var(--neon-blue);
+  transform: scale(0.92);
+}
+
+.fire-action-btn {
+  border-color: var(--neon-pink);
+  color: var(--neon-pink);
+  box-shadow: 0 0 15px rgba(255, 0, 255, 0.3);
+  font-size: 1.6rem;
+}
+
+.fire-action-btn:active, .fire-action-btn.active {
+  background: var(--neon-pink);
+  color: white;
+  box-shadow: 0 0 25px var(--neon-pink);
+}
+
+.auto-fire-btn {
+  width: auto;
+  height: 44px;
+  padding: 0 14px;
+  border-radius: 22px;
+  font-size: 0.75rem;
+  letter-spacing: 1px;
+  border-color: #39ff14;
+  color: #39ff14;
+  box-shadow: 0 0 10px rgba(57, 255, 20, 0.2);
+}
+
+.auto-fire-btn.active {
+  background: #39ff14;
+  color: #000;
+  box-shadow: 0 0 20px #39ff14;
+}
+
+@media (min-width: 1025px) {
+  /* On wide desktop screens with mouse/keyboard, keep controls visible but subtly dimmed */
+  .mobile-touch-btn {
+    opacity: 0.75;
   }
 }

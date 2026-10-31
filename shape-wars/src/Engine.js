@@ -222,6 +222,14 @@ export class GameEngine {
     this.announce(`${teamName} arise from the æther! A poetic tragedy begins.`);
   }
 
+  spawnAt(team, x, y, count = 1) {
+    for (let i = 0; i < count; i++) {
+      const ox = (Math.random() - 0.5) * 40;
+      const oy = (Math.random() - 0.5) * 40;
+      this.units.push(new Unit(Math.max(10, Math.min(this.width - 10, x + ox)), Math.max(10, Math.min(this.height - 10, y + oy)), team));
+    }
+  }
+
   mathBomb() {
     this.announce("A brilliant equation rips through the fabric of reality! Behold the majesty of math!");
     const x = this.width / 2;

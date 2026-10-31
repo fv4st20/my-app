@@ -249,6 +249,18 @@ export class GameEngine {
     this.resetPitch(); 
   }
 
+  touchKick(x, y) {
+    if (!this.ball) return;
+    const dx = x - this.ball.x;
+    const dy = y - this.ball.y;
+    const dist = Math.max(1, Math.sqrt(dx*dx + dy*dy));
+    this.ball.vx += (dx / dist) * 14;
+    this.ball.vy += (dy / dist) * 14;
+    for (let i = 0; i < 15; i++) {
+      this.particles.push(new Particle(this.ball.x, this.ball.y, '#39ff14'));
+    }
+  }
+
   update() {
     let energyLevel = 1; 
     let aggression = 0.2; 

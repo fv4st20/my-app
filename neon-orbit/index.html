@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>Neon Orbit</title>
   </head>
   <body>
@@ -11,7 +11,18 @@
       
       <!-- UI Overlay -->
       <div id="ui-layer">
-        <a href="/" class="neon-btn" style="position: absolute; bottom: 20px; left: 20px; font-size: 0.9rem; padding: 10px 20px; z-index: 1000; pointer-events: auto; text-decoration: none;">← HUB</a>
+        <a href="/" class="neon-btn hub-btn" style="position: absolute; top: 15px; right: 15px; font-size: 0.85rem; padding: 8px 16px; z-index: 1000; pointer-events: auto; text-decoration: none;">← HUB</a>
+        
+        <!-- On-Screen Mobile Controls -->
+        <div id="mobile-orbit-controls" class="mobile-controls-cluster">
+          <button id="btn-orbit-left" class="mobile-touch-btn" aria-label="Rotate Left">◀</button>
+          <button id="btn-orbit-right" class="mobile-touch-btn" aria-label="Rotate Right">▶</button>
+        </div>
+
+        <div id="mobile-action-controls" class="mobile-controls-cluster right">
+          <button id="btn-autofire" class="mobile-touch-btn auto-fire-btn" aria-label="Auto Fire">AUTO</button>
+          <button id="btn-fire" class="mobile-touch-btn fire-action-btn" aria-label="Shoot">⚡</button>
+        </div>
         <div id="nerd-stats">
           <h3>[SYS.STATS]</h3>
           <p>Blocks Mined: <span id="stat-blocks">0</span></p>
@@ -29,6 +40,7 @@
         <div id="main-menu" class="glass-panel active">
           <h1 class="glow-text">NEON ORBIT</h1>
           <p>Protect the Core. Survive the Waves.</p>
+          <p style="font-size: 0.8rem; color: #a5f3fc; opacity: 0.85; margin: 4px 0 0;">✨ Tip: Hold ◀ ▶ buttons to orbit & auto-target, or drag on screen to aim!</p>
           <div style="margin: 20px 0; display: flex; align-items: center; justify-content: center; gap: 10px;">
             <input type="checkbox" id="infinite-mode" style="width: 20px; height: 20px; cursor: pointer;">
             <label for="infinite-mode" style="cursor: pointer; color: var(--neon-cyan); font-weight: bold; text-shadow: 0 0 5px var(--neon-cyan);">Enable Infinite Mode</label>
