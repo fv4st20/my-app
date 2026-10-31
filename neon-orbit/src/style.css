@@ -75,7 +75,7 @@ canvas {
   bottom: 30px;
   left: 50%;
   transform: translateX(-50%);
-  width: 400px;
+  width: min(85vw, 400px);
   height: 10px;
   background: rgba(255,255,255,0.1);
   border: 1px solid var(--neon-blue);
@@ -98,12 +98,13 @@ canvas {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
+  width: min(90vw, 480px);
   background: var(--glass-bg);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   border: 1px solid var(--glass-border);
   border-radius: 15px;
-  padding: 40px 60px;
+  padding: clamp(24px, 5vw, 40px) clamp(20px, 6vw, 60px);
   text-align: center;
   box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37),
               0 0 20px rgba(0, 243, 255, 0.1);
@@ -119,7 +120,7 @@ canvas {
 }
 
 .glow-text {
-  font-size: 3.5rem;
+  font-size: clamp(2rem, 7vw, 3.5rem);
   font-weight: 900;
   color: #fff;
   text-shadow: 
@@ -127,7 +128,7 @@ canvas {
     0 0 20px var(--neon-blue),
     0 0 40px var(--neon-blue),
     0 0 80px var(--neon-blue);
-  letter-spacing: 4px;
+  letter-spacing: clamp(1px, 1vw, 4px);
 }
 
 .glow-text.error {
@@ -226,4 +227,25 @@ canvas {
   color: var(--neon-blue);
   margin-bottom: 5px;
   font-size: 1rem;
+}
+
+@media (max-width: 768px) {
+  #crypto-terminal {
+    display: none; /* Hide heavy terminal stream on small mobile screens to keep gameplay smooth */
+  }
+  #nerd-stats {
+    top: auto;
+    bottom: 50px;
+    left: 10px;
+    width: calc(100vw - 20px);
+    max-height: 120px;
+    overflow-y: auto;
+    font-size: 0.7rem;
+    padding: 8px 12px;
+  }
+  #score-display {
+    font-size: 1.1rem;
+    top: 10px;
+    left: 10px;
+  }
 }

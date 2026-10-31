@@ -25,29 +25,34 @@ body {
   align-items: center;
   justify-content: center;
   z-index: 100;
-  gap: 30px;
+  gap: 20px;
+  padding: 20px;
+  overflow-y: auto;
 }
 
 .title {
-  font-size: 4rem;
+  font-size: clamp(2rem, 8vw, 4rem);
   font-weight: 900;
   color: var(--neon-green);
   text-shadow: 0 0 20px var(--neon-green);
   letter-spacing: 2px;
+  text-align: center;
 }
 
 .options-grid {
   display: flex;
-  gap: 30px;
+  gap: 20px;
+  flex-wrap: wrap;
+  justify-content: center;
 }
 
 .option-card {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(57, 255, 20, 0.3);
-  padding: 40px;
+  padding: clamp(20px, 4vw, 40px);
   border-radius: 16px;
   text-align: center;
-  width: 300px;
+  width: min(90vw, 300px);
   transition: all 0.3s;
 }
 

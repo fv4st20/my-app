@@ -563,3 +563,24 @@ body {
 @keyframes popIn { 0% { transform: scale(0); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
 
 .glass-panel { background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 15px; backdrop-filter: blur(12px); }
+
+@media (max-width: 640px) {
+  .lab-bench {
+    padding: 15px;
+    gap: 15px;
+  }
+  .selectors {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .mix-control {
+    width: 100%;
+  }
+  .mix-btn {
+    width: 100%;
+  }
+  .compound-visuals {
+    flex: 1 1 auto;
+    width: 100%;
+  }
+}

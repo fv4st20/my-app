@@ -59,9 +59,9 @@ body {
 }
 
 .company-name {
-  font-size: 1.8rem;
+  font-size: clamp(1rem, 4vw, 1.8rem);
   font-weight: 900;
-  letter-spacing: 2px;
+  letter-spacing: 1px;
   text-transform: uppercase;
   text-shadow: 0 4px 10px rgba(0,0,0,0.5);
 }
@@ -69,12 +69,12 @@ body {
 .gold-display {
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-size: 1.8rem;
+  gap: 8px;
+  font-size: clamp(1.1rem, 4vw, 1.8rem);
   font-weight: bold;
   color: var(--gold);
   background: rgba(0,0,0,0.3);
-  padding: 5px 20px;
+  padding: 4px 14px;
   border-radius: 20px;
   border: 1px solid var(--gold);
   text-shadow: 0 2px 4px rgba(0,0,0,0.5);
@@ -203,29 +203,29 @@ body {
   background: var(--gold);
   color: var(--wood-dark);
   border: none;
-  font-size: 2rem;
+  font-size: clamp(1.3rem, 5vw, 2rem);
   font-weight: 900;
-  padding: 15px 40px;
+  padding: 12px 32px;
   border-radius: 30px;
   cursor: pointer;
-  box-shadow: 0 10px 0 #b45309, 0 15px 20px rgba(0,0,0,0.4);
+  box-shadow: 0 8px 0 #b45309, 0 12px 18px rgba(0,0,0,0.4);
   transition: all 0.1s;
   text-transform: uppercase;
 }
 .cast-btn:active {
-  transform: translateY(10px);
-  box-shadow: 0 0px 0 #b45309, 0 5px 10px rgba(0,0,0,0.4);
+  transform: translateY(8px);
+  box-shadow: 0 0px 0 #b45309, 0 4px 8px rgba(0,0,0,0.4);
 }
 .cast-btn:disabled {
   background: #64748b;
   color: #94a3b8;
-  box-shadow: 0 10px 0 #475569;
+  box-shadow: 0 8px 0 #475569;
   cursor: not-allowed;
 }
 
 /* Reel Minigame Bar */
 .reel-bar-container {
-  width: 300px;
+  width: min(85vw, 300px);
   height: 30px;
   background: rgba(0,0,0,0.5);
   border: 3px solid white;
@@ -247,6 +247,26 @@ body {
   background: #0f172a;
   border-top: 4px solid #fff;
   color: #f8fafc;
+}
+
+@media (max-width: 768px) {
+  .header {
+    padding: 10px 14px;
+  }
+  .bottom-panels {
+    height: auto;
+    max-height: 45vh;
+    overflow-y: auto;
+    flex-direction: column;
+  }
+  .panel {
+    border-right: none;
+    border-bottom: 3px solid #fff;
+    padding: 14px;
+  }
+  .panel:last-child {
+    border-bottom: none;
+  }
 }
 
 .panel {

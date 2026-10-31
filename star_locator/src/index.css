@@ -208,3 +208,22 @@ body {
   text-transform: uppercase;
   letter-spacing: 1px;
 }
+
+/* --- Mobile Responsiveness for 3D/2D views --- */
+@media (max-width: 768px) {
+  .sidebar {
+    width: calc(100% - 24px);
+    max-height: 45vh;
+    overflow-y: auto;
+    left: 12px;
+    right: 12px;
+    top: auto;
+    bottom: 12px;
+    padding: 14px;
+    gap: 12px;
+    pointer-events: auto;
+  }
+  .map2d-wrapper {
+    height: 160px;
+  }
+}

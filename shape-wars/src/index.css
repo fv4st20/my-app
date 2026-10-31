@@ -88,11 +88,32 @@ button:hover {
 }
 
 .start-btn {
-  font-size: 2rem;
-  padding: 20px 40px;
+  font-size: clamp(1.3rem, 5vw, 2rem);
+  padding: 16px 32px;
   background: linear-gradient(45deg, #ef4444, #38bdf8);
   border: none;
   border-radius: 50px;
   cursor: pointer;
   box-shadow: 0 0 20px rgba(255,255,255,0.2);
+}
+
+@media (max-width: 640px) {
+  .hud {
+    padding: 10px;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .hud-panel {
+    min-width: unset;
+    width: 100%;
+    padding: 10px 14px;
+    font-size: 0.85rem;
+  }
+  .controls {
+    gap: 8px;
+  }
+  button {
+    padding: 6px 10px;
+    font-size: 0.85rem;
+  }
 }
