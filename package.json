@@ -1,0 +1,15 @@
+{
+  "name": "my-swiss-knife",
+  "version": "1.0.0",
+  "description": "A unified web app hosting multiple tools",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "install-all": "cd neon-orbit && npm install && cd ../star_locator && npm install && cd ../chem-lab && npm install && cd ../chill-hub && npm install && cd ../shape-wars && npm install && cd ../sonic-soccer && npm install",
+    "build": "cd neon-orbit && npm run build && cd ../star_locator && npm run build && cd ../chem-lab && npm run build && cd ../chill-hub && npm run build && cd ../shape-wars && npm run build && cd ../sonic-soccer && npm run build"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}

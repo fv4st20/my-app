@@ -1,0 +1,191 @@
+:root {
+  --bg-color: #0b0f19;
+  --panel-bg: rgba(20, 25, 35, 0.9);
+  --text: #f8fafc;
+  --text-muted: #94a3b8;
+  
+  --alien-green: #22c55e;
+  --alien-red: #ef4444;
+  --alien-blue: #3b82f6;
+  --alien-yellow: #eab308;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  user-select: none;
+}
+
+body {
+  font-family: 'Space Grotesk', -apple-system, sans-serif;
+  background-color: #0f172a;
+  background-image: radial-gradient(#334155 1px, transparent 1px);
+  background-size: 20px 20px;
+  color: #f8fafc;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+.game-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 30px;
+  background: #1e293b;
+  padding: 50px 80px;
+  border-radius: 0px;
+  border: 4px solid #f8fafc;
+  box-shadow: 12px 12px 0px #f8fafc;
+  position: relative;
+}
+
+.return-btn {
+  position: absolute;
+  top: 25px;
+  left: 25px;
+  color: #000;
+  background: #fef08a;
+  border: 3px solid #f8fafc;
+  padding: 10px;
+  border-radius: 0;
+  box-shadow: 4px 4px 0px #f8fafc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.1s;
+  cursor: pointer;
+}
+.return-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0px #f8fafc;
+}
+
+.header {
+  text-align: center;
+}
+
+.header h1 {
+  font-size: 3.5rem;
+  font-weight: 900;
+  letter-spacing: -2px;
+  text-transform: uppercase;
+  color: #f8fafc;
+  margin-bottom: 5px;
+}
+
+.score-board {
+  font-size: 1.8rem;
+  font-weight: 900;
+  color: #000;
+  letter-spacing: 0px;
+  background: #38bdf8;
+  border: 3px solid #f8fafc;
+  padding: 5px 15px;
+  display: inline-block;
+  box-shadow: 4px 4px 0px #f8fafc;
+}
+
+.alien-grid {
+  display: grid;
+  grid-template-columns: 120px 120px 120px;
+  grid-template-rows: 120px 120px 120px;
+  gap: 20px;
+  position: relative;
+}
+
+.alien-btn {
+  background: #000;
+  border: 4px solid #1e293b;
+  border-radius: 50%;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 120px;
+  height: 120px;
+  box-shadow: 0 10px 20px rgba(0,0,0,0.5), inset 0 0 20px rgba(0,0,0,0.8);
+}
+.alien-btn:active {
+  transform: scale(0.9);
+}
+
+.alien-emoji {
+  font-size: 4rem;
+  filter: grayscale(100%) brightness(200%);
+  transition: all 0.2s;
+}
+
+/* Positions */
+.alien-top { grid-column: 2; grid-row: 1; }
+.alien-bottom { grid-column: 2; grid-row: 3; }
+.alien-left { grid-column: 1; grid-row: 2; }
+.alien-right { grid-column: 3; grid-row: 2; }
+
+/* Active States */
+.alien-top.active {
+  border-color: var(--alien-green);
+  box-shadow: 0 0 40px var(--alien-green), inset 0 0 20px var(--alien-green);
+  transform: scale(1.15);
+}
+.alien-top.active .alien-emoji { filter: none; }
+
+.alien-right.active {
+  border-color: var(--alien-red);
+  box-shadow: 0 0 40px var(--alien-red), inset 0 0 20px var(--alien-red);
+  transform: scale(1.15);
+}
+.alien-right.active .alien-emoji { filter: none; }
+
+.alien-bottom.active {
+  border-color: var(--alien-blue);
+  box-shadow: 0 0 40px var(--alien-blue), inset 0 0 20px var(--alien-blue);
+  transform: scale(1.15);
+}
+.alien-bottom.active .alien-emoji { filter: none; }
+
+.alien-left.active {
+  border-color: var(--alien-yellow);
+  box-shadow: 0 0 40px var(--alien-yellow), inset 0 0 20px var(--alien-yellow);
+  transform: scale(1.15);
+}
+.alien-left.active .alien-emoji { filter: none; }
+
+/* Center Control */
+.center-control {
+  grid-column: 2;
+  grid-row: 2;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.start-btn {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.1);
+  border: 2px solid rgba(255,255,255,0.2);
+  color: white;
+  font-weight: bold;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  backdrop-filter: blur(5px);
+}
+.start-btn:hover {
+  background: rgba(255,255,255,0.2);
+  transform: scale(1.05);
+}
+
+.status-msg {
+  height: 30px;
+  font-size: 1.2rem;
+  color: var(--text-muted);
+  letter-spacing: 1px;
+}

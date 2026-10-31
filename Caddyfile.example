@@ -1,0 +1,18 @@
+# Alternative: Caddyfile configuration for Swiss Knife Hub
+# Caddy automatically provisions and renews SSL certificates (HTTPS) with zero manual setup.
+#
+# Usage:
+# 1. Replace 'yourdomain.com' with your domain.
+# 2. Start Caddy:
+#      caddy reverse-proxy --from yourdomain.com --to 127.0.0.1:3000
+#    or place this Caddyfile in /etc/caddy/Caddyfile and run:
+#      sudo systemctl reload caddy
+
+yourdomain.com, www.yourdomain.com {
+    # Encode with gzip and zstd
+    encode gzip zstd
+
+    # Reverse proxy to the Express server
+    reverse_proxy 127.0.0.1:3000
+}
+

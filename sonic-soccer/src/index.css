@@ -1,0 +1,127 @@
+:root {
+  --neon-green: #39ff14;
+  --bg-dark: #000000;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Outfit', sans-serif;
+  background-color: var(--bg-dark);
+  color: white;
+  overflow: hidden;
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.95);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  gap: 30px;
+}
+
+.title {
+  font-size: 4rem;
+  font-weight: 900;
+  color: var(--neon-green);
+  text-shadow: 0 0 20px var(--neon-green);
+  letter-spacing: 2px;
+}
+
+.options-grid {
+  display: flex;
+  gap: 30px;
+}
+
+.option-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(57, 255, 20, 0.3);
+  padding: 40px;
+  border-radius: 16px;
+  text-align: center;
+  width: 300px;
+  transition: all 0.3s;
+}
+
+.option-card:hover {
+  border-color: var(--neon-green);
+  box-shadow: 0 0 30px rgba(57, 255, 20, 0.2);
+  transform: translateY(-5px);
+}
+
+.option-card h3 {
+  margin: 20px 0 10px;
+  color: var(--neon-green);
+}
+
+.option-card p {
+  color: #aaa;
+  margin-bottom: 20px;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.btn {
+  background: transparent;
+  color: var(--neon-green);
+  border: 2px solid var(--neon-green);
+  padding: 12px 24px;
+  border-radius: 50px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn:hover {
+  background: var(--neon-green);
+  color: var(--bg-dark);
+  box-shadow: 0 0 20px var(--neon-green);
+}
+
+.hud {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  right: 20px;
+  display: flex;
+  justify-content: space-between;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.hud-left {
+  pointer-events: auto;
+}
+
+.score-board {
+  background: rgba(0, 0, 0, 0.7);
+  border: 1px solid var(--neon-green);
+  padding: 15px 30px;
+  border-radius: 12px;
+  font-size: 2rem;
+  font-weight: bold;
+  color: white;
+  text-shadow: 0 0 10px var(--neon-green);
+  display: flex;
+  gap: 20px;
+}
+
+.audio-player {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  background: rgba(0,0,0,0.8);
+  padding: 10px;
+  border-radius: 30px;
+  border: 1px solid var(--neon-green);
+}

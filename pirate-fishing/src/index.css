@@ -1,0 +1,360 @@
+:root {
+  --sea-light: #0ea5e9;
+  --sea-dark: #0369a1;
+  --wood-light: #d97706;
+  --wood-dark: #92400e;
+  --gold: #f59e0b;
+  --text-main: #f8fafc;
+  --bg-dark: #0f172a;
+  --panel-bg: rgba(30, 41, 59, 0.9);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  user-select: none;
+}
+
+body {
+  font-family: 'Outfit', sans-serif;
+  background-color: var(--bg-dark);
+  color: var(--text-main);
+  overflow-x: hidden;
+}
+
+.game-layout {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+/* Header */
+.header {
+  background: linear-gradient(to bottom, var(--wood-dark), #451a03);
+  border-bottom: 4px solid var(--gold);
+  padding: 15px 30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+  z-index: 10;
+}
+
+.return-btn {
+  color: var(--text-main);
+  background: rgba(255,255,255,0.1);
+  padding: 8px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s;
+  cursor: pointer;
+}
+.return-btn:hover {
+  background: var(--gold);
+  color: black;
+  transform: scale(1.1);
+}
+
+.company-name {
+  font-size: 1.8rem;
+  font-weight: 900;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  text-shadow: 0 4px 10px rgba(0,0,0,0.5);
+}
+
+.gold-display {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.8rem;
+  font-weight: bold;
+  color: var(--gold);
+  background: rgba(0,0,0,0.3);
+  padding: 5px 20px;
+  border-radius: 20px;
+  border: 1px solid var(--gold);
+  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+}
+
+/* Ocean & Sky View */
+.ocean-view {
+  flex: 1;
+  position: relative;
+  background: linear-gradient(to bottom, #7dd3fc 0%, #38bdf8 100%);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  overflow: hidden;
+}
+
+/* Weather / Sky */
+.sun {
+  position: absolute;
+  top: 40px;
+  right: 80px;
+  width: 100px;
+  height: 100px;
+  background: #fef08a;
+  border-radius: 50%;
+  box-shadow: 0 0 60px #fde047, 0 0 100px #eab308;
+  animation: pulseSun 4s ease-in-out infinite;
+}
+@keyframes pulseSun {
+  0%, 100% { transform: scale(1); opacity: 0.9; }
+  50% { transform: scale(1.05); opacity: 1; }
+}
+
+.cloud {
+  position: absolute;
+  background: white;
+  border-radius: 50px;
+  opacity: 0.8;
+  box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+  animation: floatCloud linear infinite;
+}
+.cloud::before, .cloud::after {
+  content: '';
+  position: absolute;
+  background: white;
+  border-radius: 50%;
+}
+.cloud1 { top: 30px; left: -150px; width: 120px; height: 40px; animation-duration: 35s; }
+.cloud1::before { top: -20px; left: 15px; width: 50px; height: 50px; }
+.cloud1::after { top: -30px; left: 55px; width: 60px; height: 60px; }
+
+.cloud2 { top: 80px; left: -200px; width: 160px; height: 50px; animation-duration: 45s; animation-delay: -10s; opacity: 0.6; transform: scale(0.8); }
+.cloud2::before { top: -25px; left: 20px; width: 60px; height: 60px; }
+.cloud2::after { top: -40px; left: 70px; width: 80px; height: 80px; }
+
+@keyframes floatCloud {
+  from { transform: translateX(0); }
+  to { transform: translateX(120vw); }
+}
+
+/* Sea / Waves */
+.sea {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  height: 40%;
+  background: linear-gradient(to bottom, var(--sea-light) 0%, var(--sea-dark) 100%);
+  z-index: 2;
+}
+.wave {
+  position: absolute;
+  top: -15px;
+  width: 200%;
+  height: 30px;
+  background-image: radial-gradient(circle at 20px 15px, transparent 20px, var(--sea-light) 21px);
+  background-size: 40px 30px;
+  background-repeat: repeat-x;
+  animation: waveAnim 3s linear infinite;
+}
+.wave2 {
+  top: -10px;
+  background-image: radial-gradient(circle at 20px 15px, transparent 20px, #0284c7 21px);
+  animation-duration: 4s;
+  animation-direction: reverse;
+  opacity: 0.7;
+}
+
+@keyframes waveAnim {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-40px); }
+}
+
+/* Pirate Boat Animation */
+.boat {
+  position: absolute;
+  bottom: 25%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 180px;
+  height: 150px;
+  animation: floatBoat 3.5s ease-in-out infinite;
+  z-index: 3;
+}
+
+@keyframes floatBoat {
+  0% { transform: translateX(-50%) translateY(0px) rotate(-2deg); }
+  50% { transform: translateX(-50%) translateY(-15px) rotate(2deg); }
+  100% { transform: translateX(-50%) translateY(0px) rotate(-2deg); }
+}
+
+/* Fishing Action */
+.fishing-ui {
+  position: absolute;
+  top: 20%;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  z-index: 5;
+}
+
+.cast-btn {
+  background: var(--gold);
+  color: var(--wood-dark);
+  border: none;
+  font-size: 2rem;
+  font-weight: 900;
+  padding: 15px 40px;
+  border-radius: 30px;
+  cursor: pointer;
+  box-shadow: 0 10px 0 #b45309, 0 15px 20px rgba(0,0,0,0.4);
+  transition: all 0.1s;
+  text-transform: uppercase;
+}
+.cast-btn:active {
+  transform: translateY(10px);
+  box-shadow: 0 0px 0 #b45309, 0 5px 10px rgba(0,0,0,0.4);
+}
+.cast-btn:disabled {
+  background: #64748b;
+  color: #94a3b8;
+  box-shadow: 0 10px 0 #475569;
+  cursor: not-allowed;
+}
+
+/* Reel Minigame Bar */
+.reel-bar-container {
+  width: 300px;
+  height: 30px;
+  background: rgba(0,0,0,0.5);
+  border: 3px solid white;
+  border-radius: 15px;
+  overflow: hidden;
+  position: relative;
+}
+.reel-bar-fill {
+  height: 100%;
+  background: var(--gold);
+  width: 0%;
+  transition: width 0.1s linear;
+}
+
+/* Bottom Panels */
+.bottom-panels {
+  height: 350px;
+  display: flex;
+  background: #0f172a;
+  border-top: 4px solid #fff;
+  color: #f8fafc;
+}
+
+.panel {
+  flex: 1;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  border-right: 4px solid #fff;
+}
+.panel:last-child {
+  border-right: none;
+}
+.panel h2 {
+  font-size: 1.5rem;
+  margin-bottom: 15px;
+  color: #f8fafc;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 3px solid #fff;
+  padding-bottom: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+/* Cargo List */
+.cargo-list {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+.cargo-item {
+  background: #1e293b;
+  padding: 10px 15px;
+  border: 3px solid #fff;
+  box-shadow: 4px 4px 0px #fff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.fish-name { font-weight: 900; color: #f8fafc; }
+.fish-value { color: #f8fafc; font-weight: 900; }
+
+.sell-btn {
+  background: #f59e0b;
+  color: #000;
+  border: 3px solid #fff;
+  box-shadow: 4px 4px 0px #fff;
+  padding: 15px;
+  border-radius: 0;
+  font-size: 1.2rem;
+  font-weight: 900;
+  cursor: pointer;
+  transition: all 0.1s;
+  text-transform: uppercase;
+}
+.sell-btn:active {
+  transform: translate(2px,2px);
+  box-shadow: 2px 2px 0px #fff;
+}
+
+/* Upgrades List */
+.upgrade-list {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+.upgrade-card {
+  background: #1e293b;
+  padding: 15px;
+  border: 3px solid #fff;
+  box-shadow: 4px 4px 0px #fff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.upgrade-info h3 { font-size: 1.2rem; margin-bottom: 5px; font-weight: 900; color: #f8fafc; }
+.upgrade-info p { font-size: 0.9rem; color: #cbd5e1; font-weight: 600; }
+
+.buy-btn {
+  background: #38bdf8;
+  color: #000;
+  border: 3px solid #fff;
+  box-shadow: 4px 4px 0px #fff;
+  padding: 10px 15px;
+  border-radius: 0;
+  font-weight: 900;
+  cursor: pointer;
+  transition: all 0.1s;
+}
+.buy-btn:active:not(:disabled) {
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0px #fff;
+}
+.buy-btn:disabled {
+  background: #334155;
+  color: #94a3b8;
+  cursor: not-allowed;
+  box-shadow: 0 0 0 #fff;
+  border-color: #64748b;
+}
+
+/* Scrollbars */
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }

@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Neon Orbit</title>
+  </head>
+  <body>
+    <div id="app">
+      <canvas id="gameCanvas"></canvas>
+      
+      <!-- UI Overlay -->
+      <div id="ui-layer">
+        <a href="/" class="neon-btn" style="position: absolute; bottom: 20px; left: 20px; font-size: 0.9rem; padding: 10px 20px; z-index: 1000; pointer-events: auto; text-decoration: none;">← HUB</a>
+        <div id="nerd-stats">
+          <h3>[SYS.STATS]</h3>
+          <p>Blocks Mined: <span id="stat-blocks">0</span></p>
+          <p>Eigenvalue Collapses: <span id="stat-kills">0</span></p>
+          <p>Avg Loss Gradient: <span id="stat-loss">0.00</span></p>
+          <p>Data Packets Intercepted: <span id="stat-packets">0</span></p>
+        </div>
+        <div id="crypto-terminal"></div>
+        <div id="score-display">Score: <span id="score">0</span><br><span id="hash-power" style="font-size: 0.8em; color: var(--neon-purple);">Hash Rate: 0 H/s</span></div>
+        <div id="health-bar-container">
+          <div id="health-bar"></div>
+        </div>
+
+        <!-- Main Menu -->
+        <div id="main-menu" class="glass-panel active">
+          <h1 class="glow-text">NEON ORBIT</h1>
+          <p>Protect the Core. Survive the Waves.</p>
+          <div style="margin: 20px 0; display: flex; align-items: center; justify-content: center; gap: 10px;">
+            <input type="checkbox" id="infinite-mode" style="width: 20px; height: 20px; cursor: pointer;">
+            <label for="infinite-mode" style="cursor: pointer; color: var(--neon-cyan); font-weight: bold; text-shadow: 0 0 5px var(--neon-cyan);">Enable Infinite Mode</label>
+          </div>
+          <button id="start-btn" class="neon-btn">START GAME</button>
+        </div>
+
+        <!-- Game Over Menu -->
+        <div id="game-over-menu" class="glass-panel">
+          <h1 class="glow-text error">SYSTEM FAILURE</h1>
+          <p>Final Score: <span id="final-score">0</span></p>
+          <button id="restart-btn" class="neon-btn">REBOOT</button>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

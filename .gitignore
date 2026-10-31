@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Production builds
+dist/
+**/dist/
+build/
+**/build/
+
+# Environment files & Secrets
+.env
+*.pem
+*.key
+
+# Archives
+*.zip
+*.tar.gz
+
+# System & Logs
+.DS_Store
+Thumbs.db
+*.log

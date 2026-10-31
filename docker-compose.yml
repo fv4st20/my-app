@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  swiss-knife-hub:
+    build: .
+    container_name: swiss-knife-hub
+    restart: unless-stopped
+    ports:
+      # Port mapped to host. If using a host reverse proxy like Nginx or Caddy,
+      # requests on port 80/443 will forward here (port 3000).
+      - "${PORT:-3000}:3000"
+    environment:
+      - NODE_ENV=${NODE_ENV:-production}
+      - PORT=3000
+      - DOMAIN=${DOMAIN:-}
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
