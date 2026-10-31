@@ -29,41 +29,78 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=3.0">
+  <style>
+    /* Critical Inline CSS: Prevents modal and floating button from rendering unstyled */
+    #themeModal {
+      display: none !important;
+      position: fixed !important;
+      inset: 0 !important;
+      z-index: 99999 !important;
+    }
+    #themeModal.active {
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+    }
+    .theme-floating-btn {
+      position: fixed;
+      top: 18px;
+      right: 18px;
+      z-index: 1000;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(18, 24, 38, 0.75);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #f1f5f9;
+      padding: 9px 18px;
+      border-radius: 9999px;
+      font-family: inherit;
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .theme-floating-btn:hover {
+      background: rgba(30, 41, 59, 0.9);
+      border-color: #6366f1;
+      box-shadow: 0 6px 24px rgba(99, 102, 241, 0.4);
+      transform: translateY(-2px);
+    }
+    .theme-floating-btn:active {
+      transform: scale(0.96);
+    }
+    @media (max-width: 600px) {
+      .theme-floating-btn {
+        top: 12px;
+        right: 12px;
+        padding: 7px 14px;
+        font-size: 0.8rem;
+      }
+    }
+  </style>
 </head>
 <body>
   <div class="background">
     <div class="blob blob-1"></div>
     <div class="blob blob-2"></div>
   </div>
+
+  <!-- Floating RGB Theme Customizer Button -->
+  <button id="themeToggleBtn" class="theme-floating-btn" aria-label="Customize RGB Background">
+    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.563-2.512 5.563-5.563C22 6.5 17.5 2 12 2z"/></svg>
+    <span>RGB Theme</span>
+  </button>
+
   <main class="container">
-    <div class="top-nav-bar">
-      <button id="themeToggleBtn" class="theme-palette-btn" aria-label="Customize RGB Background">
-        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.563-2.512 5.563-5.563C22 6.5 17.5 2 12 2z"/></svg>
-        <span>RGB Theme</span>
-      </button>
-    </div>
     <header class="header">
       <div class="title-container">
         <h2 class="sub-title">Z340's</h2>
         <h1 class="main-title">Swiss Knife <span>Hub</span></h1>
-      </div>
-      
-      <!-- Quick Theme Palette on Main Page -->
-      <div class="main-theme-strip">
-        <span class="theme-strip-label">🎨 Background Palette:</span>
-        <div class="theme-strip-pills">
-          <button class="preset-chip main-preset" data-c1="#0b0f19" data-c2="#1a1a2e" data-c3="#16213e" data-acc="#6366f1" data-acc2="#ec4899">🌌 Cosmic</button>
-          <button class="preset-chip main-preset" data-c1="#050510" data-c2="#1e0933" data-c3="#2a0845" data-acc="#ec4899" data-acc2="#00f3ff">🔮 Cyberpunk</button>
-          <button class="preset-chip main-preset" data-c1="#01140e" data-c2="#042e20" data-c3="#064e3b" data-acc="#10b981" data-acc2="#34d399">🌲 Matrix</button>
-          <button class="preset-chip main-preset" data-c1="#180800" data-c2="#360e00" data-c3="#571402" data-acc="#f59e0b" data-acc2="#ef4444">🔥 Sunset</button>
-          <button class="preset-chip main-preset" data-c1="#020b14" data-c2="#072038" data-c3="#0c365c" data-acc="#00f0ff" data-acc2="#38bdf8">🌊 Ocean</button>
-          <button class="preset-chip main-preset" data-c1="#12021c" data-c2="#26043b" data-c3="#3b085c" data-acc="#a855f7" data-acc2="#ec4899">👾 Void</button>
-          <button id="openStudioPill" class="preset-chip studio-pill">
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m4.93 4.93 4.24 4.24"/><path d="m14.83 9.17 4.24-4.24"/></svg>
-            RGB Wheel Studio
-          </button>
-        </div>
       </div>
     </header>
 
