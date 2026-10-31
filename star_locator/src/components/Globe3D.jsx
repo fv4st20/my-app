@@ -70,15 +70,17 @@ const Globe3D = ({ latitude, longitude, celestialData }) => {
   }];
 
   if (celestialData) {
-    let size = 30;
-    let color = '#ffffff';
-    let type = celestialData.type?.toLowerCase() || '';
+    let size = 45;
+    let color = '#ffdd44';
+    let type = (celestialData.type || '').toLowerCase();
 
-    if (type.includes('star')) { size = 80; color = '#ffdd44'; }
-    else if (type.includes('planet')) { size = 50; color = '#4488ff'; }
-    else if (type.includes('moon')) { size = 30; color = '#cccccc'; }
-    else if (type.includes('dwarf')) { size = 20; color = '#aa88bb'; }
-    else { size = 15; color = '#444444'; } // Void or unknown
+    if (type.includes('supergiant')) { size = 65; color = '#ffaa33'; }
+    else if (type.includes('giant')) { size = 55; color = '#ffcc44'; }
+    else if (type.includes('star')) { size = 48; color = '#ffee66'; }
+    else if (type.includes('planet')) { size = 45; color = '#38bdf8'; }
+    else if (type.includes('galaxy')) { size = 60; color = '#c084fc'; }
+    else if (type.includes('cluster') || type.includes('nebula')) { size = 55; color = '#ec4899'; }
+    else if (type.includes('moon')) { size = 38; color = '#f1f5f9'; }
 
     elementsData.push({
       lat: latitude,
@@ -87,7 +89,9 @@ const Globe3D = ({ latitude, longitude, celestialData }) => {
       size: size,
       color: color,
       isCelestial: true,
-      name: celestialData.name
+      name: celestialData.name,
+      distanceStr: celestialData.distanceStr,
+      constellation: celestialData.constellation
     });
   }
 
@@ -206,26 +210,38 @@ const Globe3D = ({ latitude, longitude, celestialData }) => {
         htmlElement={(d) => {
           const el = document.createElement('div');
           if (d.isCelestial) {
-            el.innerHTML = `<div style="width: ${d.size}px; height: ${d.size}px; background: radial-gradient(circle at 30% 30%, #ffffff, ${d.color} 60%, #111111); border-radius: 50%; box-shadow: 0 0 ${Math.max(10, d.size/2)}px ${d.color}; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-family: sans-serif; font-size: 10px; text-shadow: 0 0 3px black; cursor: pointer;" title="${d.name}"></div>`;
+            el.innerHTML = `
+              <div style="display: flex; flex-direction: column; align-items: center; pointer-events: auto; cursor: pointer;">
+                <div style="width: ${d.size}px; height: ${d.size}px; background: radial-gradient(circle at 35% 35%, #ffffff, ${d.color} 55%, #050510); border-radius: 50%; box-shadow: 0 0 25px ${d.color}, 0 0 50px ${d.color}; border: 2px solid #ffffff;"></div>
+                <div style="margin-top: 8px; background: rgba(5, 5, 20, 0.88); border: 1.5px solid ${d.color}; color: #ffffff; padding: 4px 10px; border-radius: 12px; font-family: sans-serif; font-size: 11px; font-weight: bold; white-space: nowrap; box-shadow: 0 4px 15px rgba(0,0,0,0.7); backdrop-filter: blur(8px);">
+                  ✨ ${d.name} ${d.distanceStr ? `• ${d.distanceStr}` : ''}
+                </div>
+              </div>
+            `;
             el.style.transform = `translate(-50%, -50%)`;
           } else if (d.isVehicle) {
             el.innerHTML = `<div style="font-size: 18px; filter: drop-shadow(0 0 8px ${d.color});">${d.icon}</div>`;
             el.style.transform = `translate(-50%, -50%)`;
           } else {
-            el.innerHTML = `<div style="width: 20px; height: 20px; background: ${d.color}; border-radius: 50%; box-shadow: 0 0 15px ${d.color}; border: 2px solid white;"></div>`;
+            el.innerHTML = `
+              <div style="display: flex; flex-direction: column; align-items: center; pointer-events: none;">
+                <div style="width: 16px; height: 16px; background: #6366f1; border-radius: 50%; box-shadow: 0 0 15px #6366f1; border: 2px solid white;"></div>
+                <div style="margin-top: 4px; background: rgba(0,0,0,0.85); color: #fff; padding: 2px 6px; border-radius: 6px; font-size: 10px; font-weight: 600; white-space: nowrap;">You Are Here</div>
+              </div>
+            `;
             el.style.transform = `translate(-50%, -50%)`;
           }
           return el;
         }}
         htmlAltitude={(d) => d.alt}
 
-        // Vector line
+        // Vector line pointing straight up into space to the star
         pathsData={pathData}
         pathPoints="coords"
         pathPointAlt={(p) => p[2]}
-        pathColor="color"
+        pathColor={() => 'rgba(99, 102, 241, 0.85)'}
         pathResolution={64}
-        pathStroke={3}
+        pathStroke={4}
       />
     </div>
   );

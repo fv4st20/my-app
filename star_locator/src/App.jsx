@@ -27,21 +27,10 @@ function App() {
   };
 
   useEffect(() => {
+    // 1. Immediately start with initial coordinates so the 3D globe and stars render right away
+    fetchLocationData(52.2297, 21.0122);
 
-    const tryIPFallback = async () => {
-      try {
-        const response = await axios.get('https://ipapi.co/json/');
-        if (response.data && response.data.latitude && response.data.longitude) {
-          setError("Using IP-based location (browser location was unavailable).");
-          await fetchLocationData(response.data.latitude, response.data.longitude);
-          return true;
-        }
-      } catch (err) {
-        console.error("IP fallback also failed:", err);
-      }
-      return false;
-    };
-
+    // 2. Request user's real browser geolocation
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         async (position) => {
@@ -50,24 +39,19 @@ function App() {
           await fetchLocationData(latitude, longitude);
         },
         async (err) => {
-          console.error("Geolocation error:", err);
-          setError("Browser location failed. Attempting IP fallback...");
-          const success = await tryIPFallback();
-          if (!success) {
-            setError("Could not access your location. Please enable location services.");
-            setLoading(false);
+          console.warn("Geolocation prompt was denied or timed out:", err);
+          // Try IP lookup fallback
+          try {
+            const response = await axios.get('https://ipapi.co/json/', { timeout: 3500 });
+            if (response.data && response.data.latitude && response.data.longitude) {
+              await fetchLocationData(response.data.latitude, response.data.longitude);
+            }
+          } catch (ipErr) {
+            // Already initialized with working coordinates
           }
         },
-        { timeout: 10000, maximumAge: 0 }
+        { timeout: 6000, maximumAge: 60000 }
       );
-    } else {
-      setError("Geolocation not supported. Attempting IP fallback...");
-      tryIPFallback().then((success) => {
-        if (!success) {
-          setError("Geolocation is not supported by your browser.");
-          setLoading(false);
-        }
-      });
     }
   }, []);
 
@@ -100,7 +84,10 @@ function App() {
         
         {/* 2D Map Widget */}
         <div className="glass-panel" style={{ padding: '8px' }}>
-          <h2 style={{ fontSize: '1rem', padding: '8px', margin: 0 }}>Your Location</h2>
+          <h2 style={{ fontSize: '1rem', padding: '8px 8px 2px', margin: 0 }}>Observer Location</h2>
+          <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', padding: '0 8px 6px', margin: 0 }}>
+            📍 Click anywhere on map to aim straight up from any city!
+          </p>
           <Map2D latitude={location?.latitude} longitude={location?.longitude} onLocationChange={fetchLocationData} />
         </div>
 
