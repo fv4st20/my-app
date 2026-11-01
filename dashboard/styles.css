@@ -598,62 +598,6 @@ body {
    Z340 SECURITY GATEWAY & CLEARANCE SYSTEM
    ======================================================== */
 
-.top-floating-controls {
-  position: fixed;
-  top: 18px;
-  right: 18px;
-  z-index: 1000;
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.clearance-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  background: rgba(18, 24, 38, 0.75);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  padding: 8px 14px;
-  border-radius: 9999px;
-  font-family: inherit;
-  font-size: 0.8rem;
-  font-weight: 500;
-  color: var(--text-muted);
-  cursor: pointer;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-  transition: all 0.25s ease;
-  user-select: none;
-}
-
-.clearance-badge:hover {
-  background: rgba(30, 41, 59, 0.9);
-  border-color: rgba(0, 240, 255, 0.3);
-  color: var(--text-main);
-  transform: translateY(-1px);
-}
-
-.clearance-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #f59e0b;
-  box-shadow: 0 0 8px #f59e0b;
-  transition: all 0.3s ease;
-}
-
-.clearance-badge.verified .clearance-dot {
-  background: #10b981;
-  box-shadow: 0 0 10px #10b981;
-}
-
-.clearance-badge.verified {
-  color: #34d399;
-  border-color: rgba(16, 185, 129, 0.3);
-}
-
 /* Security Modal Overlay */
 .security-modal {
   display: none;
@@ -1099,15 +1043,6 @@ body {
 }
 
 @media (max-width: 480px) {
-  .top-floating-controls {
-    top: 12px;
-    right: 12px;
-    gap: 6px;
-  }
-  .clearance-badge {
-    padding: 6px 10px;
-    font-size: 0.75rem;
-  }
   .puzzle-stage-wrapper,
   .slider-track-container,
   .code-input-row {

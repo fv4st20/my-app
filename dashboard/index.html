@@ -29,7 +29,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=3.2">
+  <link rel="stylesheet" href="styles.css?v=3.3">
   <style>
     /* Critical Inline CSS: Prevents modals from rendering unstyled in document flow */
     #themeModal, #securityModal {
@@ -51,50 +51,11 @@
       align-items: center !important;
       justify-content: center !important;
     }
-    .top-floating-controls {
+    .theme-floating-btn {
       position: fixed;
       top: 18px;
       right: 18px;
       z-index: 1000;
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-    }
-    .clearance-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 7px;
-      background: rgba(18, 24, 38, 0.75);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      padding: 8px 14px;
-      border-radius: 9999px;
-      font-family: inherit;
-      font-size: 0.8rem;
-      font-weight: 500;
-      color: #94a3b8;
-      cursor: pointer;
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-      transition: all 0.25s ease;
-      user-select: none;
-    }
-    .clearance-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: #f59e0b;
-      box-shadow: 0 0 8px #f59e0b;
-    }
-    .clearance-badge.verified .clearance-dot {
-      background: #10b981;
-      box-shadow: 0 0 10px #10b981;
-    }
-    .clearance-badge.verified {
-      color: #34d399;
-      border-color: rgba(16, 185, 129, 0.3);
-    }
-    .theme-floating-btn {
       display: inline-flex;
       align-items: center;
       gap: 8px;
@@ -122,16 +83,9 @@
       transform: scale(0.96);
     }
     @media (max-width: 600px) {
-      .top-floating-controls {
+      .theme-floating-btn {
         top: 12px;
         right: 12px;
-        gap: 6px;
-      }
-      .clearance-badge {
-        padding: 6px 10px;
-        font-size: 0.75rem;
-      }
-      .theme-floating-btn {
         padding: 7px 14px;
         font-size: 0.8rem;
       }
@@ -144,17 +98,11 @@
     <div class="blob blob-2"></div>
   </div>
 
-  <!-- Top Floating Controls: Security Clearance & RGB Theme -->
-  <div class="top-floating-controls">
-    <div id="clearanceBadge" class="clearance-badge" title="Security Clearance • Click to test/lock">
-      <span class="clearance-dot"></span>
-      <span id="clearanceText" class="clearance-text">Checking...</span>
-    </div>
-    <button id="themeToggleBtn" class="theme-floating-btn" aria-label="Customize RGB Background">
-      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.563-2.512 5.563-5.563C22 6.5 17.5 2 12 2z"/></svg>
-      <span>RGB Theme</span>
-    </button>
-  </div>
+  <!-- Floating RGB Theme Customizer Button -->
+  <button id="themeToggleBtn" class="theme-floating-btn" aria-label="Customize RGB Background">
+    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.563-2.512 5.563-5.563C22 6.5 17.5 2 12 2z"/></svg>
+    <span>RGB Theme</span>
+  </button>
 
   <main class="container">
     <header class="header">
@@ -568,8 +516,6 @@
       const securityStatusMsg = document.getElementById('securityStatusMsg');
       const securityStatusBox = document.getElementById('securityStatus');
       const securityNoticeText = document.getElementById('securityNoticeText');
-      const clearanceBadge = document.getElementById('clearanceBadge');
-      const clearanceText = document.getElementById('clearanceText');
       const securityCard = document.querySelector('.security-card');
       const securitySoundToggle = document.getElementById('securitySoundToggle');
       const soundOnIcon = document.getElementById('soundOnIcon');
@@ -844,8 +790,6 @@
       function handleSuccess(redirectUrl) {
         playSound('grant');
         setStatus('ACCESS GRANTED — CLEARANCE ISSUED', 'success');
-        clearanceBadge.classList.add('verified');
-        clearanceText.textContent = 'Clearance: ACTIVE';
 
         if (redirectUrl) {
           securityNoticeText.textContent = 'Verification complete! Redirecting to application...';
@@ -898,17 +842,6 @@
         if (e.key === 'Enter') submitCodeVerification();
       });
 
-      // Clearance Badge click: re-verify / test gate
-      clearanceBadge.addEventListener('click', async () => {
-        if (confirm('Re-lock and test the Security Clearance Gateway?')) {
-          await fetch('/api/security/clear', { method: 'POST' });
-          clearanceBadge.classList.remove('verified');
-          clearanceText.textContent = 'Clearance: PENDING';
-          securityModal.classList.add('active');
-          loadSecurityChallenge();
-        }
-      });
-
       // --- Initial Clearance Check on Load ---
       async function initSecurityCheck() {
         try {
@@ -922,13 +855,8 @@
             } else {
               securityNoticeText.textContent = 'Restricted hub entry: Verify human presence to decrypt access.';
             }
-            clearanceBadge.classList.remove('verified');
-            clearanceText.textContent = 'Clearance: REQUIRED';
             securityModal.classList.add('active');
             loadSecurityChallenge();
-          } else {
-            clearanceBadge.classList.add('verified');
-            clearanceText.textContent = 'Clearance: ACTIVE';
           }
         } catch (e) {
           securityModal.classList.add('active');
