@@ -25,6 +25,7 @@ WORKDIR /app
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/package.json ./
 COPY --from=build /app/server.js ./
+COPY --from=build /app/security.js ./
 
 # Copy the static dashboard
 COPY --from=build /app/dashboard ./dashboard

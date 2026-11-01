@@ -29,10 +29,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=3.0">
+  <link rel="stylesheet" href="styles.css?v=3.2">
   <style>
-    /* Critical Inline CSS: Prevents modal and floating button from rendering unstyled */
-    #themeModal {
+    /* Critical Inline CSS: Prevents modals from rendering unstyled in document flow */
+    #themeModal, #securityModal {
       display: none !important;
       position: fixed !important;
       inset: 0 !important;
@@ -43,11 +43,58 @@
       align-items: center !important;
       justify-content: center !important;
     }
-    .theme-floating-btn {
+    #securityModal {
+      z-index: 100000 !important;
+    }
+    #securityModal.active {
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+    }
+    .top-floating-controls {
       position: fixed;
       top: 18px;
       right: 18px;
       z-index: 1000;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .clearance-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      background: rgba(18, 24, 38, 0.75);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      padding: 8px 14px;
+      border-radius: 9999px;
+      font-family: inherit;
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: #94a3b8;
+      cursor: pointer;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+      transition: all 0.25s ease;
+      user-select: none;
+    }
+    .clearance-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #f59e0b;
+      box-shadow: 0 0 8px #f59e0b;
+    }
+    .clearance-badge.verified .clearance-dot {
+      background: #10b981;
+      box-shadow: 0 0 10px #10b981;
+    }
+    .clearance-badge.verified {
+      color: #34d399;
+      border-color: rgba(16, 185, 129, 0.3);
+    }
+    .theme-floating-btn {
       display: inline-flex;
       align-items: center;
       gap: 8px;
@@ -75,9 +122,16 @@
       transform: scale(0.96);
     }
     @media (max-width: 600px) {
-      .theme-floating-btn {
+      .top-floating-controls {
         top: 12px;
         right: 12px;
+        gap: 6px;
+      }
+      .clearance-badge {
+        padding: 6px 10px;
+        font-size: 0.75rem;
+      }
+      .theme-floating-btn {
         padding: 7px 14px;
         font-size: 0.8rem;
       }
@@ -90,11 +144,17 @@
     <div class="blob blob-2"></div>
   </div>
 
-  <!-- Floating RGB Theme Customizer Button -->
-  <button id="themeToggleBtn" class="theme-floating-btn" aria-label="Customize RGB Background">
-    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.563-2.512 5.563-5.563C22 6.5 17.5 2 12 2z"/></svg>
-    <span>RGB Theme</span>
-  </button>
+  <!-- Top Floating Controls: Security Clearance & RGB Theme -->
+  <div class="top-floating-controls">
+    <div id="clearanceBadge" class="clearance-badge" title="Security Clearance • Click to test/lock">
+      <span class="clearance-dot"></span>
+      <span id="clearanceText" class="clearance-text">Checking...</span>
+    </div>
+    <button id="themeToggleBtn" class="theme-floating-btn" aria-label="Customize RGB Background">
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.563-2.512 5.563-5.563C22 6.5 17.5 2 12 2z"/></svg>
+      <span>RGB Theme</span>
+    </button>
+  </div>
 
   <main class="container">
     <header class="header">
@@ -280,8 +340,82 @@
     </div>
   </div>
 
+  <!-- Z340 Security Clearance Gateway Modal -->
+  <div id="securityModal" class="security-modal" aria-modal="true" role="dialog">
+    <div class="security-modal-backdrop"></div>
+    <div class="security-card">
+      <div class="security-header">
+        <div class="security-brand">
+          <div class="security-radar-icon">
+            <div class="radar-sweep"></div>
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </div>
+          <div>
+            <h3>Z340 SECURITY GATE</h3>
+            <span class="security-badge-sub">DEFENSE PROTOCOL • BIOMETRIC CHECK</span>
+          </div>
+        </div>
+        <button id="securitySoundToggle" class="security-sound-btn" title="Toggle audio feedback" aria-label="Toggle Sound">
+          <svg id="soundOnIcon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+          <svg id="soundOffIcon" style="display:none;" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>
+        </button>
+      </div>
+
+      <!-- Target / Redirect Context Notice -->
+      <div id="securityNotice" class="security-notice">
+        <span class="notice-pulse"></span>
+        <span id="securityNoticeText">Restricted entry: Verify human presence to decrypt hub access.</span>
+      </div>
+
+      <!-- Mode 1: Kinetic Puzzle Slider -->
+      <div id="puzzleSection" class="security-section">
+        <div class="puzzle-stage-wrapper">
+          <div id="puzzleBgContainer" class="puzzle-bg-box"></div>
+          <div id="puzzlePiece" class="puzzle-piece-box"></div>
+          <div class="stage-scanline"></div>
+        </div>
+
+        <!-- Interactive Slider Track -->
+        <div class="slider-track-container" id="sliderContainer">
+          <div class="slider-track-fill" id="sliderFill"></div>
+          <span class="slider-prompt" id="sliderPrompt">Slide energy core into socket ▶▶▶</span>
+          <div class="slider-puck" id="sliderPuck" tabindex="0">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mode 2: Alphanumeric Code Matrix (Accessible / Fallback) -->
+      <div id="codeSection" class="security-section" style="display: none;">
+        <div class="code-stage-wrapper">
+          <div id="codeSvgContainer" class="code-svg-box"></div>
+        </div>
+        <div class="code-input-row">
+          <input type="text" id="securityCodeInput" maxlength="4" placeholder="ENTER 4-CHAR KEY" autocomplete="off" autocapitalize="characters" />
+          <button id="verifyCodeBtn" class="code-verify-btn">Verify</button>
+        </div>
+      </div>
+
+      <!-- Security Status Banner -->
+      <div id="securityStatus" class="security-status-box idle">
+        <span class="status-indicator"></span>
+        <span id="securityStatusMsg">WAITING FOR BIOMETRIC ALIGNMENT...</span>
+      </div>
+
+      <!-- Footer Options -->
+      <div class="security-footer">
+        <button id="switchModeBtn" class="security-text-btn">Use Code Matrix</button>
+        <button id="refreshChallengeBtn" class="security-text-btn">
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg>
+          New Challenge
+        </button>
+      </div>
+    </div>
+  </div>
+
   <script>
     (function() {
+      // --- RGB Gradient Customizer Engine ---
       const STORAGE_KEY = 'swiss_hub_rgb_theme';
       const DEFAULTS = { 
         c1: '#0b0f19', 
@@ -307,9 +441,8 @@
       const lblAcc2 = document.getElementById('labelAccent2');
 
       const previewBar = document.getElementById('gradientPreviewBar');
-      const modal = document.getElementById('themeModal');
+      const themeModal = document.getElementById('themeModal');
       const btnToggle = document.getElementById('themeToggleBtn');
-      const btnStudioPill = document.getElementById('openStudioPill');
       const btnClose = document.getElementById('closeThemeModal');
       const btnBackdrop = document.getElementById('themeModalBackdrop');
       const btnSave = document.getElementById('saveThemeBtn');
@@ -355,7 +488,6 @@
         }
       }
 
-      // Load saved theme
       try {
         const saved = localStorage.getItem(STORAGE_KEY);
         if (saved) {
@@ -384,7 +516,6 @@
         input.addEventListener('input', updateFromInputs);
       });
 
-      // Quick presets (both on main page strip and in the modal)
       document.querySelectorAll('.preset-chip[data-c1]').forEach(btn => {
         btn.addEventListener('click', () => {
           const theme = {
@@ -402,17 +533,410 @@
         });
       });
 
-      const openModal = () => modal.classList.add('active');
-      const closeModal = () => modal.classList.remove('active');
+      const openThemeModal = () => themeModal.classList.add('active');
+      const closeThemeModal = () => themeModal.classList.remove('active');
 
-      if (btnToggle) btnToggle.addEventListener('click', openModal);
-      if (btnStudioPill) btnStudioPill.addEventListener('click', openModal);
-
+      if (btnToggle) btnToggle.addEventListener('click', openThemeModal);
       [btnClose, btnBackdrop, btnSave].forEach(b => {
-        if (b) b.addEventListener('click', closeModal);
+        if (b) b.addEventListener('click', closeThemeModal);
+      });
+      if (btnReset) btnReset.addEventListener('click', () => applyTheme(DEFAULTS, true));
+
+
+      // ========================================================
+      // --- Z340 SECURITY CLEARANCE GATEWAY CONTROLLER ---
+      // ========================================================
+      const urlParams = new URLSearchParams(window.location.search);
+      const verifyParam = urlParams.get('verify');
+      const targetAppParam = urlParams.get('app');
+      const redirectParam = urlParams.get('redirect');
+
+      const securityModal = document.getElementById('securityModal');
+      const puzzleBgContainer = document.getElementById('puzzleBgContainer');
+      const puzzlePiece = document.getElementById('puzzlePiece');
+      const sliderPuck = document.getElementById('sliderPuck');
+      const sliderFill = document.getElementById('sliderFill');
+      const sliderPrompt = document.getElementById('sliderPrompt');
+      const sliderContainer = document.getElementById('sliderContainer');
+      const puzzleSection = document.getElementById('puzzleSection');
+      const codeSection = document.getElementById('codeSection');
+      const codeSvgContainer = document.getElementById('codeSvgContainer');
+      const securityCodeInput = document.getElementById('securityCodeInput');
+      const verifyCodeBtn = document.getElementById('verifyCodeBtn');
+      const switchModeBtn = document.getElementById('switchModeBtn');
+      const refreshChallengeBtn = document.getElementById('refreshChallengeBtn');
+      const securityStatusMsg = document.getElementById('securityStatusMsg');
+      const securityStatusBox = document.getElementById('securityStatus');
+      const securityNoticeText = document.getElementById('securityNoticeText');
+      const clearanceBadge = document.getElementById('clearanceBadge');
+      const clearanceText = document.getElementById('clearanceText');
+      const securityCard = document.querySelector('.security-card');
+      const securitySoundToggle = document.getElementById('securitySoundToggle');
+      const soundOnIcon = document.getElementById('soundOnIcon');
+      const soundOffIcon = document.getElementById('soundOffIcon');
+
+      // --- Web Audio Sci-Fi Synthesizer ---
+      let audioCtx = null;
+      let soundEnabled = true;
+      try {
+        const savedSound = localStorage.getItem('z340_security_sound');
+        if (savedSound !== null) soundEnabled = savedSound === 'true';
+      } catch(e) {}
+
+      function updateSoundIcon() {
+        if (soundEnabled) {
+          soundOnIcon.style.display = 'block';
+          soundOffIcon.style.display = 'none';
+        } else {
+          soundOnIcon.style.display = 'none';
+          soundOffIcon.style.display = 'block';
+        }
+      }
+      updateSoundIcon();
+
+      securitySoundToggle.addEventListener('click', () => {
+        soundEnabled = !soundEnabled;
+        try { localStorage.setItem('z340_security_sound', soundEnabled); } catch(e) {}
+        updateSoundIcon();
       });
 
-      if (btnReset) btnReset.addEventListener('click', () => applyTheme(DEFAULTS, true));
+      function playSound(type) {
+        if (!soundEnabled) return;
+        try {
+          if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+          }
+          if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
+          }
+          const now = audioCtx.currentTime;
+          if (type === 'tick') {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(800, now);
+            osc.frequency.exponentialRampToValueAtTime(1200, now + 0.05);
+            gain.gain.setValueAtTime(0.08, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(now);
+            osc.stop(now + 0.05);
+          } else if (type === 'grant') {
+            [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
+              const osc = audioCtx.createOscillator();
+              const gain = audioCtx.createGain();
+              osc.type = 'triangle';
+              osc.frequency.setValueAtTime(freq, now + i * 0.07);
+              gain.gain.setValueAtTime(0.12, now + i * 0.07);
+              gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.07 + 0.35);
+              osc.connect(gain);
+              gain.connect(audioCtx.destination);
+              osc.start(now + i * 0.07);
+              osc.stop(now + i * 0.07 + 0.35);
+            });
+          } else if (type === 'deny') {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(150, now);
+            osc.frequency.linearRampToValueAtTime(90, now + 0.25);
+            gain.gain.setValueAtTime(0.12, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(now);
+            osc.stop(now + 0.25);
+          }
+        } catch(e) {}
+      }
+
+      // --- Security State & Challenge Handling ---
+      let currentChallengeId = null;
+      let currentMode = 'puzzle';
+      let isDragging = false;
+      let startPointerX = 0;
+      let dragHistory = [];
+      let isVerifying = false;
+      const pieceWidth = 44;
+
+      function setStatus(msg, state = 'idle') {
+        securityStatusMsg.textContent = msg;
+        securityStatusBox.className = 'security-status-box ' + state;
+      }
+
+      function escapeHtml(str) {
+        return String(str).replace(/[&<>"']/g, s => ({
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          '"': '&quot;',
+          "'": '&#39;'
+        })[s]);
+      }
+
+      async function loadSecurityChallenge() {
+        setStatus('GENERATING HIGH-SECURITY CIPHER...', 'verifying');
+        try {
+          const res = await fetch('/api/security/challenge');
+          const data = await res.json();
+          if (!data.success) {
+            setStatus('FAILED TO LOAD CIPHER — RETRYING...', 'error');
+            return;
+          }
+          currentChallengeId = data.challengeId;
+          puzzleBgContainer.innerHTML = data.bgSvg;
+          puzzlePiece.innerHTML = data.pieceSvg;
+          puzzlePiece.style.top = data.targetY + 'px';
+          puzzlePiece.style.left = '0px';
+          puzzlePiece.style.transform = 'translateX(0px)';
+          
+          codeSvgContainer.innerHTML = data.codeSvg;
+          securityCodeInput.value = '';
+
+          // Reset slider state
+          sliderPuck.style.transform = 'translateX(0px)';
+          sliderFill.style.width = '0px';
+          sliderPrompt.style.opacity = '1';
+
+          setStatus('WAITING FOR BIOMETRIC ALIGNMENT...', 'idle');
+        } catch (err) {
+          setStatus('NETWORK ERROR LOADING CHALLENGE', 'error');
+        }
+      }
+
+      // --- Kinetic Slider Drag Engine (PointerEvents with Mobile Touch Support) ---
+      function getTrackWidth() {
+        return sliderContainer.getBoundingClientRect().width || 320;
+      }
+
+      function onPointerDown(e) {
+        if (!currentChallengeId || isVerifying) return;
+        isDragging = true;
+        startPointerX = e.clientX;
+        dragHistory = [{ t: Date.now(), x: e.clientX, y: e.clientY }];
+        sliderPuck.setPointerCapture(e.pointerId);
+        sliderPrompt.style.opacity = '0.2';
+        setStatus('TRACKING KINETIC ALIGNMENT...', 'verifying');
+        playSound('tick');
+      }
+
+      function onPointerMove(e) {
+        if (!isDragging) return;
+        const trackW = getTrackWidth();
+        const maxTravel = trackW - 48; // 42px puck + margins
+        const deltaX = e.clientX - startPointerX;
+        const currentLeft = Math.max(0, Math.min(maxTravel, deltaX));
+        
+        dragHistory.push({ t: Date.now(), x: e.clientX, y: e.clientY });
+
+        sliderPuck.style.transform = `translateX(${currentLeft}px)`;
+        sliderFill.style.width = `${currentLeft + 24}px`;
+
+        const stageW = puzzleBgContainer.getBoundingClientRect().width || 320;
+        const maxPieceX = stageW - pieceWidth;
+        const pieceX = (currentLeft / maxTravel) * maxPieceX;
+        puzzlePiece.style.transform = `translateX(${pieceX}px)`;
+      }
+
+      async function onPointerUp(e) {
+        if (!isDragging) return;
+        isDragging = false;
+        sliderPrompt.style.opacity = '1';
+
+        const trackW = getTrackWidth();
+        const maxTravel = trackW - 48;
+        const deltaX = e.clientX - startPointerX;
+        const currentLeft = Math.max(0, Math.min(maxTravel, deltaX));
+
+        if (currentLeft < 10) {
+          sliderPuck.style.transform = 'translateX(0px)';
+          sliderFill.style.width = '0px';
+          puzzlePiece.style.transform = 'translateX(0px)';
+          setStatus('WAITING FOR BIOMETRIC ALIGNMENT...', 'idle');
+          return;
+        }
+
+        const stageW = puzzleBgContainer.getBoundingClientRect().width || 320;
+        const maxPieceX = stageW - pieceWidth;
+        const pieceX = Math.round((currentLeft / maxTravel) * maxPieceX);
+
+        await submitPuzzleVerification(pieceX);
+      }
+
+      sliderPuck.addEventListener('pointerdown', onPointerDown);
+      sliderPuck.addEventListener('pointermove', onPointerMove);
+      sliderPuck.addEventListener('pointerup', onPointerUp);
+      sliderPuck.addEventListener('pointercancel', onPointerUp);
+
+      // Support dragging directly on the puzzle piece itself
+      puzzlePiece.addEventListener('pointerdown', (e) => {
+        onPointerDown(e);
+      });
+      puzzlePiece.addEventListener('pointermove', onPointerMove);
+      puzzlePiece.addEventListener('pointerup', onPointerUp);
+      puzzlePiece.addEventListener('pointercancel', onPointerUp);
+
+      // --- Submission Handlers ---
+      async function submitPuzzleVerification(pieceX) {
+        isVerifying = true;
+        setStatus('VERIFYING CIPHER WITH SECURITY GATEWAY...', 'verifying');
+
+        try {
+          const res = await fetch('/api/security/verify-puzzle', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              challengeId: currentChallengeId,
+              x: pieceX,
+              dragHistory,
+              redirect: redirectParam || null
+            })
+          });
+          const result = await res.json();
+
+          if (result.success) {
+            handleSuccess(result.redirect);
+          } else {
+            handleFailure(result.reason);
+          }
+        } catch (err) {
+          handleFailure('Connection error during verification.');
+        } finally {
+          isVerifying = false;
+        }
+      }
+
+      async function submitCodeVerification() {
+        const code = securityCodeInput.value.trim();
+        if (!code || code.length < 4) {
+          handleFailure('Please enter the 4-character code.');
+          return;
+        }
+
+        isVerifying = true;
+        setStatus('CHECKING AUTHORIZATION KEY...', 'verifying');
+
+        try {
+          const res = await fetch('/api/security/verify-code', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              challengeId: currentChallengeId,
+              code,
+              redirect: redirectParam || null
+            })
+          });
+          const result = await res.json();
+
+          if (result.success) {
+            handleSuccess(result.redirect);
+          } else {
+            handleFailure(result.reason);
+          }
+        } catch (err) {
+          handleFailure('Connection error during verification.');
+        } finally {
+          isVerifying = false;
+        }
+      }
+
+      function handleSuccess(redirectUrl) {
+        playSound('grant');
+        setStatus('ACCESS GRANTED — CLEARANCE ISSUED', 'success');
+        clearanceBadge.classList.add('verified');
+        clearanceText.textContent = 'Clearance: ACTIVE';
+
+        if (redirectUrl) {
+          securityNoticeText.textContent = 'Verification complete! Redirecting to application...';
+          setTimeout(() => {
+            window.location.href = redirectUrl;
+          }, 650);
+        } else {
+          setTimeout(() => {
+            securityModal.classList.remove('active');
+            if (window.history.replaceState) {
+              window.history.replaceState({}, document.title, window.location.pathname);
+            }
+          }, 650);
+        }
+      }
+
+      function handleFailure(reason) {
+        playSound('deny');
+        setStatus(`❌ ${reason || 'ALIGNMENT FAILED — TRY AGAIN'}`, 'error');
+        securityCard.classList.add('shake');
+        setTimeout(() => securityCard.classList.remove('shake'), 500);
+
+        // Snap back
+        sliderPuck.style.transform = 'translateX(0px)';
+        sliderFill.style.width = '0px';
+        puzzlePiece.style.transform = 'translateX(0px)';
+
+        setTimeout(loadSecurityChallenge, 800);
+      }
+
+      // Mode switch
+      switchModeBtn.addEventListener('click', () => {
+        if (currentMode === 'puzzle') {
+          currentMode = 'code';
+          puzzleSection.style.display = 'none';
+          codeSection.style.display = 'block';
+          switchModeBtn.textContent = 'Use Puzzle Slider';
+          securityCodeInput.focus();
+        } else {
+          currentMode = 'puzzle';
+          puzzleSection.style.display = 'block';
+          codeSection.style.display = 'none';
+          switchModeBtn.textContent = 'Use Code Matrix';
+        }
+      });
+
+      refreshChallengeBtn.addEventListener('click', loadSecurityChallenge);
+      verifyCodeBtn.addEventListener('click', submitCodeVerification);
+      securityCodeInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') submitCodeVerification();
+      });
+
+      // Clearance Badge click: re-verify / test gate
+      clearanceBadge.addEventListener('click', async () => {
+        if (confirm('Re-lock and test the Security Clearance Gateway?')) {
+          await fetch('/api/security/clear', { method: 'POST' });
+          clearanceBadge.classList.remove('verified');
+          clearanceText.textContent = 'Clearance: PENDING';
+          securityModal.classList.add('active');
+          loadSecurityChallenge();
+        }
+      });
+
+      // --- Initial Clearance Check on Load ---
+      async function initSecurityCheck() {
+        try {
+          const res = await fetch('/api/security/status');
+          const data = await res.json();
+          const isVerified = data && data.verified;
+
+          if (verifyParam === 'required' || !isVerified) {
+            if (targetAppParam) {
+              securityNoticeText.innerHTML = `Restricted Entry: Access to <strong>${escapeHtml(targetAppParam)}</strong> requires clearance.`;
+            } else {
+              securityNoticeText.textContent = 'Restricted hub entry: Verify human presence to decrypt access.';
+            }
+            clearanceBadge.classList.remove('verified');
+            clearanceText.textContent = 'Clearance: REQUIRED';
+            securityModal.classList.add('active');
+            loadSecurityChallenge();
+          } else {
+            clearanceBadge.classList.add('verified');
+            clearanceText.textContent = 'Clearance: ACTIVE';
+          }
+        } catch (e) {
+          securityModal.classList.add('active');
+          loadSecurityChallenge();
+        }
+      }
+
+      initSecurityCheck();
     })();
   </script>
 </body>
