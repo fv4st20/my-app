@@ -31,16 +31,14 @@ app.get('/health', (req, res) => {
 
 // Get a new puzzle & code challenge
 app.get('/api/security/challenge', (req, res) => {
-  const clientIp = req.ip || req.socket?.remoteAddress || '';
-  const challenge = createSecurityChallenge(clientIp);
+  const challenge = createSecurityChallenge();
   res.status(200).json({ success: true, ...challenge });
 });
 
 // Verify puzzle slider submission
 app.post('/api/security/verify-puzzle', (req, res) => {
   const { challengeId, x, dragHistory, redirect } = req.body || {};
-  const clientIp = req.ip || req.socket?.remoteAddress || '';
-  const result = verifyPuzzleSubmission(challengeId, Number(x), dragHistory, clientIp);
+  const result = verifyPuzzleSubmission(challengeId, Number(x), dragHistory);
 
   if (result.success) {
     // Set 30-day clearance cookie across all sub-apps
@@ -48,7 +46,7 @@ app.post('/api/security/verify-puzzle', (req, res) => {
       'Set-Cookie',
       `z340_clearance=${result.token}; Path=/; Max-Age=${30 * 24 * 3600}; SameSite=Lax`
     );
-    return res.status(200).json({ success: true, redirect: redirect || null });
+    return res.status(200).json({ success: true, token: result.token, redirect: redirect || null });
   }
 
   return res.status(400).json({ success: false, reason: result.reason || 'Verification failed' });
@@ -57,15 +55,14 @@ app.post('/api/security/verify-puzzle', (req, res) => {
 // Verify alphanumeric code submission
 app.post('/api/security/verify-code', (req, res) => {
   const { challengeId, code, redirect } = req.body || {};
-  const clientIp = req.ip || req.socket?.remoteAddress || '';
-  const result = verifyCodeSubmission(challengeId, code, clientIp);
+  const result = verifyCodeSubmission(challengeId, code);
 
   if (result.success) {
     res.setHeader(
       'Set-Cookie',
       `z340_clearance=${result.token}; Path=/; Max-Age=${30 * 24 * 3600}; SameSite=Lax`
     );
-    return res.status(200).json({ success: true, redirect: redirect || null });
+    return res.status(200).json({ success: true, token: result.token, redirect: redirect || null });
   }
 
   return res.status(400).json({ success: false, reason: result.reason || 'Verification failed' });
@@ -75,8 +72,7 @@ app.post('/api/security/verify-code', (req, res) => {
 app.get('/api/security/status', (req, res) => {
   const cookies = parseCookies(req);
   const token = cookies['z340_clearance'];
-  const clientIp = req.ip || req.socket?.remoteAddress || '';
-  const isVerified = verifyClearanceToken(token, clientIp);
+  const isVerified = verifyClearanceToken(token);
   res.status(200).json({ verified: isVerified });
 });
 
@@ -112,9 +108,8 @@ app.use((req, res, next) => {
   // Check clearance token from cookies
   const cookies = parseCookies(req);
   const token = cookies['z340_clearance'];
-  const clientIp = req.ip || req.socket?.remoteAddress || '';
 
-  if (verifyClearanceToken(token, clientIp)) {
+  if (verifyClearanceToken(token)) {
     // Authenticated user: allow access
     return next();
   }

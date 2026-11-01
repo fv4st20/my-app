@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 
-// Server secret for HMAC token signing (persists per server run or can use env var)
-const SERVER_SECRET = process.env.SECURITY_SECRET || crypto.randomBytes(32).toString('hex');
+// Persistent HMAC secret key (consistent across server restarts so valid clearance cookies persist)
+const SERVER_SECRET = process.env.SECURITY_SECRET || 'z340_swiss_hub_sec_key_2026_9f8a3d';
 const TOKEN_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000; // 30 days clearance
 const CHALLENGE_EXPIRY_MS = 5 * 60 * 1000; // 5 minutes to solve
 
@@ -29,8 +29,7 @@ export function parseCookies(req) {
     const parts = cookie.split('=');
     const name = parts[0]?.trim();
     if (!name) return;
-    const value = parts.slice(1).join('=').trim();
-    list[name] = decodeURIComponent(value);
+    list[name] = decodeURIComponent(parts.slice(1).join('=').trim());
   });
   return list;
 }
@@ -38,10 +37,10 @@ export function parseCookies(req) {
 /**
  * Generates an HMAC-signed clearance token
  */
-export function generateClearanceToken(clientIp = '') {
+export function generateClearanceToken() {
   const timestamp = Date.now().toString(36);
   const nonce = crypto.randomBytes(8).toString('hex');
-  const payload = `${timestamp}.${nonce}.${clientIp}`;
+  const payload = `${timestamp}.${nonce}`;
   const hmac = crypto.createHmac('sha256', SERVER_SECRET).update(payload).digest('hex');
   return `${timestamp}.${nonce}.${hmac}`;
 }
@@ -49,34 +48,27 @@ export function generateClearanceToken(clientIp = '') {
 /**
  * Validates an HMAC-signed clearance token
  */
-export function verifyClearanceToken(token, clientIp = '') {
+export function verifyClearanceToken(token) {
   if (!token || typeof token !== 'string') return false;
   const parts = token.split('.');
   if (parts.length !== 3) return false;
 
   const [timestampStr, nonce, receivedHmac] = parts;
+  if (!receivedHmac || receivedHmac.length !== 64) return false;
   const timestamp = parseInt(timestampStr, 36);
 
   if (isNaN(timestamp)) return false;
   const age = Date.now() - timestamp;
   if (age < 0 || age > TOKEN_MAX_AGE_MS) return false;
 
-  // Verify HMAC (support both IP-bound and subnet/general verification)
-  const payloadWithIp = `${timestampStr}.${nonce}.${clientIp}`;
-  const expectedHmacWithIp = crypto.createHmac('sha256', SERVER_SECRET).update(payloadWithIp).digest('hex');
-
-  const payloadGeneral = `${timestampStr}.${nonce}.`;
-  const expectedHmacGeneral = crypto.createHmac('sha256', SERVER_SECRET).update(payloadGeneral).digest('hex');
+  const payload = `${timestampStr}.${nonce}`;
+  const expectedHmac = crypto.createHmac('sha256', SERVER_SECRET).update(payload).digest('hex');
 
   try {
     const bufReceived = Buffer.from(receivedHmac, 'hex');
-    const bufWithIp = Buffer.from(expectedHmacWithIp, 'hex');
-    const bufGeneral = Buffer.from(expectedHmacGeneral, 'hex');
+    const bufExpected = Buffer.from(expectedHmac, 'hex');
 
-    if (bufReceived.length === bufWithIp.length && crypto.timingSafeEqual(bufReceived, bufWithIp)) {
-      return true;
-    }
-    if (bufReceived.length === bufGeneral.length && crypto.timingSafeEqual(bufReceived, bufGeneral)) {
+    if (bufReceived.length === bufExpected.length && crypto.timingSafeEqual(bufReceived, bufExpected)) {
       return true;
     }
   } catch {
@@ -88,15 +80,15 @@ export function verifyClearanceToken(token, clientIp = '') {
 /**
  * Generates a high-tech Cyber Puzzle Challenge + Code Challenge
  */
-export function createSecurityChallenge(clientIp = '') {
+export function createSecurityChallenge() {
   const challengeId = crypto.randomUUID();
   const width = 320;
   const height = 160;
   const pieceSize = 44;
 
-  // Target X between 65 and 260; Target Y between 25 and 90
-  const targetX = Math.floor(65 + Math.random() * (width - pieceSize - 75));
-  const targetY = Math.floor(25 + Math.random() * (height - pieceSize - 35));
+  // Target X between 70 and 240; Target Y between 25 and 85
+  const targetX = Math.floor(70 + Math.random() * (width - pieceSize - 80));
+  const targetY = Math.floor(25 + Math.random() * (height - pieceSize - 30));
 
   // 4-character visual verification code (no ambiguous characters)
   const chars = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
@@ -111,12 +103,10 @@ export function createSecurityChallenge(clientIp = '') {
     targetX,
     targetY,
     code,
-    clientIp,
     createdAt: Date.now()
   });
 
-  // SVG Puzzle Piece Path relative to (0,0)
-  // Classic high-tech notched socket/key
+  // SVG Puzzle Piece Path relative to (0,0) (exact 44x44 bounding box)
   const piecePath = `M 0,0 
     H 14 C 14,9 30,9 30,0 H 44 
     V 14 C 35,14 35,30 44,30 V 44 
@@ -168,32 +158,26 @@ export function createSecurityChallenge(clientIp = '') {
     <!-- Top & Bottom Tech Indicators -->
     <text x="14" y="22" fill="rgba(255,255,255,0.4)" font-family="monospace" font-size="9" letter-spacing="1">Z340 DEFENSE PROTOCOL</text>
     <text x="${width - 14}" y="22" text-anchor="end" fill="#00f0ff" font-family="monospace" font-size="9" font-weight="bold">TARGET: ENGAGED</text>
-    <text x="14" y="${height - 12}" fill="rgba(255,255,255,0.3)" font-family="monospace" font-size="8">SLOT COORD: [REDACTED]</text>
+    <text x="14" y="${height - 12}" fill="rgba(255,255,255,0.3)" font-family="monospace" font-size="8">SLOT COORD: [ACTIVE]</text>
   </svg>
   `.trim();
 
-  // Floating Puzzle Piece SVG (Energy Core)
+  // Floating Puzzle Piece SVG (Exact 44x44 matching piece)
   const pieceSvg = `
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${pieceSize + 16} ${pieceSize + 16}" width="${pieceSize + 16}" height="${pieceSize + 16}">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${pieceSize} ${pieceSize}" width="${pieceSize}" height="${pieceSize}">
     <defs>
       <linearGradient id="pieceGrad" x1="0%" y1="0%" x2="100%" y2="100%">
         <stop offset="0%" stop-color="#00f0ff" />
         <stop offset="40%" stop-color="#6366f1" />
         <stop offset="100%" stop-color="#ec4899" />
       </linearGradient>
-      <filter id="pieceGlow" x="-30%" y="-30%" width="160%" height="160%">
-        <feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="#00f0ff" flood-opacity="0.8" />
-        <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="rgba(0,0,0,0.6)" />
-      </filter>
     </defs>
-    <g transform="translate(8, 8)">
-      <!-- Main glowing puzzle core -->
-      <path d="${piecePath}" fill="url(#pieceGrad)" stroke="#ffffff" stroke-width="1.8" filter="url(#pieceGlow)" />
-      <!-- Inner circuit emblem -->
-      <circle cx="22" cy="22" r="7" fill="#ffffff" opacity="0.85" />
-      <circle cx="22" cy="22" r="4" fill="#0b0f19" />
-      <circle cx="22" cy="22" r="1.5" fill="#00f0ff" />
-    </g>
+    <!-- Main glowing puzzle core -->
+    <path d="${piecePath}" fill="url(#pieceGrad)" stroke="#ffffff" stroke-width="1.8" />
+    <!-- Inner circuit emblem -->
+    <circle cx="22" cy="22" r="7" fill="#ffffff" opacity="0.85" />
+    <circle cx="22" cy="22" r="4" fill="#0b0f19" />
+    <circle cx="22" cy="22" r="1.5" fill="#00f0ff" />
   </svg>
   `.trim();
 
@@ -204,11 +188,11 @@ export function createSecurityChallenge(clientIp = '') {
   let charElements = '';
   for (let i = 0; i < code.length; i++) {
     const char = code[i];
-    const charX = 35 + i * 44 + (Math.random() * 8 - 4);
-    const charY = 44 + (Math.random() * 8 - 4);
-    const rot = Math.floor(Math.random() * 24 - 12);
+    const charX = 25 + i * 46;
+    const charY = 44 + (Math.random() * 6 - 3);
+    const rot = Math.floor(Math.random() * 20 - 10);
     const col = colors[i % colors.length];
-    charElements += `<text x="${charX}" y="${charY}" transform="rotate(${rot}, ${charX}, ${charY})" fill="${col}" font-family="'Courier New', monospace" font-size="32" font-weight="900" filter="drop-shadow(0 0 6px ${col})">${char}</text>`;
+    charElements += `<text x="${charX}" y="${charY}" transform="rotate(${rot}, ${charX}, ${charY})" fill="${col}" font-family="'Courier New', monospace" font-size="32" font-weight="900">${char}</text>`;
   }
 
   // Random noise lines across code
@@ -240,50 +224,49 @@ export function createSecurityChallenge(clientIp = '') {
 /**
  * Validates a puzzle slider submission
  */
-export function verifyPuzzleSubmission(challengeId, userX, dragHistory = [], clientIp = '') {
+export function verifyPuzzleSubmission(challengeId, userX, dragHistory = []) {
   if (!challengeId || typeof userX !== 'number') {
     return { success: false, reason: 'Invalid payload structure' };
   }
 
   const challenge = activeChallenges.get(challengeId);
   if (!challenge) {
-    return { success: false, reason: 'Challenge expired or invalid. Please refresh.' };
+    return { success: false, reason: 'Challenge expired. Please try again.' };
   }
 
   // Clean up challenge to prevent replay attacks
   activeChallenges.delete(challengeId);
 
-  // Validate tolerance (+/- 7px)
+  // Validate tolerance (+/- 14px for natural human finger & mouse movement)
   const delta = Math.abs(userX - challenge.targetX);
-  if (delta > 7) {
-    return { success: false, reason: `Alignment error (${Math.round(delta)}px offset). Try again!` };
+  if (delta > 14) {
+    return { success: false, reason: `Alignment offset (${Math.round(delta)}px). Align with socket!` };
   }
 
-  // Basic kinetic heuristic check for human behavior (non-zero movement count)
+  // Check for non-instant movement if history provided
   if (Array.isArray(dragHistory) && dragHistory.length > 0) {
     const duration = dragHistory[dragHistory.length - 1].t - dragHistory[0].t;
-    // Human drags take at least 150ms and less than 30s
-    if (duration > 0 && duration < 120) {
-      return { success: false, reason: 'Bot kinetic profile detected (abnormal velocity).' };
+    if (duration > 0 && duration < 80) {
+      return { success: false, reason: 'Abnormal velocity detected.' };
     }
   }
 
   // Generate clearance token
-  const token = generateClearanceToken(clientIp);
+  const token = generateClearanceToken();
   return { success: true, token };
 }
 
 /**
  * Validates an alphanumeric code submission
  */
-export function verifyCodeSubmission(challengeId, userCode, clientIp = '') {
+export function verifyCodeSubmission(challengeId, userCode) {
   if (!challengeId || !userCode || typeof userCode !== 'string') {
     return { success: false, reason: 'Code required.' };
   }
 
   const challenge = activeChallenges.get(challengeId);
   if (!challenge) {
-    return { success: false, reason: 'Challenge expired or invalid. Please refresh.' };
+    return { success: false, reason: 'Challenge expired. Please try again.' };
   }
 
   activeChallenges.delete(challengeId);
@@ -292,6 +275,6 @@ export function verifyCodeSubmission(challengeId, userCode, clientIp = '') {
     return { success: false, reason: 'Incorrect security code. Please try again.' };
   }
 
-  const token = generateClearanceToken(clientIp);
+  const token = generateClearanceToken();
   return { success: true, token };
 }

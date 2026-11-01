@@ -29,7 +29,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=3.3">
+  <link rel="stylesheet" href="styles.css?v=3.5">
   <style>
     /* Critical Inline CSS: Prevents modals from rendering unstyled in document flow */
     #themeModal, #securityModal {
@@ -50,6 +50,8 @@
       display: flex !important;
       align-items: center !important;
       justify-content: center !important;
+      opacity: 1 !important;
+      pointer-events: auto !important;
     }
     .theme-floating-btn {
       position: fixed;
@@ -661,7 +663,9 @@
         isDragging = true;
         startPointerX = e.clientX;
         dragHistory = [{ t: Date.now(), x: e.clientX, y: e.clientY }];
-        sliderPuck.setPointerCapture(e.pointerId);
+        try {
+          sliderPuck.setPointerCapture(e.pointerId);
+        } catch (err) {}
         sliderPrompt.style.opacity = '0.2';
         setStatus('TRACKING KINETIC ALIGNMENT...', 'verifying');
         playSound('tick');
@@ -688,6 +692,9 @@
       async function onPointerUp(e) {
         if (!isDragging) return;
         isDragging = false;
+        try {
+          sliderPuck.releasePointerCapture(e.pointerId);
+        } catch (err) {}
         sliderPrompt.style.opacity = '1';
 
         const trackW = getTrackWidth();
@@ -695,7 +702,7 @@
         const deltaX = e.clientX - startPointerX;
         const currentLeft = Math.max(0, Math.min(maxTravel, deltaX));
 
-        if (currentLeft < 10) {
+        if (currentLeft < 8) {
           sliderPuck.style.transform = 'translateX(0px)';
           sliderFill.style.width = '0px';
           puzzlePiece.style.transform = 'translateX(0px)';
@@ -711,17 +718,14 @@
       }
 
       sliderPuck.addEventListener('pointerdown', onPointerDown);
-      sliderPuck.addEventListener('pointermove', onPointerMove);
-      sliderPuck.addEventListener('pointerup', onPointerUp);
-      sliderPuck.addEventListener('pointercancel', onPointerUp);
-
-      // Support dragging directly on the puzzle piece itself
-      puzzlePiece.addEventListener('pointerdown', (e) => {
-        onPointerDown(e);
+      sliderContainer.addEventListener('pointerdown', (e) => {
+        if (e.target !== sliderPuck) {
+          onPointerDown(e);
+        }
       });
-      puzzlePiece.addEventListener('pointermove', onPointerMove);
-      puzzlePiece.addEventListener('pointerup', onPointerUp);
-      puzzlePiece.addEventListener('pointercancel', onPointerUp);
+      window.addEventListener('pointermove', onPointerMove, { passive: true });
+      window.addEventListener('pointerup', onPointerUp);
+      window.addEventListener('pointercancel', onPointerUp);
 
       // --- Submission Handlers ---
       async function submitPuzzleVerification(pieceX) {
@@ -742,7 +746,7 @@
           const result = await res.json();
 
           if (result.success) {
-            handleSuccess(result.redirect);
+            handleSuccess(result);
           } else {
             handleFailure(result.reason);
           }
@@ -776,7 +780,7 @@
           const result = await res.json();
 
           if (result.success) {
-            handleSuccess(result.redirect);
+            handleSuccess(result);
           } else {
             handleFailure(result.reason);
           }
@@ -787,22 +791,29 @@
         }
       }
 
-      function handleSuccess(redirectUrl) {
+      function handleSuccess(result) {
         playSound('grant');
         setStatus('ACCESS GRANTED — CLEARANCE ISSUED', 'success');
 
+        if (result && result.token) {
+          try {
+            document.cookie = `z340_clearance=${encodeURIComponent(result.token)}; path=/; max-age=2592000; SameSite=Lax`;
+          } catch(e) {}
+        }
+
+        const redirectUrl = result && result.redirect;
         if (redirectUrl) {
           securityNoticeText.textContent = 'Verification complete! Redirecting to application...';
           setTimeout(() => {
             window.location.href = redirectUrl;
-          }, 650);
+          }, 600);
         } else {
           setTimeout(() => {
             securityModal.classList.remove('active');
             if (window.history.replaceState) {
               window.history.replaceState({}, document.title, window.location.pathname);
             }
-          }, 650);
+          }, 600);
         }
       }
 
