@@ -156,7 +156,7 @@ export function createSecurityChallenge() {
     </g>
 
     <!-- Top & Bottom Tech Indicators -->
-    <text x="14" y="22" fill="rgba(255,255,255,0.4)" font-family="monospace" font-size="9" letter-spacing="1">Z340 DEFENSE PROTOCOL</text>
+    <text x="14" y="22" fill="rgba(255,255,255,0.4)" font-family="monospace" font-size="9" letter-spacing="1">ASTRA 13 DEFENSE PROTOCOL</text>
     <text x="${width - 14}" y="22" text-anchor="end" fill="#00f0ff" font-family="monospace" font-size="9" font-weight="bold">TARGET: ENGAGED</text>
     <text x="14" y="${height - 12}" fill="rgba(255,255,255,0.3)" font-family="monospace" font-size="8">SLOT COORD: [ACTIVE]</text>
   </svg>

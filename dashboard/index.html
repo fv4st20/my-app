@@ -3,21 +3,21 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Z340's Swiss Knife Hub</title>
-  <meta name="title" content="Z340's Swiss Knife Hub" />
+  <title>Astra 13's Swiss Knife Hub</title>
+  <meta name="title" content="Astra 13's Swiss Knife Hub" />
   <meta name="description" content="A multi-tool web suite featuring physics simulators, chemistry tools, celestial tracking, logic gates, and games." />
 
   <!-- Discord & OpenGraph Embed Tags -->
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://fv4st.xyz/" />
-  <meta property="og:title" content="Z340's Swiss Knife Hub 🛠️" />
+  <meta property="og:title" content="Astra 13's Swiss Knife Hub 🛠️" />
   <meta property="og:description" content="A unified web suite hosting interactive simulators, tools, games, and daily utilities." />
   <meta property="og:image" content="https://fv4st.xyz/preview.png" />
 
   <!-- Twitter / Large Discord Card format -->
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:url" content="https://fv4st.xyz/" />
-  <meta name="twitter:title" content="Z340's Swiss Knife Hub 🛠️" />
+  <meta name="twitter:title" content="Astra 13's Swiss Knife Hub 🛠️" />
   <meta name="twitter:description" content="A unified web suite hosting interactive simulators, tools, games, and daily utilities." />
   <meta name="twitter:image" content="https://fv4st.xyz/preview.png" />
 
@@ -29,7 +29,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=3.5">
+  <link rel="stylesheet" href="styles.css?v=3.6">
   <style>
     /* Critical Inline CSS: Prevents modals from rendering unstyled in document flow */
     #themeModal, #securityModal {
@@ -109,7 +109,7 @@
   <main class="container">
     <header class="header">
       <div class="title-container">
-        <h2 class="sub-title">Z340's</h2>
+        <h2 class="sub-title">Astra 13's</h2>
         <h1 class="main-title">Swiss Knife <span>Hub</span></h1>
       </div>
     </header>
@@ -205,6 +205,12 @@
       </a>
       
     </div>
+
+    <!-- Small Subtle Footer with Copyright By Astra 13 -->
+    <footer class="hub-footer">
+      <p class="copyright-text">© <span id="copyrightYear">2026</span> Astra 13's Swiss Knife Hub • All Rights Reserved</p>
+      <p class="by-author-text">Engineered by Astra 13</p>
+    </footer>
   </main>
 
   <!-- RGB Gradient Customizer Modal -->
@@ -301,8 +307,8 @@
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
           </div>
           <div>
-            <h3>Z340 SECURITY GATE</h3>
-            <span class="security-badge-sub">DEFENSE PROTOCOL • BIOMETRIC CHECK</span>
+            <h3>ASTRA 13 SECURITY GATE</h3>
+            <span class="security-badge-sub">ASTRA 13 DEFENSE PROTOCOL • BIOMETRIC CHECK</span>
           </div>
         </div>
         <button id="securitySoundToggle" class="security-sound-btn" title="Toggle audio feedback" aria-label="Toggle Sound">
@@ -876,6 +882,10 @@
       }
 
       initSecurityCheck();
+
+      // Dynamic copyright year update
+      const yrEl = document.getElementById('copyrightYear');
+      if (yrEl) yrEl.textContent = new Date().getFullYear();
     })();
   </script>
 </body>
