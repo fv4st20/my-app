@@ -241,6 +241,18 @@ body {
   color: #000;
 }
 
+.zone-toast {
+  background: rgba(245, 158, 11, 0.2);
+  border: 1px solid var(--gold);
+  color: var(--gold);
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  white-space: nowrap;
+  animation: popIn 0.2s ease-out;
+}
+
 /* ==================== OCEAN VIEW ==================== */
 .ocean-view {
   flex: 1;

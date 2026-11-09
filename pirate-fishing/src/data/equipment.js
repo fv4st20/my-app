@@ -233,3 +233,4 @@ export const CAPTAIN_PERKS = [
     getBonus: (lvl) => lvl * 0.06
   }
 ];
+

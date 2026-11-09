@@ -74,8 +74,13 @@ function App() {
   const [reelProgress, setReelProgress] = useState(0);
   const [currentBite, setCurrentBite] = useState(null);
   const [doubleCatchTriggered, setDoubleCatchTriggered] = useState(false);
+  const [zoneNotice, setZoneNotice] = useState(null);
 
   const reelTimerRef = useRef(null);
+  const castTimerRef = useRef(null);
+  const finishTimerRef = useRef(null);
+  const cargoRef = useRef(cargo);
+  cargoRef.current = cargo;
 
   // 1. Initial Load from LocalStorage
   useEffect(() => {
@@ -227,7 +232,7 @@ function App() {
   const castLine = () => {
     if (fishState !== 'idle') return;
     if (cargo.length >= currentShip.cargoCap) {
-      alert(`Cargo Hold is full (${cargo.length}/${currentShip.cargoCap})! Visit Cargo Hold to sell your haul first.`);
+      setActiveTab('cargo');
       return;
     }
 
@@ -237,7 +242,8 @@ function App() {
 
     // Random wait between 1.5s and 3.8s
     const waitTime = 1500 + Math.random() * 2300;
-    setTimeout(() => {
+    if (castTimerRef.current) clearTimeout(castTimerRef.current);
+    castTimerRef.current = setTimeout(() => {
       const rolled = rollFish();
       setCurrentBite(rolled);
       setFishState('reeling');
@@ -257,17 +263,28 @@ function App() {
 
           const newP = p - drainRate;
           if (newP <= 0) {
-            setFishState('lost');
-            setTimeout(() => setFishState('idle'), 1400);
+            setTimeout(() => {
+              setFishState('lost');
+              if (finishTimerRef.current) clearTimeout(finishTimerRef.current);
+              finishTimerRef.current = setTimeout(() => setFishState('idle'), 1400);
+            }, 0);
             return 0;
           }
           return newP;
         });
       }, 100);
     } else {
-      clearInterval(reelTimerRef.current);
+      if (reelTimerRef.current) {
+        clearInterval(reelTimerRef.current);
+        reelTimerRef.current = null;
+      }
     }
-    return () => clearInterval(reelTimerRef.current);
+    return () => {
+      if (reelTimerRef.current) {
+        clearInterval(reelTimerRef.current);
+        reelTimerRef.current = null;
+      }
+    };
   }, [fishState, currentBite, currentRod]);
 
   // Reel Click Handler
@@ -281,16 +298,36 @@ function App() {
       const newP = p + rodPower;
 
       if (newP >= 100) {
-        // CAUGHT!
-        handleCatchSuccess(currentBite);
+        // Schedule catch outside of state reducer
+        setTimeout(() => handleCatchSuccess(currentBite), 0);
         return 100;
       }
       return newP;
     });
   };
 
+  // Spacebar Desktop Support
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.code === 'Space' && !e.repeat) {
+        const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
+        if (activeTag === 'input' || activeTag === 'textarea') return;
+        if (fishState === 'idle') {
+          e.preventDefault();
+          castLine();
+        } else if (fishState === 'reeling') {
+          e.preventDefault();
+          reelClick();
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [fishState, cargo.length, currentShip.cargoCap, currentBite, currentRod, perkLevels]);
+
   // Handle successful fish catch
   const handleCatchSuccess = (caughtFish) => {
+    if (fishState !== 'reeling') return;
     setFishState('caught');
     sounds.playCatch(caughtFish.rarity);
 
@@ -327,42 +364,43 @@ function App() {
       isDouble,
     });
 
-    setTimeout(() => {
+    if (finishTimerRef.current) clearTimeout(finishTimerRef.current);
+    finishTimerRef.current = setTimeout(() => {
       setFishState('idle');
       setRecentCatchAlert(null);
     }, 1800);
   };
 
-  // Passive Crew Auto-Fishing
+  // Passive Crew Auto-Fishing (Decoupled from setCargo)
   useEffect(() => {
     if (crewCount <= 0) return;
 
-    // Crew speed calculation boosted by crew perk
     const intervalTime = Math.max(2500, Math.floor(10000 / (1 + (perkLevels.perk_crew || 0) * 0.2)));
 
     const interval = setInterval(() => {
+      if (cargoRef.current.length >= currentShip.cargoCap) return;
+
+      const autoFish = rollFish();
+
       setCargo(prevCargo => {
         if (prevCargo.length >= currentShip.cargoCap) return prevCargo;
-
-        const autoFish = rollFish();
-        // Update bestiary silently
-        setBestiary(b => {
-          const ex = b[autoFish.id] || { count: 0, maxWeight: 0, firstCaught: Date.now() };
-          return {
-            ...b,
-            [autoFish.id]: {
-              count: ex.count + 1,
-              maxWeight: Math.max(ex.maxWeight, autoFish.weightLbs),
-              firstCaught: ex.firstCaught || Date.now(),
-            }
-          };
-        });
-
-        setTotalFishCaught(t => t + 1);
-        setHighestFishValue(h => Math.max(h, autoFish.value));
-
         return [...prevCargo, autoFish];
       });
+
+      setBestiary(b => {
+        const ex = b[autoFish.id] || { count: 0, maxWeight: 0, firstCaught: Date.now() };
+        return {
+          ...b,
+          [autoFish.id]: {
+            count: ex.count + 1,
+            maxWeight: Math.max(ex.maxWeight, autoFish.weightLbs),
+            firstCaught: ex.firstCaught || Date.now(),
+          }
+        };
+      });
+
+      setTotalFishCaught(t => t + 1);
+      setHighestFishValue(h => Math.max(h, autoFish.value));
     }, intervalTime);
 
     return () => clearInterval(interval);
@@ -386,6 +424,7 @@ function App() {
   const handleZoneAction = (zone) => {
     if (unlockedZones.includes(zone.id)) {
       setCurrentZoneId(zone.id);
+      setZoneNotice(null);
       return;
     }
 
@@ -393,9 +432,12 @@ function App() {
       setGold(g => g - zone.unlockGold);
       setUnlockedZones(u => [...u, zone.id]);
       setCurrentZoneId(zone.id);
+      setZoneNotice(`Chartered expedition to ${zone.name}!`);
       sounds.playCoin();
+      setTimeout(() => setZoneNotice(null), 3000);
     } else {
-      alert(`Need ${zone.unlockGold.toLocaleString()} Gold to charter an expedition to ${zone.name}!`);
+      setZoneNotice(`Need ${zone.unlockGold.toLocaleString()} G to unlock ${zone.name}`);
+      setTimeout(() => setZoneNotice(null), 3000);
     }
   };
 
@@ -585,6 +627,7 @@ function App() {
             );
           })}
         </div>
+        {zoneNotice && <span className="zone-toast">{zoneNotice}</span>}
       </div>
 
       {/* LIVING OCEAN VIEW */}

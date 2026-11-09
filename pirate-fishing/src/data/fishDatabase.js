@@ -460,3 +460,4 @@ export const FISH_DATABASE = [
     lore: 'The very origin of all nautical disappearances. Radiates raw limitless pirate infamy.'
   }
 ];
+
