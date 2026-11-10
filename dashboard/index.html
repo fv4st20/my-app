@@ -855,6 +855,8 @@
       const verifyParam = urlParams.get('verify');
       const targetAppParam = urlParams.get('app');
       const redirectParam = urlParams.get('redirect');
+      let isUserCleared = false;
+      let targetRedirectUrl = redirectParam || null;
 
       const securityModal = document.getElementById('securityModal');
       const puzzleBgContainer = document.getElementById('puzzleBgContainer');
@@ -1095,7 +1097,7 @@
               challengeId: currentChallengeId,
               x: pieceX,
               dragHistory,
-              redirect: redirectParam || null
+              redirect: redirectParam || targetRedirectUrl || null
             })
           });
           const result = await res.json();
@@ -1129,7 +1131,7 @@
             body: JSON.stringify({
               challengeId: currentChallengeId,
               code,
-              redirect: redirectParam || null
+              redirect: redirectParam || targetRedirectUrl || null
             })
           });
           const result = await res.json();
@@ -1148,6 +1150,7 @@
 
       function handleSuccess(result) {
         playSound('grant');
+        isUserCleared = true;
         setStatus('ACCESS GRANTED — CLEARANCE ISSUED', 'success');
 
         if (result && result.token) {
@@ -1156,9 +1159,9 @@
           } catch (e) { }
         }
 
-        const redirectUrl = result && result.redirect;
+        const redirectUrl = (result && result.redirect) || targetRedirectUrl;
         if (redirectUrl) {
-          securityNoticeText.textContent = 'Verification complete! Redirecting to application...';
+          securityNoticeText.textContent = 'Verification complete! Launching application...';
           setTimeout(() => {
             window.location.href = redirectUrl;
           }, 600);
@@ -1215,7 +1218,11 @@
           const data = await res.json();
           const isVerified = data && data.verified;
 
-          if (verifyParam === 'required' || !isVerified) {
+          if (isVerified) {
+            isUserCleared = true;
+            securityModal.classList.remove('active');
+          } else {
+            isUserCleared = false;
             if (targetAppParam) {
               securityNoticeText.innerHTML = `Restricted Entry: Access to <strong>${escapeHtml(targetAppParam)}</strong> requires clearance.`;
             } else {
@@ -1225,10 +1232,26 @@
             loadSecurityChallenge();
           }
         } catch (e) {
+          isUserCleared = false;
           securityModal.classList.add('active');
           loadSecurityChallenge();
         }
       }
+
+      // Intercept app card clicks to ensure clearance is present before navigation
+      document.querySelectorAll('.card').forEach(card => {
+        card.addEventListener('click', (e) => {
+          if (!isUserCleared && !currentUser) {
+            e.preventDefault();
+            const href = card.getAttribute('href');
+            targetRedirectUrl = href;
+            const appName = card.querySelector('h2')?.textContent || href.replace(/\//g, '');
+            securityNoticeText.innerHTML = `Restricted Entry: Access to <strong>${escapeHtml(appName)}</strong> requires clearance.`;
+            securityModal.classList.add('active');
+            loadSecurityChallenge();
+          }
+        });
+      });
 
       // ========================================================
       // --- USER AUTHENTICATION & GLOBAL LEADERBOARD CONTROLLER ---
@@ -1541,6 +1564,8 @@
       if (leaderboardModalBackdrop) leaderboardModalBackdrop.addEventListener('click', closeLeaderboard);
       if (closeLeaderboardModal) closeLeaderboardModal.addEventListener('click', closeLeaderboard);
 
+      // Initialize clearance verification and auth
+      initSecurityCheck();
       fetchCurrentUser();
 
       // Dynamic copyright year update

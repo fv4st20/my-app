@@ -298,7 +298,8 @@ app.post('/api/security/verify-code', (req, res) => {
 app.get('/api/security/status', (req, res) => {
   const cookies = parseCookies(req);
   const token = cookies['z340_clearance'];
-  const isVerified = verifyClearanceToken(token);
+  const user = getAuthUser(req);
+  const isVerified = !!user || verifyClearanceToken(token);
   res.status(200).json({ verified: isVerified, quantumProtected: true });
 });
 
@@ -339,12 +340,13 @@ app.use((req, res, next) => {
     return next();
   }
 
-  // Check clearance token from cookies
+  // Check clearance token from cookies or active user session
   const cookies = parseCookies(req);
   const token = cookies['z340_clearance'];
+  const user = getAuthUser(req);
 
-  if (verifyClearanceToken(token)) {
-    // Authenticated user: allow access
+  if (user || verifyClearanceToken(token)) {
+    // Authenticated user or cleared guest: allow access
     return next();
   }
 
