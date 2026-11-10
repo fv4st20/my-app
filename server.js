@@ -140,7 +140,10 @@ app.post('/api/auth/login', (req, res) => {
 // Log out user
 app.post('/api/auth/logout', (req, res) => {
   const cookies = parseCookies(req);
-  const token = cookies['astra_session'];
+  let token = cookies['astra_session'];
+  if (!token && req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
+    token = req.headers.authorization.slice(7).trim();
+  }
   if (token) {
     db.destroySession(token);
   }
@@ -180,7 +183,7 @@ app.get('/api/leaderboard/:gameId', (req, res) => {
 
 // Request Anti-Cheat Game Challenge Token
 app.post('/api/leaderboard/start', (req, res) => {
-  const { gameId } = req.body || {};
+  const gameId = req.body?.gameId || req.query?.gameId;
   const validGames = ['alien-echo', 'neon-orbit', 'pirate-fishing', 'sonic-soccer', 'shape-wars'];
   if (!validGames.includes(gameId)) {
     return res.status(400).json({ success: false, reason: 'Unknown game ID.' });
@@ -430,3 +433,6 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`- Alien Echo:     ${publicBase}/alien-echo/`);
   console.log(`- Pirate Fishing: ${publicBase}/pirate-fishing/`);
 });
+
+export { app };
+export default app;

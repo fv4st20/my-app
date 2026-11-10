@@ -1,24 +1,28 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Astra 13's Swiss Knife Hub</title>
   <meta name="title" content="Astra 13's Swiss Knife Hub" />
-  <meta name="description" content="A multi-tool web suite featuring physics simulators, chemistry tools, celestial tracking, logic gates, and games." />
+  <meta name="description"
+    content="A multi-tool web suite featuring physics simulators, chemistry tools, celestial tracking, logic gates, and games." />
 
   <!-- Discord & OpenGraph Embed Tags -->
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://fv4st.xyz/" />
   <meta property="og:title" content="Astra 13's Swiss Knife Hub 🛠️" />
-  <meta property="og:description" content="A unified web suite hosting interactive simulators, tools, games, and daily utilities." />
+  <meta property="og:description"
+    content="A unified web suite hosting interactive simulators, tools, games, and daily utilities." />
   <meta property="og:image" content="https://fv4st.xyz/preview.png" />
 
   <!-- Twitter / Large Discord Card format -->
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:url" content="https://fv4st.xyz/" />
   <meta name="twitter:title" content="Astra 13's Swiss Knife Hub 🛠️" />
-  <meta name="twitter:description" content="A unified web suite hosting interactive simulators, tools, games, and daily utilities." />
+  <meta name="twitter:description"
+    content="A unified web suite hosting interactive simulators, tools, games, and daily utilities." />
   <meta name="twitter:image" content="https://fv4st.xyz/preview.png" />
 
   <!-- Discord Embed Accent Color Bar -->
@@ -32,20 +36,28 @@
   <link rel="stylesheet" href="styles.css?v=4.0">
   <style>
     /* Critical Inline CSS: Prevents modals from rendering unstyled in document flow */
-    #themeModal, #securityModal, #authModal, #leaderboardModal {
+    #themeModal,
+    #securityModal,
+    #authModal,
+    #leaderboardModal {
       display: none !important;
       position: fixed !important;
       inset: 0 !important;
       z-index: 99999 !important;
     }
-    #themeModal.active, #authModal.active, #leaderboardModal.active {
+
+    #themeModal.active,
+    #authModal.active,
+    #leaderboardModal.active {
       display: flex !important;
       align-items: center !important;
       justify-content: center !important;
     }
+
     #securityModal {
       z-index: 100000 !important;
     }
+
     #securityModal.active {
       display: flex !important;
       align-items: center !important;
@@ -55,6 +67,7 @@
     }
   </style>
 </head>
+
 <body>
   <div class="background">
     <div class="blob blob-1"></div>
@@ -64,17 +77,37 @@
   <!-- Top Floating Action Bar: Leaderboards, RGB Theme, User Account -->
   <div class="top-nav-bar">
     <button id="leaderboardToggleBtn" class="theme-floating-btn" aria-label="Global Leaderboards">
-      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
+        <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
+        <path d="M4 22h16" />
+        <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" />
+        <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" />
+        <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" />
+      </svg>
       <span>Leaderboards</span>
     </button>
 
     <button id="themeToggleBtn" class="theme-floating-btn" aria-label="Customize RGB Background">
-      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.563-2.512 5.563-5.563C22 6.5 17.5 2 12 2z"/></svg>
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="13.5" cy="6.5" r=".5" fill="currentColor" />
+        <circle cx="17.5" cy="10.5" r=".5" fill="currentColor" />
+        <circle cx="8.5" cy="7.5" r=".5" fill="currentColor" />
+        <circle cx="6.5" cy="12.5" r=".5" fill="currentColor" />
+        <path
+          d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.563-2.512 5.563-5.563C22 6.5 17.5 2 12 2z" />
+      </svg>
       <span>RGB Theme</span>
     </button>
 
     <button id="accountBtn" class="theme-floating-btn" aria-label="Account Login or Profile">
-      <svg id="accountDefaultIcon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <svg id="accountDefaultIcon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+        <circle cx="12" cy="7" r="4" />
+      </svg>
       <span id="accountAvatarBadge" style="display:none;" class="account-badge-avatar"></span>
       <span id="accountBtnText">Sign In</span>
     </button>
@@ -98,7 +131,14 @@
         <div class="card-content">
           <div class="card-top-row">
             <div class="icon neon-icon">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><line x1="21.17" y1="8" x2="12" y2="8"/><line x1="3.95" y1="6.06" x2="8.54" y2="14"/><line x1="10.88" y1="21.94" x2="15.46" y2="14"/></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <circle cx="12" cy="12" r="4" />
+                <line x1="21.17" y1="8" x2="12" y2="8" />
+                <line x1="3.95" y1="6.06" x2="8.54" y2="14" />
+                <line x1="10.88" y1="21.94" x2="15.46" y2="14" />
+              </svg>
             </div>
             <div class="card-badges">
               <span class="category-badge">🪐 SIMULATOR</span>
@@ -119,7 +159,11 @@
         <div class="card-content">
           <div class="card-top-row">
             <div class="icon star-icon">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon
+                  points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+              </svg>
             </div>
             <div class="card-badges">
               <span class="category-badge">✨ ASTRONOMY</span>
@@ -140,7 +184,14 @@
         <div class="card-content">
           <div class="card-top-row">
             <div class="icon chem-icon">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v7.31"/><path d="M14 9.3V1.99"/><path d="M8.5 2h7"/><path d="M14 9.3a6.5 6.5 0 1 1-4 0"/><line x1="5.52" y1="16" x2="18.48" y2="16"/></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M10 2v7.31" />
+                <path d="M14 9.3V1.99" />
+                <path d="M8.5 2h7" />
+                <path d="M14 9.3a6.5 6.5 0 1 1-4 0" />
+                <line x1="5.52" y1="16" x2="18.48" y2="16" />
+              </svg>
             </div>
             <div class="card-badges">
               <span class="category-badge">🧪 SCIENCE</span>
@@ -155,13 +206,16 @@
           </div>
         </div>
       </a>
-      
+
       <!-- 4. Chill Hub -->
       <a href="/chill-hub/" class="card card-chill">
         <div class="card-content">
           <div class="card-top-row">
             <div class="icon chill-icon">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h4l3-9 5 18 3-9h5"/></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M2 12h4l3-9 5 18 3-9h5" />
+              </svg>
             </div>
             <div class="card-badges">
               <span class="category-badge">🎧 ZEN TOOL</span>
@@ -182,7 +236,13 @@
         <div class="card-content">
           <div class="card-top-row">
             <div class="icon shape-icon">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><path d="M12 18v-6"/><path d="M8 15h8"/></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+                <polyline points="14 2 14 8 20 8" />
+                <path d="M12 18v-6" />
+                <path d="M8 15h8" />
+              </svg>
             </div>
             <div class="card-badges">
               <span class="category-badge">⚔️ SIMULATOR</span>
@@ -203,7 +263,15 @@
         <div class="card-content">
           <div class="card-top-row">
             <div class="icon sonic-icon">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="M2 12h2"/><path d="M20 12h2"/></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <circle cx="12" cy="12" r="3" />
+                <path d="M12 2v2" />
+                <path d="M12 20v2" />
+                <path d="M2 12h2" />
+                <path d="M20 12h2" />
+              </svg>
             </div>
             <div class="card-badges">
               <span class="category-badge">⚽ AUDIO MATCH</span>
@@ -218,13 +286,19 @@
           </div>
         </div>
       </a>
-      
+
       <!-- 7. nond_ex -->
       <a href="/nond_ex/" class="card card-nond">
         <div class="card-content">
           <div class="card-top-row">
             <div class="icon nond-icon">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6" y2="6"/><line x1="6" y1="18" x2="6" y2="18"/></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="14" width="20" height="8" rx="2" ry="2" />
+                <rect x="2" y="2" width="20" height="8" rx="2" ry="2" />
+                <line x1="6" y1="6" x2="6" y2="6" />
+                <line x1="6" y1="18" x2="6" y2="18" />
+              </svg>
             </div>
             <div class="card-badges">
               <span class="category-badge">⚡ CIRCUITS</span>
@@ -239,13 +313,18 @@
           </div>
         </div>
       </a>
-      
+
       <!-- 8. Alien Echo -->
       <a href="/alien-echo/" class="card card-alien">
         <div class="card-content">
           <div class="card-top-row">
             <div class="icon alien-icon">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a7 7 0 0 1 7 7c0 4-7 13-7 13S5 13 5 9a7 7 0 0 1 7-7z"/><circle cx="9" cy="9" r="1"/><circle cx="15" cy="9" r="1"/></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2a7 7 0 0 1 7 7c0 4-7 13-7 13S5 13 5 9a7 7 0 0 1 7-7z" />
+                <circle cx="9" cy="9" r="1" />
+                <circle cx="15" cy="9" r="1" />
+              </svg>
             </div>
             <div class="card-badges">
               <span class="category-badge">👽 MEMORY</span>
@@ -260,13 +339,17 @@
           </div>
         </div>
       </a>
-      
+
       <!-- 9. Pirate Fishing -->
       <a href="/pirate-fishing/" class="card card-pirate">
         <div class="card-content">
           <div class="card-top-row">
             <div class="icon fishing-icon">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
+                <line x1="4" y1="22" x2="4" y2="15" />
+              </svg>
             </div>
             <div class="card-badges">
               <span class="category-badge">🏴‍☠️ CLICKER RPG</span>
@@ -281,15 +364,16 @@
           </div>
         </div>
       </a>
-      
+
     </div>
 
     <!-- Small Subtle Footer with Copyright By Astra 13 -->
     <footer class="hub-footer">
       <div class="footer-divider"></div>
       <div class="footer-content">
-        <p class="copyright-text">© <span id="copyrightYear">2026</span> Astra 13's Swiss Knife Hub • All Rights Reserved</p>
-        <p class="by-author-text">Engineered by <span class="author-highlight">Astra 13</span></p>
+        <p class="copyright-text">© <span id="copyrightYear">2026</span> Astra 13's Swiss Knife Hub • All Rights
+          Reserved</p>
+        <p class="by-author-text">Created by <span class="author-highlight">Astra 13</span></p>
         <p class="quantum-footer-tag">🛡️ Post-Quantum AES-256-GCM Authenticated Encryption Active</p>
       </div>
     </footer>
@@ -301,7 +385,14 @@
     <div class="theme-modal-dialog">
       <div class="theme-modal-header">
         <div class="modal-title-group">
-          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m4.93 4.93 4.24 4.24"/><path d="m14.83 9.17 4.24-4.24"/><path d="m14.83 14.83 4.24 4.24"/><path d="m9.17 14.83-4.24 4.24"/></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10" />
+            <path d="m4.93 4.93 4.24 4.24" />
+            <path d="m14.83 9.17 4.24-4.24" />
+            <path d="m14.83 14.83 4.24 4.24" />
+            <path d="m9.17 14.83-4.24 4.24" />
+          </svg>
           <h3>RGB Background Studio</h3>
         </div>
         <button id="closeThemeModal" class="theme-close-btn">&times;</button>
@@ -309,7 +400,7 @@
 
       <div class="theme-modal-body">
         <p class="modal-subtitle">Tap any color box to open the RGB Color Wheel:</p>
-        
+
         <div class="gradient-preview" id="gradientPreviewBar"></div>
 
         <div class="color-pickers-grid">
@@ -361,12 +452,18 @@
         <div class="presets-section">
           <span class="presets-title">Quick Presets:</span>
           <div class="presets-chips">
-            <button class="preset-chip" data-c1="#0b0f19" data-c2="#1a1a2e" data-c3="#16213e" data-acc="#6366f1" data-acc2="#ec4899" data-angle="45">🌌 Cosmic</button>
-            <button class="preset-chip" data-c1="#050510" data-c2="#1e0933" data-c3="#2a0845" data-acc="#ec4899" data-acc2="#00f3ff" data-angle="135">🔮 Cyberpunk</button>
-            <button class="preset-chip" data-c1="#01140e" data-c2="#042e20" data-c3="#064e3b" data-acc="#10b981" data-acc2="#34d399" data-angle="90">🌲 Matrix</button>
-            <button class="preset-chip" data-c1="#180800" data-c2="#360e00" data-c3="#571402" data-acc="#f59e0b" data-acc2="#ef4444" data-angle="60">🔥 Sunset</button>
-            <button class="preset-chip" data-c1="#020b14" data-c2="#072038" data-c3="#0c365c" data-acc="#00f0ff" data-acc2="#38bdf8" data-angle="120">🌊 Ocean</button>
-            <button class="preset-chip" data-c1="#12021c" data-c2="#26043b" data-c3="#3b085c" data-acc="#a855f7" data-acc2="#ec4899" data-angle="210">👾 Void</button>
+            <button class="preset-chip" data-c1="#0b0f19" data-c2="#1a1a2e" data-c3="#16213e" data-acc="#6366f1"
+              data-acc2="#ec4899" data-angle="45">🌌 Cosmic</button>
+            <button class="preset-chip" data-c1="#050510" data-c2="#1e0933" data-c3="#2a0845" data-acc="#ec4899"
+              data-acc2="#00f3ff" data-angle="135">🔮 Cyberpunk</button>
+            <button class="preset-chip" data-c1="#01140e" data-c2="#042e20" data-c3="#064e3b" data-acc="#10b981"
+              data-acc2="#34d399" data-angle="90">🌲 Matrix</button>
+            <button class="preset-chip" data-c1="#180800" data-c2="#360e00" data-c3="#571402" data-acc="#f59e0b"
+              data-acc2="#ef4444" data-angle="60">🔥 Sunset</button>
+            <button class="preset-chip" data-c1="#020b14" data-c2="#072038" data-c3="#0c365c" data-acc="#00f0ff"
+              data-acc2="#38bdf8" data-angle="120">🌊 Ocean</button>
+            <button class="preset-chip" data-c1="#12021c" data-c2="#26043b" data-c3="#3b085c" data-acc="#a855f7"
+              data-acc2="#ec4899" data-angle="210">👾 Void</button>
           </div>
         </div>
       </div>
@@ -396,23 +493,34 @@
           <div class="auth-field">
             <label class="auth-label" for="loginUsername">Username</label>
             <div class="auth-input-wrapper">
-              <svg class="auth-input-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-              <input type="text" id="loginUsername" class="auth-input" placeholder="Enter username" autocomplete="username" required maxlength="24" />
+              <svg class="auth-input-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+                fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
+              </svg>
+              <input type="text" id="loginUsername" class="auth-input" placeholder="Enter username"
+                autocomplete="username" required maxlength="24" />
             </div>
           </div>
 
           <div class="auth-field">
             <label class="auth-label" for="loginPassword">Password</label>
             <div class="auth-input-wrapper">
-              <svg class="auth-input-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-              <input type="password" id="loginPassword" class="auth-input" placeholder="Enter password" autocomplete="current-password" required />
+              <svg class="auth-input-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+                fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+              </svg>
+              <input type="password" id="loginPassword" class="auth-input" placeholder="Enter password"
+                autocomplete="current-password" required />
             </div>
           </div>
 
           <button type="submit" id="signInSubmitBtn" class="auth-submit-btn">Sign In</button>
 
           <p class="auth-optional-note">
-            💡 Accounts are 100% optional! You can play all games freely. Registering links your verified high scores to the global leaderboard.
+            💡 Accounts are 100% optional! You can play all games freely. Registering links your verified high scores to
+            the global leaderboard.
           </p>
         </form>
 
@@ -421,8 +529,13 @@
           <div class="auth-field">
             <label class="auth-label" for="regUsername">Choose Username</label>
             <div class="auth-input-wrapper">
-              <svg class="auth-input-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-              <input type="text" id="regUsername" class="auth-input" placeholder="e.g. Maverick_99" autocomplete="username" required maxlength="20" />
+              <svg class="auth-input-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+                fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
+              </svg>
+              <input type="text" id="regUsername" class="auth-input" placeholder="e.g. Maverick_99"
+                autocomplete="username" required maxlength="20" />
             </div>
             <span class="auth-hint">3-20 characters: letters, numbers, and underscores only.</span>
           </div>
@@ -430,8 +543,13 @@
           <div class="auth-field">
             <label class="auth-label" for="regPassword">Password</label>
             <div class="auth-input-wrapper">
-              <svg class="auth-input-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-              <input type="password" id="regPassword" class="auth-input" placeholder="At least 6 characters" autocomplete="new-password" required minlength="6" />
+              <svg class="auth-input-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+                fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+              </svg>
+              <input type="password" id="regPassword" class="auth-input" placeholder="At least 6 characters"
+                autocomplete="new-password" required minlength="6" />
             </div>
           </div>
 
@@ -468,7 +586,15 @@
     <div class="leaderboard-modal-dialog">
       <div class="theme-modal-header" style="border-bottom:1px solid rgba(255,255,255,0.08);">
         <div class="modal-title-group">
-          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2">
+            <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
+            <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
+            <path d="M4 22h16" />
+            <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" />
+            <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" />
+            <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" />
+          </svg>
           <h3>Astra 13 Global Leaderboards</h3>
         </div>
         <button id="closeLeaderboardModal" class="theme-close-btn">&times;</button>
@@ -498,22 +624,38 @@
         <div class="security-brand">
           <div class="security-radar-icon">
             <div class="radar-sweep"></div>
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+            </svg>
           </div>
           <div>
             <h3>ASTRA 13 SECURITY GATE</h3>
             <span class="security-badge-sub">QUANTUM-SAFE AES-256-GCM • POST-QUANTUM PROTOCOL</span>
           </div>
         </div>
-        <button id="securitySoundToggle" class="security-sound-btn" title="Toggle audio feedback" aria-label="Toggle Sound">
-          <svg id="soundOnIcon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
-          <svg id="soundOffIcon" style="display:none;" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>
+        <button id="securitySoundToggle" class="security-sound-btn" title="Toggle audio feedback"
+          aria-label="Toggle Sound">
+          <svg id="soundOnIcon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+            fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+          </svg>
+          <svg id="soundOffIcon" style="display:none;" xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+            <line x1="23" y1="9" x2="17" y2="15"></line>
+            <line x1="17" y1="9" x2="23" y2="15"></line>
+          </svg>
         </button>
       </div>
 
       <!-- Quantum Protection Badge -->
       <div class="quantum-security-banner">
-        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2.5">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+        </svg>
         <span>PROTECTED BY QUANTUM-SAFE AES-256-GCM (NIST LEVEL 5)</span>
       </div>
 
@@ -536,7 +678,10 @@
           <div class="slider-track-fill" id="sliderFill"></div>
           <span class="slider-prompt" id="sliderPrompt">Slide energy core into socket ▶▶▶</span>
           <div class="slider-puck" id="sliderPuck" tabindex="0">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2.5">
+              <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
           </div>
         </div>
       </div>
@@ -547,7 +692,8 @@
           <div id="codeSvgContainer" class="code-svg-box"></div>
         </div>
         <div class="code-input-row">
-          <input type="text" id="securityCodeInput" maxlength="4" placeholder="ENTER 4-CHAR KEY" autocomplete="off" autocapitalize="characters" />
+          <input type="text" id="securityCodeInput" maxlength="4" placeholder="ENTER 4-CHAR KEY" autocomplete="off"
+            autocapitalize="characters" />
           <button id="verifyCodeBtn" class="code-verify-btn">Verify</button>
         </div>
       </div>
@@ -562,7 +708,10 @@
       <div class="security-footer">
         <button id="switchModeBtn" class="security-text-btn">Use Code Matrix</button>
         <button id="refreshChallengeBtn" class="security-text-btn">
-          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2">
+            <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2" />
+          </svg>
           New Challenge
         </button>
       </div>
@@ -570,16 +719,16 @@
   </div>
 
   <script>
-    (function() {
+    (function () {
       // --- RGB Gradient Customizer Engine ---
       const STORAGE_KEY = 'swiss_hub_rgb_theme';
-      const DEFAULTS = { 
-        c1: '#0b0f19', 
-        c2: '#1a1a2e', 
-        c3: '#16213e', 
-        acc: '#6366f1', 
+      const DEFAULTS = {
+        c1: '#0b0f19',
+        c2: '#1a1a2e',
+        c3: '#16213e',
+        acc: '#6366f1',
         acc2: '#ec4899',
-        angle: 45 
+        angle: 45
       };
 
       const elC1 = document.getElementById('colorBg1');
@@ -638,9 +787,9 @@
         }
 
         if (save) {
-          try { 
-            localStorage.setItem(STORAGE_KEY, JSON.stringify({ c1, c2, c3, acc, acc2, angle })); 
-          } catch (e) {}
+          try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify({ c1, c2, c3, acc, acc2, angle }));
+          } catch (e) { }
         }
       }
 
@@ -735,7 +884,7 @@
       try {
         const savedSound = localStorage.getItem('z340_security_sound');
         if (savedSound !== null) soundEnabled = savedSound === 'true';
-      } catch(e) {}
+      } catch (e) { }
 
       function updateSoundIcon() {
         if (soundEnabled) {
@@ -750,7 +899,7 @@
 
       securitySoundToggle.addEventListener('click', () => {
         soundEnabled = !soundEnabled;
-        try { localStorage.setItem('z340_security_sound', soundEnabled); } catch(e) {}
+        try { localStorage.setItem('z340_security_sound', soundEnabled); } catch (e) { }
         updateSoundIcon();
       });
 
@@ -802,7 +951,7 @@
             osc.start(now);
             osc.stop(now + 0.25);
           }
-        } catch(e) {}
+        } catch (e) { }
       }
 
       // --- Security State & Challenge Handling ---
@@ -844,7 +993,7 @@
           puzzlePiece.style.top = data.targetY + 'px';
           puzzlePiece.style.left = '0px';
           puzzlePiece.style.transform = 'translateX(0px)';
-          
+
           codeSvgContainer.innerHTML = data.codeSvg;
           securityCodeInput.value = '';
 
@@ -871,7 +1020,7 @@
         dragHistory = [{ t: Date.now(), x: e.clientX, y: e.clientY }];
         try {
           sliderPuck.setPointerCapture(e.pointerId);
-        } catch (err) {}
+        } catch (err) { }
         sliderPrompt.style.opacity = '0.2';
         setStatus('TRACKING KINETIC ALIGNMENT...', 'verifying');
         playSound('tick');
@@ -883,7 +1032,7 @@
         const maxTravel = trackW - 48; // 42px puck + margins
         const deltaX = e.clientX - startPointerX;
         const currentLeft = Math.max(0, Math.min(maxTravel, deltaX));
-        
+
         dragHistory.push({ t: Date.now(), x: e.clientX, y: e.clientY });
 
         sliderPuck.style.transform = `translateX(${currentLeft}px)`;
@@ -900,7 +1049,7 @@
         isDragging = false;
         try {
           sliderPuck.releasePointerCapture(e.pointerId);
-        } catch (err) {}
+        } catch (err) { }
         sliderPrompt.style.opacity = '1';
 
         const trackW = getTrackWidth();
@@ -1004,7 +1153,7 @@
         if (result && result.token) {
           try {
             document.cookie = `z340_clearance=${encodeURIComponent(result.token)}; path=/; max-age=2592000; SameSite=Lax`;
-          } catch(e) {}
+          } catch (e) { }
         }
 
         const redirectUrl = result && result.redirect;
@@ -1291,7 +1440,7 @@
         logoutBtn.addEventListener('click', async () => {
           try {
             await fetch('/api/auth/logout', { method: 'POST' });
-          } catch(e) {}
+          } catch (e) { }
           updateAuthUI(null);
           closeAuthModal();
         });
@@ -1400,4 +1549,5 @@
     })();
   </script>
 </body>
+
 </html>

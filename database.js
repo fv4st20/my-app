@@ -144,6 +144,16 @@ class Database {
     };
 
     this.data.users.push(user);
+
+    // Auto-claim any previous guest scores achieved with this username
+    for (const s of this.data.scores) {
+      if (!s.userId && s.username.toLowerCase() === cleanUsername.toLowerCase()) {
+        s.userId = user.id;
+        s.isGuest = false;
+        s.isVerified = true;
+      }
+    }
+
     this.save();
 
     // Return safe user representation
