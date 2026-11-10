@@ -31,7 +31,6 @@ body {
   overflow-x: hidden;
   overflow-y: auto;
   position: relative;
-  -webkit-overflow-scrolling: touch;
 }
 
 @keyframes gradientBG {
@@ -171,7 +170,7 @@ body {
   background: linear-gradient(135deg, #818cf8 0%, #c084fc 50%, #f472b6 100%);
   -webkit-background-clip: text;
   background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: transparent;
   filter: drop-shadow(0 0 20px rgba(192, 132, 252, 0.5));
 }
 
@@ -512,7 +511,6 @@ body {
   gap: 16px;
   max-height: 88vh;
   overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
 }
 
 .theme-modal-header {
@@ -832,7 +830,6 @@ body {
   gap: 15px;
   max-height: 92vh;
   overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
