@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import { generateQuantumToken, verifyQuantumToken, CRYPTO_SPECS } from './quantumCrypto.js';
 
 // Persistent HMAC secret key (consistent across server restarts so valid clearance cookies persist)
 const SERVER_SECRET = process.env.SECURITY_SECRET || 'z340_swiss_hub_sec_key_2026_9f8a3d';
@@ -35,21 +36,25 @@ export function parseCookies(req) {
 }
 
 /**
- * Generates an HMAC-signed clearance token
+ * Generates an encrypted & authenticated Quantum-Safe AES-256-GCM clearance token
  */
 export function generateClearanceToken() {
-  const timestamp = Date.now().toString(36);
-  const nonce = crypto.randomBytes(8).toString('hex');
-  const payload = `${timestamp}.${nonce}`;
-  const hmac = crypto.createHmac('sha256', SERVER_SECRET).update(payload).digest('hex');
-  return `${timestamp}.${nonce}.${hmac}`;
+  return generateQuantumToken({ clearance: true, standard: 'AES-256-GCM' }, TOKEN_MAX_AGE_MS);
 }
 
 /**
- * Validates an HMAC-signed clearance token
+ * Validates a clearance token (AES-256-GCM authenticated with legacy fallback)
  */
 export function verifyClearanceToken(token) {
   if (!token || typeof token !== 'string') return false;
+
+  // Quantum-Safe AES-256-GCM format
+  if (token.startsWith('q1.')) {
+    const verified = verifyQuantumToken(token);
+    return verified.valid;
+  }
+
+  // Legacy HMAC token format fallback
   const parts = token.split('.');
   if (parts.length !== 3) return false;
 
@@ -217,7 +222,8 @@ export function createSecurityChallenge() {
     bgSvg,
     pieceSvg,
     targetY,
-    codeSvg
+    codeSvg,
+    cryptoSpecs: CRYPTO_SPECS
   };
 }
 

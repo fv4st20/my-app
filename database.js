@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
 import { fileURLToPath } from 'url';
+import { generateQuantumToken, verifyQuantumToken, signQuantumHMAC, verifyQuantumHMAC, CRYPTO_SPECS } from './quantumCrypto.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -166,8 +167,8 @@ class Database {
     }
 
     user.lastLogin = Date.now();
-    const token = crypto.randomBytes(32).toString('hex');
     const expiresAt = Date.now() + 30 * 24 * 60 * 60 * 1000; // 30 days
+    const token = generateQuantumToken({ userId: user.id, username: user.username }, 30 * 24 * 60 * 60 * 1000);
 
     this.data.sessions.push({
       token,
@@ -192,6 +193,32 @@ class Database {
 
   getUserFromToken(token) {
     if (!token || typeof token !== 'string') return null;
+
+    // Quantum Token verification
+    if (token.startsWith('q1.')) {
+      const qv = verifyQuantumToken(token);
+      if (!qv.valid || !qv.data?.userId) return null;
+      
+      // Check if session was revoked / logged out
+      const session = this.data.sessions.find(s => s.token === token);
+      if (!session) return null;
+      if (session.expiresAt < Date.now()) {
+        this.data.sessions = this.data.sessions.filter(s => s.token !== token);
+        this.save();
+        return null;
+      }
+
+      const user = this.findUserById(qv.data.userId);
+      if (!user) return null;
+      return {
+        id: user.id,
+        username: user.username,
+        avatarColor: user.avatarColor,
+        createdAt: user.createdAt
+      };
+    }
+
+    // Legacy token fallback
     const session = this.data.sessions.find(s => s.token === token);
     if (!session) return null;
     if (session.expiresAt < Date.now()) {
@@ -217,10 +244,11 @@ class Database {
 
   // --- Anti-Cheat Game Challenge Generation & Verification ---
   createGameChallenge(gameId) {
-    const nonce = crypto.randomBytes(12).toString('hex');
+    const nonce = crypto.randomBytes(16).toString('hex');
     const startedAt = Date.now();
     const payload = `${gameId}:${startedAt}:${nonce}`;
-    const sig = crypto.createHmac('sha256', SERVER_SECRET).update(payload).digest('hex');
+    // Sign with Post-Quantum 512-bit HMAC
+    const sig = signQuantumHMAC(payload);
     return {
       gameId,
       startedAt,
@@ -234,18 +262,24 @@ class Database {
       return { valid: false, reason: 'Missing verification challenge signature.' };
     }
 
-    // Verify HMAC signature
+    // Verify signature using Post-Quantum HMAC-SHA-512 with SHA-256 fallback
     const payload = `${gameId}:${startedAt}:${nonce}`;
-    const expectedSig = crypto.createHmac('sha256', SERVER_SECRET).update(payload).digest('hex');
+    let isSigValid = verifyQuantumHMAC(payload, sig);
 
-    try {
-      const bufA = Buffer.from(sig, 'hex');
-      const bufB = Buffer.from(expectedSig, 'hex');
-      if (bufA.length !== bufB.length || !crypto.timingSafeEqual(bufA, bufB)) {
-        return { valid: false, reason: 'Tampered game session signature.' };
-      }
-    } catch {
-      return { valid: false, reason: 'Invalid signature encoding.' };
+    if (!isSigValid) {
+      // Fallback for in-flight legacy 256-bit signatures
+      try {
+        const expectedSig = crypto.createHmac('sha256', SERVER_SECRET).update(payload).digest('hex');
+        const bufA = Buffer.from(sig, 'hex');
+        const bufB = Buffer.from(expectedSig, 'hex');
+        if (bufA.length === bufB.length && crypto.timingSafeEqual(bufA, bufB)) {
+          isSigValid = true;
+        }
+      } catch {}
+    }
+
+    if (!isSigValid) {
+      return { valid: false, reason: 'Tampered game session signature.' };
     }
 
     // Check Replay Attack

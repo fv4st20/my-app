@@ -2,6 +2,7 @@ import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { db } from './database.js';
+import { CRYPTO_SPECS } from './quantumCrypto.js';
 import {
   parseCookies,
   verifyClearanceToken,
@@ -295,7 +296,15 @@ app.get('/api/security/status', (req, res) => {
   const cookies = parseCookies(req);
   const token = cookies['z340_clearance'];
   const isVerified = verifyClearanceToken(token);
-  res.status(200).json({ verified: isVerified });
+  res.status(200).json({ verified: isVerified, quantumProtected: true });
+});
+
+// Post-Quantum Cryptographic Specifications
+app.get('/api/security/specs', (req, res) => {
+  res.status(200).json({
+    success: true,
+    specs: CRYPTO_SPECS
+  });
 });
 
 // Lock / clear clearance (for manual testing or re-verification)

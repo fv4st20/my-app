@@ -27,6 +27,7 @@ COPY --from=build /app/package.json ./
 COPY --from=build /app/server.js ./
 COPY --from=build /app/security.js ./
 COPY --from=build /app/database.js ./
+COPY --from=build /app/quantumCrypto.js ./
 
 # Ensure persistent data directory exists
 RUN mkdir -p /app/data

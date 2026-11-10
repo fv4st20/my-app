@@ -1760,3 +1760,28 @@ body {
   font-weight: 700;
   letter-spacing: 0.5px;
 }
+
+.quantum-footer-tag {
+  font-size: 0.74rem;
+  color: #00f0ff;
+  opacity: 0.75;
+  letter-spacing: 0.4px;
+  margin-top: 4px;
+}
+
+.quantum-security-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: rgba(0, 240, 255, 0.08);
+  border: 1px solid rgba(0, 240, 255, 0.25);
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-family: monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  color: #00f0ff;
+  text-shadow: 0 0 8px rgba(0, 240, 255, 0.3);
+}
