@@ -1,18 +1,24 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, Mic, Upload, Music, Trophy, CheckCircle, X } from 'lucide-react';
+import { ArrowLeft, Mic, Upload, Music, Trophy, CheckCircle, X, Volume2, VolumeX, Play, Disc3, Zap } from 'lucide-react';
 import { GameEngine } from './Engine';
+import { AudioEngine } from './audioEngine';
 import './index.css';
 
 function App() {
   const canvasRef = useRef(null);
   const engineRef = useRef(null);
   const reqRef = useRef(null);
-  const audioCtxRef = useRef(null);
-  
+  const audioEngineRef = useRef(null);
+  const audioElRef = useRef(null);
+
   const [started, setStarted] = useState(false);
-  const [mode, setMode] = useState(null); // 'mic' or 'mp3' or 'synth'
+  const [mode, setMode] = useState(null); // 'cyberpunk', 'dnb', 'synthwave', 'mic', 'mp3'
   const [score, setScore] = useState({ blue: 0, red: 0 });
-  const [isDragging, setIsDragging] = useState(false);
+  const [sonicStrikes, setSonicStrikes] = useState(0);
+  const [currentBpm, setCurrentBpm] = useState(128);
+  const [isBeatActive, setIsBeatActive] = useState(false);
+  const [volume, setVolume] = useState(0.8);
+  const [sfxEnabled, setSfxEnabled] = useState(true);
 
   // Auth & Leaderboard
   const [user, setUser] = useState(null);
@@ -22,9 +28,6 @@ function App() {
   const [loadingLeaderboard, setLoadingLeaderboard] = useState(false);
   const [submitStatus, setSubmitStatus] = useState(null);
   const [submitting, setSubmitting] = useState(false);
-  
-  // Audio Element for MP3
-  const audioRef = useRef(null);
 
   // Check auth session on load
   useEffect(() => {
@@ -37,6 +40,13 @@ function App() {
       })
       .catch(() => {});
   }, []);
+
+  const getAudioEngine = () => {
+    if (!audioEngineRef.current) {
+      audioEngineRef.current = new AudioEngine();
+    }
+    return audioEngineRef.current;
+  };
 
   const fetchLeaderboard = async () => {
     setLoadingLeaderboard(true);
@@ -76,7 +86,8 @@ function App() {
           details: {
             blue: score.blue,
             red: score.red,
-            mode: mode || 'synth'
+            sonicStrikes,
+            mode: mode || 'cyberpunk'
           }
         })
       });
@@ -85,8 +96,8 @@ function App() {
         setSubmitStatus(`Rank #${data.rank} Recorded on Global Board!`);
         setTimeout(() => setSubmitStatus(null), 4000);
       } else {
-        setSubmitStatus(data?.error || 'Submission failed');
-        setTimeout(() => setSubmitStatus(null), 3000);
+        setSubmitStatus(data?.error || data?.reason || 'Submission failed');
+        setTimeout(() => setSubmitStatus(null), 3500);
       }
     } catch {
       setSubmitStatus('Network error submitting score');
@@ -96,288 +107,358 @@ function App() {
     }
   };
 
-  const initGame = async (analyser) => {
+  const initGameLoop = () => {
     setStarted(true);
 
     // Request anti-cheat game session challenge
-    try {
-      const res = await fetch('/api/leaderboard/start?gameId=sonic-soccer', { method: 'POST' });
-      const data = await res.json();
-      if (data?.success && data?.challenge) {
-        setChallenge(data.challenge);
-      }
-    } catch {}
-    
-    // We need a short timeout to let React render the canvas
+    fetch('/api/leaderboard/start?gameId=sonic-soccer', { method: 'POST' })
+      .then(r => r.json())
+      .then(data => {
+        if (data?.success && data?.challenge) {
+          setChallenge(data.challenge);
+        }
+      })
+      .catch(() => {});
+
     setTimeout(() => {
       const canvas = canvasRef.current;
       if (!canvas) return;
-      
-      engineRef.current = new GameEngine(canvas, analyser);
-      
+
+      const audio = getAudioEngine();
+      engineRef.current = new GameEngine(canvas, audio);
+
       const handleResize = () => {
-        engineRef.current.resize(window.innerWidth, window.innerHeight);
+        if (engineRef.current) {
+          engineRef.current.resize(window.innerWidth, window.innerHeight);
+        }
       };
-      
+
       window.addEventListener('resize', handleResize);
       handleResize();
 
+      let lastBeatFlash = 0;
       const loop = () => {
-        engineRef.current.update();
-        engineRef.current.draw();
-        setScore({ ...engineRef.current.score });
+        if (engineRef.current) {
+          engineRef.current.update();
+          engineRef.current.draw();
+          setScore({ ...engineRef.current.score });
+          setSonicStrikes(engineRef.current.sonicStrikes);
+
+          // Update BPM and Beat Pulse Indicator
+          if (audio) {
+            setCurrentBpm(audio.currentBpm || 128);
+            const now = performance.now();
+            if (audio.isKickBeat || audio.beatPulse > 0.6) {
+              setIsBeatActive(true);
+              lastBeatFlash = now;
+            } else if (now - lastBeatFlash > 120) {
+              setIsBeatActive(false);
+            }
+          }
+        }
         reqRef.current = requestAnimationFrame(loop);
       };
-      
+
       reqRef.current = requestAnimationFrame(loop);
-    }, 100);
+    }, 80);
+  };
+
+  const startTrack = (trackName) => {
+    const audio = getAudioEngine();
+    audio.ensureContext();
+    audio.playTrack(trackName);
+    setMode(trackName);
+    if (!started) initGameLoop();
   };
 
   const startMic = async () => {
     try {
+      const audio = getAudioEngine();
+      audio.ensureContext();
+      audio.stopTrack();
+
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const AudioContext = window.AudioContext || window.webkitAudioContext;
-      audioCtxRef.current = new AudioContext();
-      
-      const source = audioCtxRef.current.createMediaStreamSource(stream);
-      const analyser = audioCtxRef.current.createAnalyser();
-      source.connect(analyser);
-      // Don't connect to destination to avoid feedback loop!
-      
+      const source = audio.ctx.createMediaStreamSource(stream);
+      source.connect(audio.analyser);
+      // Microphone is NOT connected to destination to prevent feedback scream
+
       setMode('mic');
-      initGame(analyser);
+      if (!started) initGameLoop();
     } catch (err) {
-      alert("Microphone access denied or unavailable.");
+      alert('Microphone access was denied or is unavailable on this device.');
     }
   };
 
   const handleAudioFile = (file) => {
     if (!file) return;
+    const audio = getAudioEngine();
+    audio.ensureContext();
+    audio.stopTrack();
 
-    const AudioContext = window.AudioContext || window.webkitAudioContext;
-    audioCtxRef.current = new AudioContext();
-    
-    const analyser = audioCtxRef.current.createAnalyser();
-    
-    const audio = new Audio(URL.createObjectURL(file));
-    audio.loop = true;
-    audioRef.current = audio;
-    
-    const source = audioCtxRef.current.createMediaElementSource(audio);
-    source.connect(analyser);
-    analyser.connect(audioCtxRef.current.destination);
-    
-    audio.play();
+    const fileAudio = new Audio(URL.createObjectURL(file));
+    fileAudio.loop = true;
+    audioElRef.current = fileAudio;
+
+    const source = audio.ctx.createMediaElementSource(fileAudio);
+    source.connect(audio.analyser);
+    audio.analyser.connect(audio.masterGain);
+
+    fileAudio.play().catch(() => {});
     setMode('mp3');
-    initGame(analyser);
+    if (!started) initGameLoop();
   };
 
-  const startMp3 = (e) => {
-    handleAudioFile(e.target.files[0]);
+  const handleCanvasClick = (e) => {
+    if (!engineRef.current) return;
+    const rect = canvasRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    engineRef.current.touchKick(x, y);
   };
 
-  const startDemoBeat = () => {
-    const AudioContext = window.AudioContext || window.webkitAudioContext;
-    const ctx = new AudioContext();
-    audioCtxRef.current = ctx;
-    const analyser = ctx.createAnalyser();
-    
-    // Electronic dance rhythm generator
-    const bpm = 124;
-    const interval = (60 / bpm) * 1000 / 2;
-    let step = 0;
-    
-    const timer = setInterval(() => {
-      if (ctx.state === 'closed') {
-        clearInterval(timer);
-        return;
-      }
-      try {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        
-        if (step % 4 === 0) {
-          // Punchy 808 kick
-          osc.frequency.setValueAtTime(140, ctx.currentTime);
-          osc.frequency.exponentialRampToValueAtTime(38, ctx.currentTime + 0.15);
-          gain.gain.setValueAtTime(1.0, ctx.currentTime);
-          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.22);
-        } else if (step % 4 === 2) {
-          // Snare snap
-          osc.type = 'triangle';
-          osc.frequency.setValueAtTime(280, ctx.currentTime);
-          gain.gain.setValueAtTime(0.65, ctx.currentTime);
-          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.14);
-        } else {
-          // Electro synth pulse
-          osc.type = 'sawtooth';
-          const notes = [110, 130, 164, 196, 220];
-          osc.frequency.setValueAtTime(notes[step % notes.length], ctx.currentTime);
-          gain.gain.setValueAtTime(0.35, ctx.currentTime);
-          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
-        }
-        
-        osc.connect(gain);
-        gain.connect(analyser);
-        gain.connect(ctx.destination);
-        
-        osc.start();
-        osc.stop(ctx.currentTime + 0.25);
-        step = (step + 1) % 16;
-      } catch (e) {
-        clearInterval(timer);
-      }
-    }, interval);
-    
-    setMode('synth');
-    initGame(analyser);
+  const toggleSfx = () => {
+    const next = !sfxEnabled;
+    setSfxEnabled(next);
+    if (audioEngineRef.current) {
+      audioEngineRef.current.sfxEnabled = next;
+    }
   };
 
-  const handleDragOver = (e) => {
-    e.preventDefault();
-    if (!started) setIsDragging(true);
-  };
-
-  const handleDragLeave = (e) => {
-    e.preventDefault();
-    setIsDragging(false);
-  };
-
-  const handleDrop = (e) => {
-    e.preventDefault();
-    setIsDragging(false);
-    if (started) return;
-    
-    const file = e.dataTransfer.files[0];
-    if (file && file.type.startsWith('audio/')) {
-      handleAudioFile(file);
+  const handleVolumeChange = (e) => {
+    const val = parseFloat(e.target.value);
+    setVolume(val);
+    if (audioEngineRef.current) {
+      audioEngineRef.current.setVolume(val);
     }
   };
 
   useEffect(() => {
     return () => {
       if (reqRef.current) cancelAnimationFrame(reqRef.current);
-      if (audioCtxRef.current) audioCtxRef.current.close();
-      if (audioRef.current) audioRef.current.pause();
+      if (audioEngineRef.current) {
+        audioEngineRef.current.stopTrack();
+        if (audioEngineRef.current.ctx) {
+          audioEngineRef.current.ctx.close().catch(() => {});
+        }
+      }
+      if (audioElRef.current) {
+        audioElRef.current.pause();
+      }
     };
   }, []);
 
   return (
-    <div 
-      onDragOver={handleDragOver} 
-      onDragLeave={handleDragLeave} 
-      onDrop={handleDrop} 
-      style={{ width: '100vw', height: '100vh', position: 'relative' }}
-    >
-      {isDragging && !started && (
-        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(57, 255, 20, 0.1)', border: '4px dashed var(--neon-green)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
-           <h2 style={{ color: 'var(--neon-green)', fontSize: '3rem', textShadow: '0 0 20px var(--neon-green)', background: '#000', padding: '20px 40px', borderRadius: '20px' }}>Drop MP3 to Play!</h2>
-        </div>
-      )}
+    <div className="sonic-container">
+      {/* Canvas */}
+      <canvas
+        ref={canvasRef}
+        className="game-canvas"
+        onClick={handleCanvasClick}
+      />
 
+      {/* Start / Selection Screen */}
       {!started && (
         <div className="overlay">
-          <div style={{ position: 'absolute', top: '20px', left: '20px' }}>
-            <a href="/" style={{color: 'var(--neon-green)', textDecoration: 'none', pointerEvents: 'auto'}}><ArrowLeft size={32} /></a>
+          <div className="sonic-badge-top">
+            <span className="pulse-dot"></span>
+            ASTRONAUTIC AUDIO SYNCHRONIZER • NEXT-GEN DSP
           </div>
-          <h1 className="title">Sonic Soccer</h1>
-          <p style={{fontSize: '1.2rem', color: '#ccc', textAlign: 'center', maxWidth: '600px'}}>
-            A football simulation powered entirely by soundwaves. <br/>
-            Loudness determines game speed and kick power. High frequencies increase player aggression.
+
+          <h1 className="title">SONIC SOCCER</h1>
+          <p className="subtitle">
+            CYBERNETIC AUDIO-REACTIVE SPORTS ARENA • ACCURATE SPECTRAL FLUX & ON-BEAT SONIC STRIKES
           </p>
-          
+
           <div className="options-grid">
-            <div className="option-card">
-              <Mic size={48} color="var(--neon-green)" />
-              <h3>Microphone Mode</h3>
-              <p>Yell, clap, or play music out loud. The engine will pick up your mic.</p>
-              <button className="btn" onClick={startMic}>Connect Mic</button>
+            {/* Track 1: Cyber Rush */}
+            <div className="option-card featured" onClick={() => startTrack('cyberpunk')}>
+              <div className="option-card-badge">RECOMMENDED</div>
+              <div className="option-icon-box">
+                <Disc3 size={32} className="spin-slow" />
+              </div>
+              <h3>CYBER RUSH</h3>
+              <div className="track-bpm-tag">128 BPM • ELECTRO HOUSE</div>
+              <p>Heavy 808 sub-bass, pumping sidechain compression, and razor-sharp synthesizer arpeggios.</p>
+              <button className="btn">
+                <Play size={16} /> PLAY CYBER RUSH
+              </button>
             </div>
-            
+
+            {/* Track 2: Neon Velocity */}
+            <div className="option-card" onClick={() => startTrack('dnb')}>
+              <div className="option-icon-box">
+                <Zap size={32} />
+              </div>
+              <h3>NEON VELOCITY</h3>
+              <div className="track-bpm-tag">156 BPM • DRUM & BASS</div>
+              <p>High-octane Amen breakbeats, rolling Reese basslines, and hyper-accelerated player sprints.</p>
+              <button className="btn">
+                <Play size={16} /> PLAY NEON VELOCITY
+              </button>
+            </div>
+
+            {/* Track 3: Retrowave Stride */}
+            <div className="option-card" onClick={() => startTrack('synthwave')}>
+              <div className="option-icon-box">
+                <Music size={32} />
+              </div>
+              <h3>RETROWAVE STRIDE</h3>
+              <div className="track-bpm-tag">114 BPM • DARKSYNTH</div>
+              <p>Analog octave square bass, lush gated-reverb snares, and nostalgic 80s neon lead melodies.</p>
+              <button className="btn">
+                <Play size={16} /> PLAY RETROWAVE
+              </button>
+            </div>
+
+            {/* Live Microphone */}
+            <div className="option-card" onClick={startMic}>
+              <div className="option-icon-box">
+                <Mic size={32} />
+              </div>
+              <h3>LIVE MICROPHONE</h3>
+              <div className="track-bpm-tag">REAL-TIME HARDWARE DSP</div>
+              <p>Shout, clap, or play your own Spotify / YouTube track in the background to drive the stadium!</p>
+              <button className="btn">
+                <Mic size={16} /> CONNECT MIC
+              </button>
+            </div>
+
+            {/* Custom MP3 Upload */}
             <div className="option-card">
-              <Upload size={48} color="var(--neon-green)" />
-              <h3>MP3 Fallback</h3>
-              <p>No mic? Upload an MP3 file directly. It will play in the background.</p>
-              <label className="btn" style={{display: 'inline-block', marginTop: '10px'}}>
-                Choose MP3
-                <input type="file" accept="audio/*" onChange={startMp3} style={{display: 'none'}} />
+              <div className="option-icon-box">
+                <Upload size={32} />
+              </div>
+              <h3>CUSTOM MP3 / WAV</h3>
+              <div className="track-bpm-tag">1024-BIN FFT ANALYSIS</div>
+              <p>Drop your own music file. Full multi-band frequency splitting and beat onsets extracted instantly.</p>
+              <label className="btn upload-btn">
+                <Upload size={16} /> UPLOAD FILE
+                <input
+                  type="file"
+                  accept="audio/*"
+                  onChange={(e) => handleAudioFile(e.target.files[0])}
+                  style={{ display: 'none' }}
+                />
               </label>
             </div>
-
-            <div className="option-card">
-              <Music size={48} color="var(--neon-green)" />
-              <h3>Instant Demo Beat</h3>
-              <p>Perfect for Mobile! Starts a generated synth electro track immediately.</p>
-              <button className="btn" onClick={startDemoBeat}>Play Demo Beat ⚡</button>
-            </div>
           </div>
 
-          {/* Leaderboard & User Bar */}
           <div className="start-footer-bar">
             <button className="sonic-rank-btn" onClick={openLeaderboard}>
-              <Trophy size={18} /> Global Rankings
+              <Trophy size={16} /> Global Leaderboard
             </button>
             {user ? (
               <span className="sonic-user-badge">
-                <CheckCircle size={15} color="#22c55e" /> {user.username} (Verified)
+                <CheckCircle size={14} style={{ color: '#00f0ff' }} /> {user.username} (Verified Pilot)
               </span>
             ) : (
-              <span className="sonic-user-badge guest">
-                Guest Player (Sign in on main hub to verify)
-              </span>
+              <span className="sonic-user-badge guest">Guest Striker (Scores can be claimed upon sign-up)</span>
             )}
+            <a href="/" className="sonic-back-link">
+              <ArrowLeft size={16} /> Exit to Hub
+            </a>
           </div>
         </div>
       )}
 
+      {/* In-Game Modern Cyber HUD */}
       {started && (
         <div className="hud">
+          {/* Top Left: Navigation & Mode Switcher */}
           <div className="hud-left">
-            <a href="/" style={{color: 'var(--neon-green)', textDecoration: 'none'}}><ArrowLeft size={32} /></a>
-          </div>
-          
-          <div className="score-board">
-            <span style={{color: '#38bdf8'}}>{score.blue}</span>
-            <span>-</span>
-            <span style={{color: '#ef4444'}}>{score.red}</span>
+            <a href="/" className="sonic-hud-btn" title="Back to Astra Hub">
+              <ArrowLeft size={16} /> Hub
+            </a>
+            <div className="track-switcher">
+              <span className="track-label">TRACK:</span>
+              <button
+                className={`track-pill ${mode === 'cyberpunk' ? 'active' : ''}`}
+                onClick={() => startTrack('cyberpunk')}
+              >
+                Cyber 128
+              </button>
+              <button
+                className={`track-pill ${mode === 'dnb' ? 'active' : ''}`}
+                onClick={() => startTrack('dnb')}
+              >
+                DnB 156
+              </button>
+              <button
+                className={`track-pill ${mode === 'synthwave' ? 'active' : ''}`}
+                onClick={() => startTrack('synthwave')}
+              >
+                Retro 114
+              </button>
+            </div>
           </div>
 
+          {/* Center: Scoreboard & Sonic Strike Meter */}
+          <div className="hud-center">
+            <div className="score-board">
+              <div className="team-score blue">
+                <span className="team-name">BLUE</span>
+                <span className="score-val">{score.blue}</span>
+              </div>
+              <div className="score-divider">:</div>
+              <div className="team-score red">
+                <span className="score-val">{score.red}</span>
+                <span className="team-name">RED</span>
+              </div>
+            </div>
+
+            <div className="sonic-strike-counter">
+              <Zap size={14} className="zap-glow" />
+              <span>SONIC STRIKES: <strong>{sonicStrikes}</strong></span>
+              <span className={`beat-indicator ${isBeatActive ? 'hit' : ''}`} title="Beat Onset Meter"></span>
+              <span className="bpm-display">{currentBpm} BPM</span>
+            </div>
+          </div>
+
+          {/* Top Right: Sound Controls & Leaderboard */}
           <div className="hud-right">
-            <button className="sonic-hud-btn" onClick={openLeaderboard} title="View Leaderboards">
-              <Trophy size={18} />
-              <span className="hud-btn-text">Rankings</span>
-            </button>
-            <button 
-              className="sonic-hud-btn submit" 
-              onClick={submitScore} 
-              disabled={submitting}
-              title="Submit your Blue Team score"
+            <button
+              className="sonic-hud-icon-btn"
+              onClick={toggleSfx}
+              title={sfxEnabled ? 'Mute Game SFX' : 'Enable Game SFX'}
             >
-              {submitting ? 'Submitting...' : `Submit (${score.blue})`}
+              {sfxEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}
+            </button>
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.05"
+              value={volume}
+              onChange={handleVolumeChange}
+              className="volume-slider"
+              title="Master Volume"
+            />
+            <button
+              className="sonic-hud-btn submit"
+              onClick={submitScore}
+              disabled={submitting}
+              title="Submit high score to Astra 13 Global Leaderboard"
+            >
+              <Trophy size={16} /> {submitting ? 'Submitting...' : 'Submit Score'}
+            </button>
+            <button className="sonic-hud-btn" onClick={openLeaderboard}>
+              <Trophy size={16} /> Board
             </button>
           </div>
         </div>
       )}
 
+      {/* Floating Instructions Toast */}
+      {started && (
+        <div className="sonic-instructions-hint">
+          <span>💡 <strong>Tip:</strong> Click anywhere on the pitch to launch laser touch kicks. Kick on the <strong>beat</strong> for a ⚡ <strong>Sonic Strike!</strong></span>
+        </div>
+      )}
+
+      {/* Score Submission Notification Toast */}
       {submitStatus && (
         <div className="sonic-toast-banner">
           {submitStatus}
-        </div>
-      )}
-
-      {mode === 'mp3' && started && (
-        <div className="audio-player">
-           <div style={{display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--neon-green)'}}>
-             <Music size={20} /> Playing MP3 Audio Track
-           </div>
-        </div>
-      )}
-
-      {mode === 'synth' && started && (
-        <div className="audio-player">
-           <div style={{display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--neon-green)'}}>
-             <Music size={20} /> Playing Synth Beat Rhythm ⚡ (Tap field to kick ball)
-           </div>
         </div>
       )}
 
@@ -386,88 +467,54 @@ function App() {
         <div className="sonic-modal-backdrop" onClick={() => setShowLeaderboard(false)}>
           <div className="sonic-modal-card" onClick={e => e.stopPropagation()}>
             <div className="sonic-modal-header">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <Trophy size={22} color="#39ff14" />
-                <h2>Sonic Soccer Leaderboard</h2>
+              <div className="modal-title-wrap">
+                <Trophy size={24} style={{ color: '#00f0ff' }} />
+                <h2>Sonic Soccer Global Leaderboard</h2>
               </div>
-              <button className="sonic-close-btn" onClick={() => setShowLeaderboard(false)}>
+              <button className="sonic-modal-close" onClick={() => setShowLeaderboard(false)}>
                 <X size={20} />
               </button>
             </div>
 
-            <div className="sonic-modal-body">
+            <p className="sonic-modal-desc">
+              Scores recorded across all pilots. Kick on beat drops to increase Sonic Strike multipliers.
+            </p>
+
+            <div className="sonic-leaderboard-list">
               {loadingLeaderboard ? (
-                <div style={{ textAlign: 'center', padding: '40px', color: '#94a3b8' }}>
-                  Loading rankings...
-                </div>
+                <div className="sonic-board-empty">Fetching rankings...</div>
               ) : leaderboard.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '40px', color: '#94a3b8' }}>
-                  No scores recorded yet. Score a goal to take #1!
-                </div>
+                <div className="sonic-board-empty">No scores recorded yet. Be the first to strike!</div>
               ) : (
-                <div className="sonic-leaderboard-table-wrap">
-                  <table className="sonic-table">
-                    <thead>
-                      <tr>
-                        <th>Rank</th>
-                        <th>Player</th>
-                        <th>Goals (Score)</th>
-                        <th>Date</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {leaderboard.map((item, idx) => (
-                        <tr key={idx} className={item.username === user?.username ? 'highlight-row' : ''}>
-                          <td>
-                            <span className={`rank-badge ${idx === 0 ? 'gold' : idx === 1 ? 'silver' : idx === 2 ? 'bronze' : ''}`}>
-                              {idx === 0 ? '🥇 1' : idx === 1 ? '🥈 2' : idx === 2 ? '🥉 3' : `#${idx + 1}`}
-                            </span>
-                          </td>
-                          <td>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                              <span style={{ fontWeight: 600 }}>{item.username}</span>
-                              {item.isRegistered && (
-                                <span title="Verified Hub Member" style={{ color: '#22c55e', fontSize: '0.85rem' }}>✓</span>
-                              )}
-                            </div>
-                          </td>
-                          <td style={{ fontWeight: 'bold', color: '#39ff14' }}>
-                            {item.score} goals
-                          </td>
-                          <td style={{ color: '#94a3b8', fontSize: '0.8rem' }}>
-                            {new Date(item.timestamp).toLocaleDateString()}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                leaderboard.map((item, idx) => (
+                  <div key={item.id || idx} className={`sonic-board-row rank-${idx + 1}`}>
+                    <div className="board-col-rank">
+                      {idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `#${idx + 1}`}
+                    </div>
+                    <div className="board-col-player">
+                      <span className="player-name">{item.username}</span>
+                      {item.isRegistered && (
+                        <span className="pilot-verified-badge" title="Verified Pilot Account">
+                          <CheckCircle size={12} /> VERIFIED
+                        </span>
+                      )}
+                    </div>
+                    <div className="board-col-score">
+                      <span className="score-num">{item.score}</span>
+                      <span className="score-label">GOALS</span>
+                    </div>
+                  </div>
+                ))
               )}
             </div>
 
             <div className="sonic-modal-footer">
-              <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>
-                Anti-cheat verified scores with HMAC challenge protection.
-              </span>
-              <button className="btn" style={{ padding: '8px 20px' }} onClick={() => setShowLeaderboard(false)}>
+              <button className="btn" onClick={() => setShowLeaderboard(false)}>
                 Close
               </button>
             </div>
           </div>
         </div>
-      )}
-
-      {started && (
-        <canvas 
-          ref={canvasRef} 
-          onClick={(e) => engineRef.current?.touchKick(e.clientX, e.clientY)}
-          onTouchStart={(e) => {
-            if (e.touches && e.touches[0]) {
-              engineRef.current?.touchKick(e.touches[0].clientX, e.touches[0].clientY);
-            }
-          }}
-          style={{ display: 'block', width: '100vw', height: '100vh', touchAction: 'none' }} 
-        />
       )}
     </div>
   );
