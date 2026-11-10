@@ -184,7 +184,7 @@ function App() {
 
       setMode('mic');
       if (!started) initGameLoop();
-    } catch (err) {
+    } catch {
       alert('Microphone access was denied or is unavailable on this device.');
     }
   };

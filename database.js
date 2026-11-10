@@ -339,6 +339,14 @@ class Database {
       throw new Error('Score must be a positive integer.');
     }
 
+    // Absolute physical reality bounds check across all submissions
+    if (gameId === 'sonic-soccer' && numScore > 60) {
+      throw new Error('Goal count exceeds physical match limit.');
+    }
+    if (gameId === 'alien-echo' && numScore > 100) {
+      throw new Error('Alien Echo round count exceeds human memory limits.');
+    }
+
     let cleanName = (username || 'Anonymous').trim();
     // Sanitize string
     cleanName = cleanName.replace(/<[^>]*>/g, '').slice(0, 24);
@@ -401,7 +409,8 @@ class Database {
       id: s.id,
       username: s.username,
       userId: s.userId,
-      isGuest: s.isGuest,
+      isGuest: !s.userId,
+      isRegistered: !!s.userId,
       isVerified: !!s.isVerified,
       score: s.score,
       details: s.details || {},
