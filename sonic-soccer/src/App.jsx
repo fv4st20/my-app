@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, Mic, Upload, Music } from 'lucide-react';
+import { ArrowLeft, Mic, Upload, Music, Trophy, CheckCircle, X } from 'lucide-react';
 import { GameEngine } from './Engine';
 import './index.css';
 
@@ -10,15 +10,103 @@ function App() {
   const audioCtxRef = useRef(null);
   
   const [started, setStarted] = useState(false);
-  const [mode, setMode] = useState(null); // 'mic' or 'mp3'
+  const [mode, setMode] = useState(null); // 'mic' or 'mp3' or 'synth'
   const [score, setScore] = useState({ blue: 0, red: 0 });
   const [isDragging, setIsDragging] = useState(false);
+
+  // Auth & Leaderboard
+  const [user, setUser] = useState(null);
+  const [challenge, setChallenge] = useState(null);
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [leaderboard, setLeaderboard] = useState([]);
+  const [loadingLeaderboard, setLoadingLeaderboard] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
   
   // Audio Element for MP3
   const audioRef = useRef(null);
 
-  const initGame = (analyser) => {
+  // Check auth session on load
+  useEffect(() => {
+    fetch('/api/auth/me')
+      .then(r => r.json())
+      .then(data => {
+        if (data?.authenticated && data?.user) {
+          setUser(data.user);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const fetchLeaderboard = async () => {
+    setLoadingLeaderboard(true);
+    try {
+      const res = await fetch('/api/leaderboard/sonic-soccer?limit=25');
+      const data = await res.json();
+      if (data?.success) {
+        setLeaderboard(data.leaderboard || []);
+      }
+    } catch (e) {
+      console.warn('Failed to load leaderboard:', e);
+    } finally {
+      setLoadingLeaderboard(false);
+    }
+  };
+
+  const openLeaderboard = () => {
+    setShowLeaderboard(true);
+    fetchLeaderboard();
+  };
+
+  const submitScore = async () => {
+    if (score.blue <= 0) {
+      alert('Score at least 1 goal with the Blue team to submit to the Global Leaderboard!');
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const res = await fetch('/api/leaderboard/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          gameId: 'sonic-soccer',
+          score: score.blue,
+          challenge,
+          username: user ? user.username : 'Guest Striker',
+          details: {
+            blue: score.blue,
+            red: score.red,
+            mode: mode || 'synth'
+          }
+        })
+      });
+      const data = await res.json();
+      if (data?.success) {
+        setSubmitStatus(`Rank #${data.rank} Recorded on Global Board!`);
+        setTimeout(() => setSubmitStatus(null), 4000);
+      } else {
+        setSubmitStatus(data?.error || 'Submission failed');
+        setTimeout(() => setSubmitStatus(null), 3000);
+      }
+    } catch {
+      setSubmitStatus('Network error submitting score');
+      setTimeout(() => setSubmitStatus(null), 3000);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const initGame = async (analyser) => {
     setStarted(true);
+
+    // Request anti-cheat game session challenge
+    try {
+      const res = await fetch('/api/leaderboard/start?gameId=sonic-soccer', { method: 'POST' });
+      const data = await res.json();
+      if (data?.success && data?.challenge) {
+        setChallenge(data.challenge);
+      }
+    } catch {}
     
     // We need a short timeout to let React render the canvas
     setTimeout(() => {
@@ -223,6 +311,22 @@ function App() {
               <button className="btn" onClick={startDemoBeat}>Play Demo Beat ⚡</button>
             </div>
           </div>
+
+          {/* Leaderboard & User Bar */}
+          <div className="start-footer-bar">
+            <button className="sonic-rank-btn" onClick={openLeaderboard}>
+              <Trophy size={18} /> Global Rankings
+            </button>
+            {user ? (
+              <span className="sonic-user-badge">
+                <CheckCircle size={15} color="#22c55e" /> {user.username} (Verified)
+              </span>
+            ) : (
+              <span className="sonic-user-badge guest">
+                Guest Player (Sign in on main hub to verify)
+              </span>
+            )}
+          </div>
         </div>
       )}
 
@@ -231,11 +335,33 @@ function App() {
           <div className="hud-left">
             <a href="/" style={{color: 'var(--neon-green)', textDecoration: 'none'}}><ArrowLeft size={32} /></a>
           </div>
+          
           <div className="score-board">
             <span style={{color: '#38bdf8'}}>{score.blue}</span>
             <span>-</span>
             <span style={{color: '#ef4444'}}>{score.red}</span>
           </div>
+
+          <div className="hud-right">
+            <button className="sonic-hud-btn" onClick={openLeaderboard} title="View Leaderboards">
+              <Trophy size={18} />
+              <span className="hud-btn-text">Rankings</span>
+            </button>
+            <button 
+              className="sonic-hud-btn submit" 
+              onClick={submitScore} 
+              disabled={submitting}
+              title="Submit your Blue Team score"
+            >
+              {submitting ? 'Submitting...' : `Submit (${score.blue})`}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {submitStatus && (
+        <div className="sonic-toast-banner">
+          {submitStatus}
         </div>
       )}
 
@@ -252,6 +378,82 @@ function App() {
            <div style={{display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--neon-green)'}}>
              <Music size={20} /> Playing Synth Beat Rhythm ⚡ (Tap field to kick ball)
            </div>
+        </div>
+      )}
+
+      {/* Leaderboard Modal */}
+      {showLeaderboard && (
+        <div className="sonic-modal-backdrop" onClick={() => setShowLeaderboard(false)}>
+          <div className="sonic-modal-card" onClick={e => e.stopPropagation()}>
+            <div className="sonic-modal-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <Trophy size={22} color="#39ff14" />
+                <h2>Sonic Soccer Leaderboard</h2>
+              </div>
+              <button className="sonic-close-btn" onClick={() => setShowLeaderboard(false)}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="sonic-modal-body">
+              {loadingLeaderboard ? (
+                <div style={{ textAlign: 'center', padding: '40px', color: '#94a3b8' }}>
+                  Loading rankings...
+                </div>
+              ) : leaderboard.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '40px', color: '#94a3b8' }}>
+                  No scores recorded yet. Score a goal to take #1!
+                </div>
+              ) : (
+                <div className="sonic-leaderboard-table-wrap">
+                  <table className="sonic-table">
+                    <thead>
+                      <tr>
+                        <th>Rank</th>
+                        <th>Player</th>
+                        <th>Goals (Score)</th>
+                        <th>Date</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {leaderboard.map((item, idx) => (
+                        <tr key={idx} className={item.username === user?.username ? 'highlight-row' : ''}>
+                          <td>
+                            <span className={`rank-badge ${idx === 0 ? 'gold' : idx === 1 ? 'silver' : idx === 2 ? 'bronze' : ''}`}>
+                              {idx === 0 ? '🥇 1' : idx === 1 ? '🥈 2' : idx === 2 ? '🥉 3' : `#${idx + 1}`}
+                            </span>
+                          </td>
+                          <td>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <span style={{ fontWeight: 600 }}>{item.username}</span>
+                              {item.isRegistered && (
+                                <span title="Verified Hub Member" style={{ color: '#22c55e', fontSize: '0.85rem' }}>✓</span>
+                              )}
+                            </div>
+                          </td>
+                          <td style={{ fontWeight: 'bold', color: '#39ff14' }}>
+                            {item.score} goals
+                          </td>
+                          <td style={{ color: '#94a3b8', fontSize: '0.8rem' }}>
+                            {new Date(item.timestamp).toLocaleDateString()}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            <div className="sonic-modal-footer">
+              <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>
+                Anti-cheat verified scores with HMAC challenge protection.
+              </span>
+              <button className="btn" style={{ padding: '8px 20px' }} onClick={() => setShowLeaderboard(false)}>
+                Close
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

@@ -29,16 +29,16 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=3.6">
+  <link rel="stylesheet" href="styles.css?v=4.0">
   <style>
     /* Critical Inline CSS: Prevents modals from rendering unstyled in document flow */
-    #themeModal, #securityModal {
+    #themeModal, #securityModal, #authModal, #leaderboardModal {
       display: none !important;
       position: fixed !important;
       inset: 0 !important;
       z-index: 99999 !important;
     }
-    #themeModal.active {
+    #themeModal.active, #authModal.active, #leaderboardModal.active {
       display: flex !important;
       align-items: center !important;
       justify-content: center !important;
@@ -53,45 +53,6 @@
       opacity: 1 !important;
       pointer-events: auto !important;
     }
-    .theme-floating-btn {
-      position: fixed;
-      top: 18px;
-      right: 18px;
-      z-index: 1000;
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      background: rgba(18, 24, 38, 0.75);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      color: #f1f5f9;
-      padding: 9px 18px;
-      border-radius: 9999px;
-      font-family: inherit;
-      font-size: 0.85rem;
-      font-weight: 500;
-      cursor: pointer;
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    .theme-floating-btn:hover {
-      background: rgba(30, 41, 59, 0.9);
-      border-color: #6366f1;
-      box-shadow: 0 6px 24px rgba(99, 102, 241, 0.4);
-      transform: translateY(-2px);
-    }
-    .theme-floating-btn:active {
-      transform: scale(0.96);
-    }
-    @media (max-width: 600px) {
-      .theme-floating-btn {
-        top: 12px;
-        right: 12px;
-        padding: 7px 14px;
-        font-size: 0.8rem;
-      }
-    }
   </style>
 </head>
 <body>
@@ -100,107 +61,224 @@
     <div class="blob blob-2"></div>
   </div>
 
-  <!-- Floating RGB Theme Customizer Button -->
-  <button id="themeToggleBtn" class="theme-floating-btn" aria-label="Customize RGB Background">
-    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.563-2.512 5.563-5.563C22 6.5 17.5 2 12 2z"/></svg>
-    <span>RGB Theme</span>
-  </button>
+  <!-- Top Floating Action Bar: Leaderboards, RGB Theme, User Account -->
+  <div class="top-nav-bar">
+    <button id="leaderboardToggleBtn" class="theme-floating-btn" aria-label="Global Leaderboards">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
+      <span>Leaderboards</span>
+    </button>
+
+    <button id="themeToggleBtn" class="theme-floating-btn" aria-label="Customize RGB Background">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.563-2.512 5.563-5.563C22 6.5 17.5 2 12 2z"/></svg>
+      <span>RGB Theme</span>
+    </button>
+
+    <button id="accountBtn" class="theme-floating-btn" aria-label="Account Login or Profile">
+      <svg id="accountDefaultIcon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <span id="accountAvatarBadge" style="display:none;" class="account-badge-avatar"></span>
+      <span id="accountBtnText">Sign In</span>
+    </button>
+  </div>
 
   <main class="container">
     <header class="header">
       <div class="title-container">
-        <h2 class="sub-title">Astra 13's</h2>
-        <h1 class="main-title">Swiss Knife <span>Hub</span></h1>
+        <div class="brand-pill">
+          <span class="beacon-dot"></span>
+          <span>ASTRA 13 SYSTEM</span>
+        </div>
+        <h1 class="main-title">Swiss Knife <span class="hub-word">Hub</span></h1>
+        <p class="hub-subtitle">Advanced Interactive Web Suite & Cyber Arcade</p>
       </div>
     </header>
 
     <div class="grid">
-      <a href="/neon-orbit/" class="card">
+      <!-- 1. Neon Orbit -->
+      <a href="/neon-orbit/" class="card card-neon">
         <div class="card-content">
-          <div class="icon neon-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><line x1="21.17" y1="8" x2="12" y2="8"/><line x1="3.95" y1="6.06" x2="8.54" y2="14"/><line x1="10.88" y1="21.94" x2="15.46" y2="14"/></svg>
+          <div class="card-top-row">
+            <div class="icon neon-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><line x1="21.17" y1="8" x2="12" y2="8"/><line x1="3.95" y1="6.06" x2="8.54" y2="14"/><line x1="10.88" y1="21.94" x2="15.46" y2="14"/></svg>
+            </div>
+            <div class="card-badges">
+              <span class="category-badge">🪐 SIMULATOR</span>
+              <span class="lb-badge">🏆 RANKED</span>
+            </div>
           </div>
           <h2>Neon Orbit</h2>
           <p>Interactive vanilla TS particle physics simulator with PixiJS.</p>
+          <div class="card-footer-link">
+            <span>Launch Simulator</span>
+            <span class="card-arrow">→</span>
+          </div>
         </div>
       </a>
 
-      <a href="/star-locator/" class="card">
+      <!-- 2. Star Locator -->
+      <a href="/star-locator/" class="card card-star">
         <div class="card-content">
-          <div class="icon star-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          <div class="card-top-row">
+            <div class="icon star-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            </div>
+            <div class="card-badges">
+              <span class="category-badge">✨ ASTRONOMY</span>
+              <span class="category-badge" style="color:#fbbf24;">3D SKY</span>
+            </div>
           </div>
           <h2>Star Locator</h2>
           <p>React, Three.js, and Leaflet based celestial body tracker.</p>
+          <div class="card-footer-link">
+            <span>Track Celestial Bodies</span>
+            <span class="card-arrow">→</span>
+          </div>
         </div>
       </a>
-      <a href="/chem-lab/" class="card">
+
+      <!-- 3. Chem Lab -->
+      <a href="/chem-lab/" class="card card-chem">
         <div class="card-content">
-          <div class="icon chem-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v7.31"/><path d="M14 9.3V1.99"/><path d="M8.5 2h7"/><path d="M14 9.3a6.5 6.5 0 1 1-4 0"/><line x1="5.52" y1="16" x2="18.48" y2="16"/></svg>
+          <div class="card-top-row">
+            <div class="icon chem-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v7.31"/><path d="M14 9.3V1.99"/><path d="M8.5 2h7"/><path d="M14 9.3a6.5 6.5 0 1 1-4 0"/><line x1="5.52" y1="16" x2="18.48" y2="16"/></svg>
+            </div>
+            <div class="card-badges">
+              <span class="category-badge">🧪 SCIENCE</span>
+              <span class="category-badge" style="color:#10b981;">PUBCHEM</span>
+            </div>
           </div>
           <h2>Chem Lab</h2>
           <p>Educational chemistry hub with PubChem API integration.</p>
+          <div class="card-footer-link">
+            <span>Explore Molecules</span>
+            <span class="card-arrow">→</span>
+          </div>
         </div>
       </a>
       
-      <a href="/chill-hub/" class="card">
+      <!-- 4. Chill Hub -->
+      <a href="/chill-hub/" class="card card-chill">
         <div class="card-content">
-          <div class="icon chill-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h4l3-9 5 18 3-9h5"/></svg>
+          <div class="card-top-row">
+            <div class="icon chill-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h4l3-9 5 18 3-9h5"/></svg>
+            </div>
+            <div class="card-badges">
+              <span class="category-badge">🎧 ZEN TOOL</span>
+              <span class="category-badge" style="color:#ec4899;">FOCUS</span>
+            </div>
           </div>
           <h2>Chill Hub</h2>
-          <p>Daily multi-tool with relaxing animations, satisfying sounds, and a focus mode.</p>
+          <p>Daily multi-tool with relaxing animations, satisfying sounds, and focus mode.</p>
+          <div class="card-footer-link">
+            <span>Enter Relaxation Zone</span>
+            <span class="card-arrow">→</span>
+          </div>
         </div>
       </a>
 
-      <a href="/shape-wars/" class="card">
+      <!-- 5. Shape Wars -->
+      <a href="/shape-wars/" class="card card-shape">
         <div class="card-content">
-          <div class="icon shape-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><path d="M12 18v-6"/><path d="M8 15h8"/></svg>
+          <div class="card-top-row">
+            <div class="icon shape-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><path d="M12 18v-6"/><path d="M8 15h8"/></svg>
+            </div>
+            <div class="card-badges">
+              <span class="category-badge">⚔️ SIMULATOR</span>
+              <span class="lb-badge">🏆 RANKED</span>
+            </div>
           </div>
           <h2>Shape Wars</h2>
           <p>An emotional physics battle simulator with dramatic commentary.</p>
+          <div class="card-footer-link">
+            <span>Engage Battle</span>
+            <span class="card-arrow">→</span>
+          </div>
         </div>
       </a>
 
-      <a href="/sonic-soccer/" class="card">
+      <!-- 6. Sonic Soccer -->
+      <a href="/sonic-soccer/" class="card card-sonic">
         <div class="card-content">
-          <div class="icon sonic-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="M2 12h2"/><path d="M20 12h2"/></svg>
+          <div class="card-top-row">
+            <div class="icon sonic-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="M2 12h2"/><path d="M20 12h2"/></svg>
+            </div>
+            <div class="card-badges">
+              <span class="category-badge">⚽ AUDIO MATCH</span>
+              <span class="lb-badge">🏆 RANKED</span>
+            </div>
           </div>
           <h2>Sonic Soccer</h2>
           <p>A football match powered entirely by your voice and soundwaves.</p>
+          <div class="card-footer-link">
+            <span>Kick Off Match</span>
+            <span class="card-arrow">→</span>
+          </div>
         </div>
       </a>
       
-      <a href="/nond_ex/" class="card">
+      <!-- 7. nond_ex -->
+      <a href="/nond_ex/" class="card card-nond">
         <div class="card-content">
-          <div class="icon nond-icon" style="color: #38bdf8;">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6" y2="6"/><line x1="6" y1="18" x2="6" y2="18"/></svg>
+          <div class="card-top-row">
+            <div class="icon nond-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6" y2="6"/><line x1="6" y1="18" x2="6" y2="18"/></svg>
+            </div>
+            <div class="card-badges">
+              <span class="category-badge">⚡ CIRCUITS</span>
+              <span class="category-badge" style="color:#38bdf8;">LOGIC GATES</span>
+            </div>
           </div>
           <h2>nond_ex</h2>
           <p>Digital logic gate and circuit simulator workspace.</p>
+          <div class="card-footer-link">
+            <span>Build Circuit</span>
+            <span class="card-arrow">→</span>
+          </div>
         </div>
       </a>
       
-      <a href="/alien-echo/" class="card">
+      <!-- 8. Alien Echo -->
+      <a href="/alien-echo/" class="card card-alien">
         <div class="card-content">
-          <div class="icon alien-icon" style="color: #22c55e;">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a7 7 0 0 1 7 7c0 4-7 13-7 13S5 13 5 9a7 7 0 0 1 7-7z"/><circle cx="9" cy="9" r="1"/><circle cx="15" cy="9" r="1"/></svg>
+          <div class="card-top-row">
+            <div class="icon alien-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a7 7 0 0 1 7 7c0 4-7 13-7 13S5 13 5 9a7 7 0 0 1 7-7z"/><circle cx="9" cy="9" r="1"/><circle cx="15" cy="9" r="1"/></svg>
+            </div>
+            <div class="card-badges">
+              <span class="category-badge">👽 MEMORY</span>
+              <span class="lb-badge">🏆 RANKED</span>
+            </div>
           </div>
           <h2>Alien Echo</h2>
           <p>Sci-fi Simon-style memory game with custom synth tones.</p>
+          <div class="card-footer-link">
+            <span>Test Memory Sequence</span>
+            <span class="card-arrow">→</span>
+          </div>
         </div>
       </a>
       
-      <a href="/pirate-fishing/" class="card">
+      <!-- 9. Pirate Fishing -->
+      <a href="/pirate-fishing/" class="card card-pirate">
         <div class="card-content">
-          <div class="icon fishing-icon" style="color: #f59e0b;">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+          <div class="card-top-row">
+            <div class="icon fishing-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+            </div>
+            <div class="card-badges">
+              <span class="category-badge">🏴‍☠️ CLICKER RPG</span>
+              <span class="lb-badge">🏆 RANKED</span>
+            </div>
           </div>
           <h2>Pirate Fishing</h2>
           <p>An addictive clicker game: catch fish, earn Doubloons, and build a Pirate Company!</p>
+          <div class="card-footer-link">
+            <span>Set Sail</span>
+            <span class="card-arrow">→</span>
+          </div>
         </div>
       </a>
       
@@ -208,9 +286,13 @@
 
     <!-- Small Subtle Footer with Copyright By Astra 13 -->
     <footer class="hub-footer">
-      <p class="copyright-text">© <span id="copyrightYear">2026</span> Astra 13's Swiss Knife Hub • All Rights Reserved</p>
-      <p class="by-author-text">Engineered by Astra 13</p>
+      <div class="footer-divider"></div>
+      <div class="footer-content">
+        <p class="copyright-text">© <span id="copyrightYear">2026</span> Astra 13's Swiss Knife Hub • All Rights Reserved</p>
+        <p class="by-author-text">Engineered by <span class="author-highlight">Astra 13</span></p>
+      </div>
     </footer>
+  </main>
   </main>
 
   <!-- RGB Gradient Customizer Modal -->
@@ -292,6 +374,118 @@
       <div class="theme-modal-footer">
         <button id="resetThemeBtn" class="reset-btn">Reset Defaults</button>
         <button id="saveThemeBtn" class="apply-btn">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- User Account & Auth Modal (Optional Sign In & Registration) -->
+  <div id="authModal" class="theme-modal" aria-modal="true" role="dialog">
+    <div class="theme-modal-backdrop" id="authModalBackdrop"></div>
+    <div class="auth-modal-dialog">
+      <div class="auth-tabs-strip" id="authTabsStrip">
+        <button id="tabSignIn" class="auth-tab-btn active">Sign In</button>
+        <button id="tabRegister" class="auth-tab-btn">Create Account</button>
+      </div>
+
+      <div class="auth-body">
+        <!-- Error / Status Notice -->
+        <div id="authNotice" class="auth-banner-msg"></div>
+
+        <!-- View 1: Sign In -->
+        <form id="signInForm" class="auth-form">
+          <div class="auth-field">
+            <label class="auth-label" for="loginUsername">Username</label>
+            <div class="auth-input-wrapper">
+              <svg class="auth-input-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              <input type="text" id="loginUsername" class="auth-input" placeholder="Enter username" autocomplete="username" required maxlength="24" />
+            </div>
+          </div>
+
+          <div class="auth-field">
+            <label class="auth-label" for="loginPassword">Password</label>
+            <div class="auth-input-wrapper">
+              <svg class="auth-input-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              <input type="password" id="loginPassword" class="auth-input" placeholder="Enter password" autocomplete="current-password" required />
+            </div>
+          </div>
+
+          <button type="submit" id="signInSubmitBtn" class="auth-submit-btn">Sign In</button>
+
+          <p class="auth-optional-note">
+            💡 Accounts are 100% optional! You can play all games freely. Registering links your verified high scores to the global leaderboard.
+          </p>
+        </form>
+
+        <!-- View 2: Register -->
+        <form id="registerForm" class="auth-form" style="display:none;">
+          <div class="auth-field">
+            <label class="auth-label" for="regUsername">Choose Username</label>
+            <div class="auth-input-wrapper">
+              <svg class="auth-input-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              <input type="text" id="regUsername" class="auth-input" placeholder="e.g. Maverick_99" autocomplete="username" required maxlength="20" />
+            </div>
+            <span class="auth-hint">3-20 characters: letters, numbers, and underscores only.</span>
+          </div>
+
+          <div class="auth-field">
+            <label class="auth-label" for="regPassword">Password</label>
+            <div class="auth-input-wrapper">
+              <svg class="auth-input-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              <input type="password" id="regPassword" class="auth-input" placeholder="At least 6 characters" autocomplete="new-password" required minlength="6" />
+            </div>
+          </div>
+
+          <button type="submit" id="registerSubmitBtn" class="auth-submit-btn">Create Free Account</button>
+
+          <p class="auth-optional-note">
+            🛡️ Secured with cryptographic scrypt hashing, brute-force rate limits, and anti-cheat signature validation.
+          </p>
+        </form>
+
+        <!-- View 3: Logged In Profile -->
+        <div id="profileView" class="profile-card" style="display:none;">
+          <div id="profileAvatar" class="profile-avatar-large">A</div>
+          <div>
+            <h3 class="profile-name">
+              <span id="profileUsername">Player</span>
+              <span class="verified-tag">✓ Verified</span>
+            </h3>
+            <p id="profileMemberSince" class="profile-meta">Member since today</p>
+          </div>
+
+          <div class="profile-actions">
+            <button id="viewMyScoresBtn" class="auth-submit-btn" style="flex:1;">🏆 View Leaderboards</button>
+            <button id="logoutBtn" class="profile-logout-btn">Log Out</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Global Leaderboards Modal -->
+  <div id="leaderboardModal" class="theme-modal" aria-modal="true" role="dialog">
+    <div class="theme-modal-backdrop" id="leaderboardModalBackdrop"></div>
+    <div class="leaderboard-modal-dialog">
+      <div class="theme-modal-header" style="border-bottom:1px solid rgba(255,255,255,0.08);">
+        <div class="modal-title-group">
+          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
+          <h3>Astra 13 Global Leaderboards</h3>
+        </div>
+        <button id="closeLeaderboardModal" class="theme-close-btn">&times;</button>
+      </div>
+
+      <!-- Game Tabs -->
+      <div class="leaderboard-game-tabs">
+        <button class="leaderboard-game-tab active" data-game="alien-echo">👽 Alien Echo</button>
+        <button class="leaderboard-game-tab" data-game="neon-orbit">⚛️ Neon Orbit</button>
+        <button class="leaderboard-game-tab" data-game="pirate-fishing">🏴‍☠️ Pirate Fishing</button>
+        <button class="leaderboard-game-tab" data-game="sonic-soccer">⚽ Sonic Soccer</button>
+        <button class="leaderboard-game-tab" data-game="shape-wars">⚔️ Shape Wars</button>
+      </div>
+
+      <!-- Table Content Area -->
+      <div class="leaderboard-content" id="leaderboardContent">
+        <div style="text-align:center; padding:30px; color:#94a3b8;">Loading global standings...</div>
       </div>
     </div>
   </div>
@@ -881,7 +1075,318 @@
         }
       }
 
-      initSecurityCheck();
+      // ========================================================
+      // --- USER AUTHENTICATION & GLOBAL LEADERBOARD CONTROLLER ---
+      // ========================================================
+      let currentUser = null;
+      let activeLeaderboardGame = 'alien-echo';
+
+      const accountBtn = document.getElementById('accountBtn');
+      const accountBtnText = document.getElementById('accountBtnText');
+      const accountAvatarBadge = document.getElementById('accountAvatarBadge');
+      const accountDefaultIcon = document.getElementById('accountDefaultIcon');
+
+      const authModal = document.getElementById('authModal');
+      const authModalBackdrop = document.getElementById('authModalBackdrop');
+      const tabSignIn = document.getElementById('tabSignIn');
+      const tabRegister = document.getElementById('tabRegister');
+      const signInForm = document.getElementById('signInForm');
+      const registerForm = document.getElementById('registerForm');
+      const profileView = document.getElementById('profileView');
+      const authNotice = document.getElementById('authNotice');
+      const profileUsername = document.getElementById('profileUsername');
+      const profileAvatar = document.getElementById('profileAvatar');
+      const profileMemberSince = document.getElementById('profileMemberSince');
+      const logoutBtn = document.getElementById('logoutBtn');
+      const viewMyScoresBtn = document.getElementById('viewMyScoresBtn');
+
+      const leaderboardModal = document.getElementById('leaderboardModal');
+      const leaderboardModalBackdrop = document.getElementById('leaderboardModalBackdrop');
+      const closeLeaderboardModal = document.getElementById('closeLeaderboardModal');
+      const leaderboardToggleBtn = document.getElementById('leaderboardToggleBtn');
+      const leaderboardContent = document.getElementById('leaderboardContent');
+
+      function setAuthNotice(msg, type = '') {
+        if (!authNotice) return;
+        if (!msg) {
+          authNotice.style.display = 'none';
+          authNotice.textContent = '';
+          authNotice.className = 'auth-banner-msg';
+          return;
+        }
+        authNotice.textContent = msg;
+        authNotice.className = `auth-banner-msg ${type}`;
+        authNotice.style.display = 'block';
+      }
+
+      function updateAuthUI(user) {
+        currentUser = user;
+        if (user) {
+          accountBtnText.textContent = user.username;
+          if (accountAvatarBadge) {
+            accountAvatarBadge.style.display = 'inline-flex';
+            accountAvatarBadge.style.background = user.avatarColor || '#6366f1';
+            accountAvatarBadge.textContent = (user.username || 'U')[0].toUpperCase();
+          }
+          if (accountDefaultIcon) accountDefaultIcon.style.display = 'none';
+        } else {
+          accountBtnText.textContent = 'Sign In';
+          if (accountAvatarBadge) accountAvatarBadge.style.display = 'none';
+          if (accountDefaultIcon) accountDefaultIcon.style.display = 'inline-block';
+        }
+      }
+
+      async function fetchCurrentUser() {
+        try {
+          const res = await fetch('/api/auth/me');
+          const data = await res.json();
+          if (data && data.authenticated && data.user) {
+            updateAuthUI(data.user);
+          } else {
+            updateAuthUI(null);
+          }
+        } catch (e) {
+          updateAuthUI(null);
+        }
+      }
+
+      function openAuthModal() {
+        setAuthNotice('');
+        if (currentUser) {
+          // Show Profile view
+          document.getElementById('authTabsStrip').style.display = 'none';
+          signInForm.style.display = 'none';
+          registerForm.style.display = 'none';
+          profileView.style.display = 'flex';
+
+          profileUsername.textContent = currentUser.username;
+          profileAvatar.textContent = (currentUser.username || 'U')[0].toUpperCase();
+          profileAvatar.style.background = currentUser.avatarColor || '#6366f1';
+          if (currentUser.createdAt) {
+            const dateStr = new Date(currentUser.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+            profileMemberSince.textContent = `Registered Member • Joined ${dateStr}`;
+          }
+        } else {
+          document.getElementById('authTabsStrip').style.display = 'flex';
+          profileView.style.display = 'none';
+          switchAuthTab('signIn');
+        }
+        authModal.classList.add('active');
+      }
+
+      function closeAuthModal() {
+        authModal.classList.remove('active');
+      }
+
+      function switchAuthTab(tab) {
+        setAuthNotice('');
+        if (tab === 'signIn') {
+          tabSignIn.classList.add('active');
+          tabRegister.classList.remove('active');
+          signInForm.style.display = 'flex';
+          registerForm.style.display = 'none';
+        } else {
+          tabRegister.classList.add('active');
+          tabSignIn.classList.remove('active');
+          registerForm.style.display = 'flex';
+          signInForm.style.display = 'none';
+        }
+      }
+
+      if (accountBtn) accountBtn.addEventListener('click', openAuthModal);
+      if (authModalBackdrop) authModalBackdrop.addEventListener('click', closeAuthModal);
+      if (tabSignIn) tabSignIn.addEventListener('click', () => switchAuthTab('signIn'));
+      if (tabRegister) tabRegister.addEventListener('click', () => switchAuthTab('register'));
+
+      // Sign In Form Handler
+      if (signInForm) {
+        signInForm.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const username = document.getElementById('loginUsername').value.trim();
+          const password = document.getElementById('loginPassword').value;
+          const submitBtn = document.getElementById('signInSubmitBtn');
+
+          if (!username || !password) return;
+          submitBtn.disabled = true;
+          submitBtn.textContent = 'Verifying...';
+          setAuthNotice('');
+
+          try {
+            const res = await fetch('/api/auth/login', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ username, password })
+            });
+            const data = await res.json();
+            if (data.success) {
+              setAuthNotice('Login successful!', 'success');
+              updateAuthUI(data.user);
+              setTimeout(() => {
+                closeAuthModal();
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Sign In';
+              }, 600);
+            } else {
+              setAuthNotice(data.reason || 'Login failed.', 'error');
+              submitBtn.disabled = false;
+              submitBtn.textContent = 'Sign In';
+            }
+          } catch (err) {
+            setAuthNotice('Network connection error.', 'error');
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Sign In';
+          }
+        });
+      }
+
+      // Register Form Handler
+      if (registerForm) {
+        registerForm.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const username = document.getElementById('regUsername').value.trim();
+          const password = document.getElementById('regPassword').value;
+          const submitBtn = document.getElementById('registerSubmitBtn');
+
+          if (!username || !password) return;
+          submitBtn.disabled = true;
+          submitBtn.textContent = 'Creating Account...';
+          setAuthNotice('');
+
+          try {
+            const res = await fetch('/api/auth/register', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ username, password })
+            });
+            const data = await res.json();
+            if (data.success) {
+              setAuthNotice('Account created successfully!', 'success');
+              updateAuthUI(data.user);
+              setTimeout(() => {
+                closeAuthModal();
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Create Free Account';
+              }, 700);
+            } else {
+              setAuthNotice(data.reason || 'Registration failed.', 'error');
+              submitBtn.disabled = false;
+              submitBtn.textContent = 'Create Free Account';
+            }
+          } catch (err) {
+            setAuthNotice('Network connection error.', 'error');
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Create Free Account';
+          }
+        });
+      }
+
+      // Log Out Handler
+      if (logoutBtn) {
+        logoutBtn.addEventListener('click', async () => {
+          try {
+            await fetch('/api/auth/logout', { method: 'POST' });
+          } catch(e) {}
+          updateAuthUI(null);
+          closeAuthModal();
+        });
+      }
+
+      // --- Leaderboard Modal Controller ---
+      function openLeaderboard(gameId = 'alien-echo') {
+        activeLeaderboardGame = gameId;
+        document.querySelectorAll('.leaderboard-game-tab').forEach(tab => {
+          if (tab.getAttribute('data-game') === gameId) {
+            tab.classList.add('active');
+          } else {
+            tab.classList.remove('active');
+          }
+        });
+        loadLeaderboard(gameId);
+        leaderboardModal.classList.add('active');
+      }
+
+      function closeLeaderboard() {
+        leaderboardModal.classList.remove('active');
+      }
+
+      async function loadLeaderboard(gameId) {
+        if (!leaderboardContent) return;
+        leaderboardContent.innerHTML = '<div style="text-align:center; padding:30px; color:#94a3b8;">Loading standings...</div>';
+
+        try {
+          const res = await fetch(`/api/leaderboard/${encodeURIComponent(gameId)}?limit=50`);
+          const data = await res.json();
+
+          if (!data || !data.success || !Array.isArray(data.leaderboard) || data.leaderboard.length === 0) {
+            leaderboardContent.innerHTML = `
+              <div class="empty-leaderboard">
+                <div class="empty-leaderboard-icon">🏆</div>
+                <h4 style="color:#fff; margin-bottom:6px;">No Records Yet</h4>
+                <p>Be the very first player to conquer this game and immortalize your high score!</p>
+              </div>
+            `;
+            return;
+          }
+
+          let html = `
+            <table class="leaderboard-table">
+              <thead>
+                <tr>
+                  <th style="width:50px;">Rank</th>
+                  <th>Player</th>
+                  <th>High Score</th>
+                  <th style="text-align:right;">Date</th>
+                </tr>
+              </thead>
+              <tbody>
+          `;
+
+          data.leaderboard.forEach(entry => {
+            const rankClass = entry.rank === 1 ? 'rank-1' : entry.rank === 2 ? 'rank-2' : entry.rank === 3 ? 'rank-3' : 'rank-other';
+            const isMe = currentUser && currentUser.username.toLowerCase() === entry.username.toLowerCase();
+            const dateStr = entry.date ? new Date(entry.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '-';
+
+            html += `
+              <tr style="${isMe ? 'background:rgba(99,102,241,0.15); font-weight:bold;' : ''}">
+                <td><span class="rank-badge ${rankClass}">#${entry.rank}</span></td>
+                <td>
+                  <div class="player-col">
+                    <span>${escapeHtml(entry.username)}</span>
+                    ${!entry.isGuest ? '<span class="verified-star" title="Registered & Verified Player">✓</span>' : '<span class="guest-tag">Guest</span>'}
+                    ${isMe ? '<span style="color:#6366f1; font-size:0.75rem;">(You)</span>' : ''}
+                  </div>
+                </td>
+                <td class="score-col">${Number(entry.score).toLocaleString()}</td>
+                <td class="date-col" style="text-align:right;">${dateStr}</td>
+              </tr>
+            `;
+          });
+
+          html += `</tbody></table>`;
+          leaderboardContent.innerHTML = html;
+        } catch (e) {
+          leaderboardContent.innerHTML = '<div style="text-align:center; padding:30px; color:#ef4444;">Failed to load leaderboard data.</div>';
+        }
+      }
+
+      document.querySelectorAll('.leaderboard-game-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+          document.querySelectorAll('.leaderboard-game-tab').forEach(t => t.classList.remove('active'));
+          tab.classList.add('active');
+          const game = tab.getAttribute('data-game');
+          loadLeaderboard(game);
+        });
+      });
+
+      if (leaderboardToggleBtn) leaderboardToggleBtn.addEventListener('click', () => openLeaderboard('alien-echo'));
+      if (viewMyScoresBtn) viewMyScoresBtn.addEventListener('click', () => {
+        closeAuthModal();
+        openLeaderboard('alien-echo');
+      });
+      if (leaderboardModalBackdrop) leaderboardModalBackdrop.addEventListener('click', closeLeaderboard);
+      if (closeLeaderboardModal) closeLeaderboardModal.addEventListener('click', closeLeaderboard);
+
+      fetchCurrentUser();
 
       // Dynamic copyright year update
       const yrEl = document.getElementById('copyrightYear');

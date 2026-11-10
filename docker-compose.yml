@@ -13,6 +13,8 @@ services:
       - NODE_ENV=${NODE_ENV:-production}
       - PORT=3000
       - DOMAIN=${DOMAIN:-}
+    volumes:
+      - ./data:/app/data
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:3000/health || exit 1"]
       interval: 30s

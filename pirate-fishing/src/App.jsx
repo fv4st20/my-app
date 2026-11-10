@@ -69,6 +69,12 @@ function App() {
   const [showPrestigeModal, setShowPrestigeModal] = useState(false);
   const [recentCatchAlert, setRecentCatchAlert] = useState(null);
 
+  // User Auth & Global Leaderboard State
+  const [authUser, setAuthUser] = useState(null);
+  const [pirateLeaderboard, setPirateLeaderboard] = useState([]);
+  const [submittingLeaderboard, setSubmittingLeaderboard] = useState(false);
+  const [leaderboardNotice, setLeaderboardNotice] = useState(null);
+
   // Fishing Minigame State: 'idle' | 'waiting' | 'reeling' | 'caught' | 'lost'
   const [fishState, setFishState] = useState('idle');
   const [reelProgress, setReelProgress] = useState(0);
@@ -117,6 +123,58 @@ function App() {
     }
     setSaveLoaded(true);
   }, []);
+
+  // Fetch authenticated user & leaderboard
+  useEffect(() => {
+    fetch('/api/auth/me')
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.authenticated && data.user) {
+          setAuthUser(data.user);
+        }
+      })
+      .catch(() => {});
+    fetchPirateLeaderboard();
+  }, []);
+
+  const fetchPirateLeaderboard = async () => {
+    try {
+      const res = await fetch('/api/leaderboard/pirate-fishing?limit=25');
+      const data = await res.json();
+      if (data && data.success) {
+        setPirateLeaderboard(data.leaderboard || []);
+      }
+    } catch (e) {}
+  };
+
+  const submitToGlobalLeaderboard = async () => {
+    if (allTimeGold <= 0) return;
+    setSubmittingLeaderboard(true);
+    setLeaderboardNotice(null);
+    try {
+      const res = await fetch('/api/leaderboard/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          gameId: 'pirate-fishing',
+          score: allTimeGold,
+          username: authUser ? authUser.username : 'Captain Anonymous',
+          details: { infamy: totalAscensions, caught: totalFishCaught }
+        })
+      });
+      const data = await res.json();
+      if (data && data.success) {
+        setLeaderboardNotice(`⚓ Glory Broadcast! You hold Global Rank #${data.rank || 1}!`);
+        fetchPirateLeaderboard();
+      } else {
+        setLeaderboardNotice(data.reason || 'Broadcast failed.');
+      }
+    } catch (e) {
+      setLeaderboardNotice('Network connection error.');
+    } finally {
+      setSubmittingLeaderboard(false);
+    }
+  };
 
   // 2. Auto-save to LocalStorage
   useEffect(() => {
@@ -590,6 +648,18 @@ function App() {
             <span className="gold-amount">{gold.toLocaleString()}</span>
             <span className="gold-mult-tag">x{goldMultiplier}</span>
           </div>
+
+          <button
+            onClick={() => {
+              setActiveTab('stats');
+              fetchPirateLeaderboard();
+            }}
+            className="icon-tool-btn"
+            title="Global Pirate Rankings"
+            style={{ color: 'var(--gold)', borderColor: 'rgba(245, 158, 11, 0.4)' }}
+          >
+            <Trophy size={18} />
+          </button>
 
           <button
             onClick={toggleSound}
@@ -1310,6 +1380,69 @@ function App() {
                 <div className="stat-card">
                   <span className="stat-label">Active Global Multiplier</span>
                   <span className="stat-val gold-text">x{goldMultiplier}</span>
+                </div>
+              </div>
+
+              {/* GLOBAL LEADERBOARD SECTION */}
+              <div style={{background:'#1e293b', border:'2px solid var(--gold)', borderRadius:'12px', padding:'16px', display:'flex', flexDirection:'column', gap:'12px'}}>
+                <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:'10px'}}>
+                  <div>
+                    <h4 style={{fontSize:'1.1rem', fontWeight:'900', color:'#fff', display:'flex', alignItems:'center', gap:'6px'}}>
+                      <Trophy size={18} color="var(--gold)" />
+                      Global High Seas Sovereign Leaderboard
+                    </h4>
+                    <p style={{fontSize:'0.8rem', color:'var(--text-muted)'}}>
+                      {authUser ? (
+                        <span>Playing as registered captain: <strong style={{color:'#fff'}}>{authUser.username}</strong></span>
+                      ) : (
+                        <span>Playing as guest. <a href="/" style={{color:'#38bdf8'}}>Sign in</a> on Hub for verified crown!</span>
+                      )}
+                    </p>
+                  </div>
+                  <button
+                    className="buy-btn"
+                    onClick={submitToGlobalLeaderboard}
+                    disabled={submittingLeaderboard || allTimeGold <= 0}
+                    style={{padding:'8px 16px', background:'var(--gold)', color:'#000', cursor: allTimeGold > 0 ? 'pointer' : 'not-allowed'}}
+                  >
+                    {submittingLeaderboard ? 'Broadcasting...' : '👑 Broadcast Wealth to Leaderboard'}
+                  </button>
+                </div>
+
+                {leaderboardNotice && (
+                  <div style={{background:'rgba(245,158,11,0.15)', border:'1px solid var(--gold)', color:'var(--gold)', padding:'8px 12px', borderRadius:'8px', fontSize:'0.85rem', fontWeight:'700'}}>
+                    {leaderboardNotice}
+                  </div>
+                )}
+
+                <div style={{maxHeight:'260px', overflowY:'auto'}}>
+                  {pirateLeaderboard.length === 0 ? (
+                    <p style={{color:'var(--text-muted)', textAlign:'center', padding:'20px'}}>No pirate scores recorded yet. Be the first to broadcast your haul!</p>
+                  ) : (
+                    <table style={{width:'100%', borderCollapse:'collapse', fontSize:'0.85rem'}}>
+                      <thead>
+                        <tr style={{color:'var(--text-muted)', borderBottom:'1px solid #334155', textAlign:'left'}}>
+                          <th style={{padding:'8px 6px'}}>Rank</th>
+                          <th style={{padding:'8px 6px'}}>Captain</th>
+                          <th style={{padding:'8px 6px'}}>Lifetime Gold</th>
+                          <th style={{padding:'8px 6px', textAlign:'right'}}>Infamy Rank</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {pirateLeaderboard.map(entry => (
+                          <tr key={entry.id} style={{borderBottom:'1px solid #0f172a', background: authUser && authUser.username === entry.username ? 'rgba(245,158,11,0.1)' : 'transparent'}}>
+                            <td style={{padding:'8px 6px', fontWeight:'900', color: entry.rank === 1 ? 'var(--gold)' : '#fff'}}>#{entry.rank}</td>
+                            <td style={{padding:'8px 6px'}}>
+                              <strong>{entry.username}</strong>
+                              {entry.isVerified && <span style={{color:'#22c55e', marginLeft:'4px', fontWeight:'900'}}>✓</span>}
+                            </td>
+                            <td style={{padding:'8px 6px', color:'var(--gold)', fontWeight:'900'}}>{entry.score.toLocaleString()} G</td>
+                            <td style={{padding:'8px 6px', textAlign:'right', color:'#cbd5e1'}}>{entry.details?.infamy ? `Rank ${entry.details.infamy}` : 'Rank 0'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
                 </div>
               </div>
 

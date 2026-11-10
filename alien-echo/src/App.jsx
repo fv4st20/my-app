@@ -23,7 +23,43 @@ function App() {
   const [score, setScore] = useState(0);
   const [status, setStatus] = useState('PRESS START');
   
+  // Auth & Leaderboard State
+  const [user, setUser] = useState(null);
+  const [gameChallenge, setGameChallenge] = useState(null);
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [leaderboard, setLeaderboard] = useState([]);
+  const [loadingLeaderboard, setLoadingLeaderboard] = useState(false);
+  const [lastSubmission, setLastSubmission] = useState(null);
+
   const audioCtxRef = useRef(null);
+
+  // Check user session
+  useEffect(() => {
+    fetch('/api/auth/me')
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.authenticated && data.user) {
+          setUser(data.user);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  // Fetch leaderboard data
+  const fetchLeaderboard = async () => {
+    setLoadingLeaderboard(true);
+    try {
+      const res = await fetch('/api/leaderboard/alien-echo?limit=25');
+      const data = await res.json();
+      if (data && data.success) {
+        setLeaderboard(data.leaderboard || []);
+      }
+    } catch (e) {
+      console.warn('Failed to fetch leaderboard:', e);
+    } finally {
+      setLoadingLeaderboard(false);
+    }
+  };
 
   // Initialize Audio
   const initAudio = () => {
@@ -42,17 +78,14 @@ function App() {
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     
-    // Sci-fi synth tone
     osc.type = 'square';
     osc.frequency.setValueAtTime(freq, ctx.currentTime);
     
-    // Filter sweep for retro feel
     const filter = ctx.createBiquadFilter();
     filter.type = 'lowpass';
     filter.frequency.setValueAtTime(2000, ctx.currentTime);
     filter.frequency.exponentialRampToValueAtTime(300, ctx.currentTime + (duration/1000));
 
-    // Envelope
     gain.gain.setValueAtTime(0, ctx.currentTime);
     gain.gain.linearRampToValueAtTime(0.3, ctx.currentTime + 0.05);
     gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + (duration/1000));
@@ -74,12 +107,27 @@ function App() {
     }, duration - 100);
   };
 
-  const startGame = () => {
+  const startGame = async () => {
     initAudio();
     setSequence([]);
     setPlayerInput([]);
     setScore(0);
+    setLastSubmission(null);
     setStatus('PREPARING...');
+
+    // Request anti-cheat game session challenge
+    try {
+      const res = await fetch('/api/leaderboard/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ gameId: 'alien-echo' })
+      });
+      const data = await res.json();
+      if (data && data.success) {
+        setGameChallenge(data.challenge);
+      }
+    } catch (e) {}
+
     setTimeout(() => {
       nextRound([]);
     }, 1000);
@@ -93,10 +141,8 @@ function App() {
     setSequence(newSeq);
     setPlayerInput([]);
     
-    // Speed increases as score goes up
     const playSpeed = Math.max(200, 600 - (newSeq.length * 20)); 
     
-    // Play sequence
     let i = 0;
     const interval = setInterval(() => {
       activateAlien(newSeq[i], playSpeed);
@@ -111,6 +157,33 @@ function App() {
     }, playSpeed + 200);
   };
 
+  const submitScoreToLeaderboard = async (finalScore) => {
+    if (finalScore <= 0) return;
+    try {
+      const res = await fetch('/api/leaderboard/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          gameId: 'alien-echo',
+          score: finalScore,
+          challenge: gameChallenge,
+          username: user ? user.username : 'Guest Pilot',
+          details: { rounds: finalScore }
+        })
+      });
+      const data = await res.json();
+      if (data && data.success) {
+        setLastSubmission({
+          rank: data.rank,
+          username: data.entry.username,
+          isRegistered: data.isRegistered
+        });
+      }
+    } catch (e) {
+      console.warn('Score submission error:', e);
+    }
+  };
+
   const handleAlienClick = (id) => {
     if (!isPlayerTurn) return;
     
@@ -120,19 +193,20 @@ function App() {
     const newInput = [...playerInput, id];
     setPlayerInput(newInput);
 
-    // Validate
     const currentIndex = newInput.length - 1;
     if (newInput[currentIndex] !== sequence[currentIndex]) {
       // Game Over
-      playTone(100, 1000); // Error buzz
+      playTone(100, 1000);
       setIsPlayerTurn(false);
-      setStatus(`GAME OVER! SCORE: ${score}`);
+      setStatus(`GAME OVER! FINAL SCORE: ${score}`);
       setSequence([]);
+
+      // Submit score
+      submitScoreToLeaderboard(score);
       return;
     }
 
     if (newInput.length === sequence.length) {
-      // Round complete
       setIsPlayerTurn(false);
       setScore(s => s + 1);
       setStatus('CORRECT!');
@@ -147,12 +221,36 @@ function App() {
       <a href="/" className="return-btn" title="Return to Hub">
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
       </a>
+
+      <button 
+        className="leaderboard-btn-top" 
+        onClick={() => {
+          fetchLeaderboard();
+          setShowLeaderboard(true);
+        }}
+        title="View Global Leaderboard"
+      >
+        🏆 Leaderboard
+      </button>
+
       <div className="header">
         <h1>Alien Echo</h1>
         <div className="score-board">SCORE: {score}</div>
+        {user ? (
+          <div className="user-indicator">Pilot: <strong>{user.username}</strong> <span className="verified-badge">✓</span></div>
+        ) : (
+          <div className="guest-indicator">Playing as Guest • <a href="/" style={{color:'#38bdf8'}}>Sign In</a> for verified rank</div>
+        )}
       </div>
 
       <div className="status-msg">{status}</div>
+
+      {lastSubmission && (
+        <div className="submission-banner">
+          🚀 Score submitted to Global Leaderboard! 
+          {lastSubmission.rank && <span> Global Rank: <strong>#{lastSubmission.rank}</strong></span>}
+        </div>
+      )}
 
       <div className="alien-grid">
         {ALIENS.map(alien => (
@@ -172,6 +270,49 @@ function App() {
           )}
         </div>
       </div>
+
+      {/* In-Game Leaderboard Modal */}
+      {showLeaderboard && (
+        <div className="modal-overlay" onClick={() => setShowLeaderboard(false)}>
+          <div className="leaderboard-modal-box" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>🏆 Alien Echo Global Hall of Fame</h2>
+              <button className="close-btn" onClick={() => setShowLeaderboard(false)}>&times;</button>
+            </div>
+            
+            <div className="leaderboard-scroll">
+              {loadingLeaderboard ? (
+                <p style={{textAlign:'center', padding:'20px', color:'#94a3b8'}}>Loading records...</p>
+              ) : leaderboard.length === 0 ? (
+                <p style={{textAlign:'center', padding:'20px', color:'#94a3b8'}}>No scores yet! Play a round to claim #1.</p>
+              ) : (
+                <table className="lb-table">
+                  <thead>
+                    <tr>
+                      <th>Rank</th>
+                      <th>Pilot</th>
+                      <th>Score</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {leaderboard.map(entry => (
+                      <tr key={entry.id} className={user && user.username === entry.username ? 'highlight-row' : ''}>
+                        <td><span className={`rank-tag rank-${entry.rank}`}>#{entry.rank}</span></td>
+                        <td>
+                          <strong>{entry.username}</strong>
+                          {entry.isVerified && <span className="v-check">✓</span>}
+                        </td>
+                        <td className="score-cell">{entry.score}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+            <button className="close-modal-btn" onClick={() => setShowLeaderboard(false)}>Close</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

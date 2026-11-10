@@ -97,6 +97,239 @@ button:hover {
   box-shadow: 0 0 20px rgba(255,255,255,0.2);
 }
 
+.shape-board-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(250, 204, 21, 0.1);
+  border: 1px solid #facc15;
+  color: #facc15;
+  padding: 10px 22px;
+  border-radius: 30px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.shape-board-btn:hover {
+  background: #facc15;
+  color: #000;
+  box-shadow: 0 0 20px rgba(250, 204, 21, 0.4);
+  transform: translateY(-2px);
+}
+
+.shape-user-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #e2e8f0;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+}
+
+.shape-user-tag.guest {
+  color: #94a3b8;
+  border-style: dashed;
+}
+
+/* Battle Casualty Pill in HUD */
+.battle-score-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.7);
+  border: 1px solid rgba(239, 68, 68, 0.5);
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  backdrop-filter: blur(8px);
+}
+
+.shape-hud-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(250, 204, 21, 0.4);
+  color: #facc15;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.shape-hud-btn:hover {
+  background: #facc15;
+  color: #000;
+  box-shadow: 0 0 15px rgba(250, 204, 21, 0.4);
+}
+
+.shape-hud-btn.submit {
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+.shape-hud-btn.submit:hover {
+  background: #ef4444;
+  color: #fff;
+  box-shadow: 0 0 15px rgba(239, 68, 68, 0.4);
+}
+
+/* Toast Banner */
+.shape-toast-banner {
+  position: absolute;
+  top: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(16, 185, 129, 0.95);
+  color: #fff;
+  padding: 10px 24px;
+  border-radius: 30px;
+  font-weight: bold;
+  font-size: 0.95rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  z-index: 50;
+  animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translate(-50%, -10px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+/* Modal */
+.shape-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.shape-modal-card {
+  background: #0d1117;
+  border: 1px solid rgba(250, 204, 21, 0.3);
+  border-radius: 20px;
+  width: min(650px, 95vw);
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 30px rgba(250, 204, 21, 0.15);
+}
+
+.shape-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.shape-modal-header h2 {
+  font-size: 1.3rem;
+  color: #f8fafc;
+}
+
+.shape-close-btn {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.shape-close-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.shape-modal-body {
+  padding: 16px 24px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.shape-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.shape-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.9rem;
+}
+
+.shape-table th {
+  color: #94a3b8;
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  font-weight: 500;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+}
+
+.shape-table td {
+  padding: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  color: #e2e8f0;
+}
+
+.highlight-row {
+  background: rgba(250, 204, 21, 0.08);
+}
+
+.rank-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-weight: bold;
+  font-size: 0.8rem;
+  color: #94a3b8;
+}
+
+.rank-badge.gold {
+  color: #fbbf24;
+  background: rgba(251, 191, 36, 0.15);
+}
+
+.rank-badge.silver {
+  color: #cbd5e1;
+  background: rgba(203, 213, 225, 0.15);
+}
+
+.rank-badge.bronze {
+  color: #d97706;
+  background: rgba(217, 119, 6, 0.15);
+}
+
+.shape-modal-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.4);
+}
+
 @media (max-width: 640px) {
   .hud {
     padding: 10px;

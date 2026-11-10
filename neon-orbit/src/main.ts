@@ -680,6 +680,8 @@ function draw() {
 async function startGame() {
   mainMenu.classList.remove('active');
   gameOverMenu.classList.remove('active');
+  if (neonRankAlert) neonRankAlert.innerText = '';
+  requestNeonChallenge();
   
   // Reset state
   isInfiniteMode = infiniteModeCheckbox.checked;
@@ -730,6 +732,7 @@ function gameOver() {
   cancelAnimationFrame(animationId);
   finalScoreEl.innerText = score.toString();
   gameOverMenu.classList.add('active');
+  submitNeonScore(score);
   
   // Final big explosion
   particles.push(...createExplosion(core.position.x, core.position.y, core.color, 100));
@@ -774,6 +777,82 @@ function updateUI() {
 // Event Listeners
 startBtn.addEventListener('click', startGame);
 restartBtn.addEventListener('click', startGame);
+
+// --- Global Leaderboard Integration ---
+let neonChallenge: any = null;
+const neonLbModal = document.getElementById('neon-leaderboard-modal');
+const neonLbContent = document.getElementById('neon-lb-content');
+const neonCloseLb = document.getElementById('neon-close-lb');
+const neonOpenLbMain = document.getElementById('neon-open-lb-main');
+const neonOpenLbOver = document.getElementById('neon-open-lb-over');
+const neonRankAlert = document.getElementById('neon-rank-alert');
+
+async function requestNeonChallenge() {
+  try {
+    const res = await fetch('/api/leaderboard/start', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ gameId: 'neon-orbit' })
+    });
+    const data = await res.json();
+    if (data && data.success) {
+      neonChallenge = data.challenge;
+    }
+  } catch (e) {}
+}
+
+async function submitNeonScore(finalScore: number) {
+  if (finalScore <= 0) return;
+  try {
+    const res = await fetch('/api/leaderboard/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        gameId: 'neon-orbit',
+        score: finalScore,
+        challenge: neonChallenge,
+        details: { blocks: totalBlocksMined, kills: totalEigenvalueCollapses }
+      })
+    });
+    const data = await res.json();
+    if (data && data.success && neonRankAlert) {
+      neonRankAlert.innerText = `🚀 Score saved to Global Leaderboard! Rank #${data.rank || 1}`;
+    }
+  } catch (e) {}
+}
+
+async function openNeonLeaderboard() {
+  if (!neonLbModal || !neonLbContent) return;
+  neonLbModal.style.display = 'flex';
+  neonLbContent.innerHTML = '<p style="text-align:center; padding:20px; color:#94a3b8;">Loading standings...</p>';
+
+  try {
+    const res = await fetch('/api/leaderboard/neon-orbit?limit=25');
+    const data = await res.json();
+    if (!data || !data.success || !Array.isArray(data.leaderboard) || data.leaderboard.length === 0) {
+      neonLbContent.innerHTML = '<p style="text-align:center; padding:20px; color:#94a3b8;">No scores recorded yet!</p>';
+      return;
+    }
+
+    let html = '<table style="width:100%; border-collapse:collapse; text-align:left;">';
+    html += '<tr style="color:#a5f3fc; border-bottom:1px solid rgba(0,243,255,0.3); font-size:0.75rem;"><th>RANK</th><th>PILOT</th><th style="text-align:right;">SCORE</th></tr>';
+    data.leaderboard.forEach((entry: any) => {
+      html += `<tr style="border-bottom:1px solid rgba(255,255,255,0.06); padding:6px 0;">
+        <td style="padding:8px 4px; font-weight:bold; color:var(--neon-pink);">#${entry.rank}</td>
+        <td style="padding:8px 4px;">${entry.username} ${entry.isVerified ? '<span style="color:#22c55e;">✓</span>' : ''}</td>
+        <td style="padding:8px 4px; text-align:right; font-weight:bold; color:var(--neon-blue);">${entry.score.toLocaleString()}</td>
+      </tr>`;
+    });
+    html += '</table>';
+    neonLbContent.innerHTML = html;
+  } catch (e) {
+    neonLbContent.innerHTML = '<p style="text-align:center; color:#ef4444;">Failed to load leaderboard.</p>';
+  }
+}
+
+if (neonOpenLbMain) neonOpenLbMain.addEventListener('click', openNeonLeaderboard);
+if (neonOpenLbOver) neonOpenLbOver.addEventListener('click', openNeonLeaderboard);
+if (neonCloseLb && neonLbModal) neonCloseLb.addEventListener('click', () => { neonLbModal.style.display = 'none'; });
 
 // Start initial draw to clear screen
 core = new Core(canvas.width / 2, canvas.height / 2);

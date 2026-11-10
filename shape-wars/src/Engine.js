@@ -199,6 +199,7 @@ export class GameEngine {
     
     this.blueDeaths = 0;
     this.redDeaths = 0;
+    this.totalCasualties = 0;
     
     this.synth = window.speechSynthesis;
     this.lastAnnouncement = 0;
@@ -289,6 +290,7 @@ export class GameEngine {
         const w = words[Math.floor(Math.random() * words.length)];
         this.texts.push(new FloatingText(u.x, u.y, w, "#fff", 100, 16));
         
+        this.totalCasualties++;
         if (u.team === 'blue') this.blueDeaths++;
         else this.redDeaths++;
         

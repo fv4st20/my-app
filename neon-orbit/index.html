@@ -55,13 +55,25 @@
             Infinite Mode</label>
         </div>
         <button id="start-btn" class="neon-btn">START GAME</button>
+        <button id="neon-open-lb-main" class="neon-btn" style="margin-top: 10px; background: rgba(0, 243, 255, 0.15); border-color: var(--neon-blue);">🏆 LEADERBOARD</button>
       </div>
 
       <!-- Game Over Menu -->
       <div id="game-over-menu" class="glass-panel">
         <h1 class="glow-text error">SYSTEM FAILURE</h1>
         <p>Final Score: <span id="final-score">0</span></p>
-        <button id="restart-btn" class="neon-btn">REBOOT</button>
+        <p id="neon-rank-alert" style="color: var(--neon-blue); font-size: 0.9rem; margin-top: 8px;"></p>
+        <button id="restart-btn" class="neon-btn" style="margin-top: 12px;">REBOOT</button>
+        <button id="neon-open-lb-over" class="neon-btn" style="margin-top: 8px; background: rgba(0, 243, 255, 0.15); border-color: var(--neon-blue);">🏆 LEADERBOARD</button>
+      </div>
+
+      <!-- Global Leaderboard Modal -->
+      <div id="neon-leaderboard-modal" class="glass-panel" style="display:none; width: 92%; max-width: 460px; max-height: 80vh; overflow:hidden; flex-direction:column; z-index: 1000; pointer-events:auto;">
+        <h2 class="glow-text" style="font-size: 1.2rem; margin-bottom: 12px; color: var(--neon-blue);">🏆 NEON ORBIT HALL OF FAME</h2>
+        <div id="neon-lb-content" style="flex:1; overflow-y:auto; width:100%; max-height: 48vh; font-size: 0.85rem; margin-bottom: 14px;">
+          Loading records...
+        </div>
+        <button id="neon-close-lb" class="neon-btn" style="width:100%;">CLOSE</button>
       </div>
     </div>
   </div>

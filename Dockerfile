@@ -26,6 +26,10 @@ COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/package.json ./
 COPY --from=build /app/server.js ./
 COPY --from=build /app/security.js ./
+COPY --from=build /app/database.js ./
+
+# Ensure persistent data directory exists
+RUN mkdir -p /app/data
 
 # Copy the static dashboard
 COPY --from=build /app/dashboard ./dashboard

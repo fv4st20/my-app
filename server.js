@@ -1,6 +1,7 @@
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { db } from './database.js';
 import {
   parseCookies,
   verifyClearanceToken,
@@ -19,12 +20,233 @@ const DOMAIN = process.env.DOMAIN ? process.env.DOMAIN.trim() : '';
 // Trust first proxy (Nginx / Cloudflare / Docker bridge) for accurate protocol & client IP
 app.set('trust proxy', 1);
 
-// JSON body parser for security API requests
-app.use(express.json());
+// JSON body parser with strict size limit to mitigate large payload DoS attacks
+app.use(express.json({ limit: '10kb' }));
+
+// Anti-DDoS and Brute-Force Rate Limiting Store
+const ipRateLimits = new Map();
+
+function checkRateLimit(ip, action, maxAttempts, windowMs, lockMs = 0) {
+  const key = `${ip}:${action}`;
+  const now = Date.now();
+  let record = ipRateLimits.get(key);
+
+  if (record && record.lockedUntil && now < record.lockedUntil) {
+    const waitSec = Math.ceil((record.lockedUntil - now) / 1000);
+    return { allowed: false, retryAfter: waitSec, message: `Security trigger: Rate limit exceeded. Locked for ${waitSec}s.` };
+  }
+
+  if (!record || now > record.resetTime) {
+    record = { count: 1, resetTime: now + windowMs, lockedUntil: 0 };
+    ipRateLimits.set(key, record);
+    return { allowed: true };
+  }
+
+  record.count++;
+  if (record.count > maxAttempts) {
+    if (lockMs > 0) {
+      record.lockedUntil = now + lockMs;
+      const waitSec = Math.ceil(lockMs / 1000);
+      return { allowed: false, retryAfter: waitSec, message: `Security trigger: Rate limit exceeded. Locked for ${waitSec}s.` };
+    }
+    return { allowed: false, retryAfter: Math.ceil((record.resetTime - now) / 1000), message: 'Too many requests. Please slow down.' };
+  }
+
+  return { allowed: true };
+}
+
+// Extract authenticated user from cookie or Bearer token
+function getAuthUser(req) {
+  const cookies = parseCookies(req);
+  let token = cookies['astra_session'];
+  if (!token && req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
+    token = req.headers.authorization.slice(7).trim();
+  }
+  if (!token) return null;
+  return db.getUserFromToken(token);
+}
 
 // Health check endpoint for Docker & uptime monitoring
 app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'healthy', uptime: process.uptime() });
+  res.status(200).json({ status: 'healthy', uptime: process.uptime(), ...db.getGlobalStats() });
+});
+
+// --- User Authentication API Endpoints ---
+
+// Register new user account
+app.post('/api/auth/register', (req, res) => {
+  const clientIp = req.ip || req.socket.remoteAddress || 'unknown';
+  const limitCheck = checkRateLimit(clientIp, 'auth_reg', 6, 10 * 60 * 1000, 15 * 60 * 1000);
+  if (!limitCheck.allowed) {
+    return res.status(429).json({ success: false, reason: limitCheck.message });
+  }
+
+  const { username, password } = req.body || {};
+  try {
+    const user = db.createUser(username, password);
+    const auth = db.authenticate(username, password);
+
+    res.setHeader(
+      'Set-Cookie',
+      `astra_session=${auth.token}; Path=/; Max-Age=${30 * 24 * 3600}; SameSite=Lax`
+    );
+
+    return res.status(201).json({
+      success: true,
+      message: 'Account registered successfully!',
+      user: auth.user,
+      token: auth.token
+    });
+  } catch (err) {
+    return res.status(400).json({ success: false, reason: err.message || 'Registration failed.' });
+  }
+});
+
+// Login to user account
+app.post('/api/auth/login', (req, res) => {
+  const clientIp = req.ip || req.socket.remoteAddress || 'unknown';
+  const limitCheck = checkRateLimit(clientIp, 'auth_login', 8, 5 * 60 * 1000, 15 * 60 * 1000);
+  if (!limitCheck.allowed) {
+    return res.status(429).json({ success: false, reason: limitCheck.message });
+  }
+
+  const { username, password } = req.body || {};
+  if (!username || !password) {
+    return res.status(400).json({ success: false, reason: 'Username and password are required.' });
+  }
+
+  const auth = db.authenticate(username, password);
+  if (!auth.success) {
+    return res.status(400).json({ success: false, reason: auth.reason });
+  }
+
+  // Clear failed rate limit on success
+  ipRateLimits.delete(`${clientIp}:auth_login`);
+
+  res.setHeader(
+    'Set-Cookie',
+    `astra_session=${auth.token}; Path=/; Max-Age=${30 * 24 * 3600}; SameSite=Lax`
+  );
+
+  return res.status(200).json({
+    success: true,
+    message: 'Login successful!',
+    user: auth.user,
+    token: auth.token
+  });
+});
+
+// Log out user
+app.post('/api/auth/logout', (req, res) => {
+  const cookies = parseCookies(req);
+  const token = cookies['astra_session'];
+  if (token) {
+    db.destroySession(token);
+  }
+  res.setHeader('Set-Cookie', 'astra_session=; Path=/; Max-Age=0; SameSite=Lax');
+  return res.status(200).json({ success: true, message: 'Logged out successfully.' });
+});
+
+// Current User Info
+app.get('/api/auth/me', (req, res) => {
+  const user = getAuthUser(req);
+  return res.status(200).json({
+    success: true,
+    authenticated: !!user,
+    user: user || null
+  });
+});
+
+// --- Global Leaderboard API Endpoints ---
+
+// Get Leaderboard for a game
+app.get('/api/leaderboard/:gameId', (req, res) => {
+  const { gameId } = req.params;
+  const validGames = ['alien-echo', 'neon-orbit', 'pirate-fishing', 'sonic-soccer', 'shape-wars'];
+  if (!validGames.includes(gameId)) {
+    return res.status(400).json({ success: false, reason: 'Unknown game ID.' });
+  }
+
+  const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 50));
+  const leaderboard = db.getLeaderboard(gameId, limit);
+
+  return res.status(200).json({
+    success: true,
+    gameId,
+    leaderboard
+  });
+});
+
+// Request Anti-Cheat Game Challenge Token
+app.post('/api/leaderboard/start', (req, res) => {
+  const { gameId } = req.body || {};
+  const validGames = ['alien-echo', 'neon-orbit', 'pirate-fishing', 'sonic-soccer', 'shape-wars'];
+  if (!validGames.includes(gameId)) {
+    return res.status(400).json({ success: false, reason: 'Unknown game ID.' });
+  }
+
+  const challenge = db.createGameChallenge(gameId);
+  return res.status(200).json({
+    success: true,
+    challenge
+  });
+});
+
+// Submit Score to Global Leaderboard
+app.post('/api/leaderboard/submit', (req, res) => {
+  const clientIp = req.ip || req.socket.remoteAddress || 'unknown';
+  const limitCheck = checkRateLimit(clientIp, 'score_submit', 15, 60 * 1000);
+  if (!limitCheck.allowed) {
+    return res.status(429).json({ success: false, reason: limitCheck.message });
+  }
+
+  const { gameId, score, username, challenge, details } = req.body || {};
+
+  // Verify anti-cheat challenge if provided
+  let isVerified = false;
+  if (challenge) {
+    const verify = db.verifyGameChallenge(gameId, challenge.startedAt, challenge.nonce, challenge.sig, score);
+    if (!verify.valid) {
+      return res.status(400).json({ success: false, reason: verify.reason });
+    }
+    isVerified = true;
+  }
+
+  const user = getAuthUser(req);
+  let finalUsername = user ? user.username : (username || 'Guest');
+  let userId = user ? user.id : null;
+
+  try {
+    const entry = db.recordScore({
+      gameId,
+      score,
+      username: finalUsername,
+      userId,
+      details: details || {},
+      isVerified
+    });
+
+    const updatedLeaderboard = db.getLeaderboard(gameId, 50);
+    const playerRank = updatedLeaderboard.findIndex(s => s.id === entry.id) + 1;
+
+    return res.status(200).json({
+      success: true,
+      message: 'Score submitted to Global Leaderboard!',
+      entry,
+      rank: playerRank > 0 ? playerRank : null,
+      isRegistered: !!user
+    });
+  } catch (err) {
+    return res.status(400).json({ success: false, reason: err.message || 'Failed to submit score.' });
+  }
+});
+
+// Global Stats Overview
+app.get('/api/leaderboard/stats/overview', (req, res) => {
+  return res.status(200).json({
+    success: true,
+    ...db.getGlobalStats()
+  });
 });
 
 // --- Security Gateway API Endpoints ---
