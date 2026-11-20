@@ -1,4 +1,5 @@
 import fs from 'fs';
+import crypto from 'crypto';
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -22,6 +23,46 @@ const PORT = Number(process.env.PORT) || 3000;
 const BIND_HOST = process.env.BIND_HOST ? process.env.BIND_HOST.trim() : '0.0.0.0';
 const DOMAIN = process.env.DOMAIN ? process.env.DOMAIN.trim() : '';
 
+function normalizeOnionHost(raw) {
+  if (!raw || typeof raw !== 'string') return '';
+  const trimmed = raw.trim();
+  if (!trimmed) return '';
+  try {
+    const parsed = trimmed.includes('://') ? new URL(trimmed) : new URL(`http://${trimmed}`);
+    if (
+      parsed.username ||
+      parsed.password ||
+      (parsed.pathname && parsed.pathname !== '/') ||
+      parsed.search ||
+      parsed.hash
+    ) {
+      return '';
+    }
+    const host = parsed.host.toLowerCase();
+    if (!/^[a-z0-9-]+(?:\.[a-z0-9-]+)*\.onion(?::\d{1,5})?$/i.test(host)) {
+      return '';
+    }
+    return host;
+  } catch {
+    return '';
+  }
+}
+
+const ONION_DOMAIN = normalizeOnionHost(process.env.ONION_DOMAIN || '');
+
+function getConfiguredOnionHost() {
+  const envVal = process.env.ONION_DOMAIN;
+  if (typeof envVal === 'string') {
+    return normalizeOnionHost(envVal);
+  }
+  return ONION_DOMAIN;
+}
+
+export function isOnionRequest(req) {
+  const host = String(req?.headers?.host || '').trim();
+  return /^[a-z0-9-]+(?:\.[a-z0-9-]+)*\.onion(?::\d{1,5})?$/i.test(host) && /\.onion(?::\d+)?$/i.test(host);
+}
+
 // Disable Express fingerprinting header
 app.disable('x-powered-by');
 
@@ -44,6 +85,8 @@ const SUB_APPS = Object.freeze([
 const protectedAppPrefixes = SUB_APPS.map(a => a.prefix);
 
 function isSecureRequest(req) {
+  if (req.socket?.encrypted) return true;
+  if (isOnionRequest(req)) return false;
   if (req.secure) return true;
   const proto = req.headers['x-forwarded-proto'];
   if (typeof proto === 'string' && proto.split(',')[0].trim().toLowerCase() === 'https') {
@@ -109,6 +152,37 @@ app.use((req, res, next) => {
     return res.status(400).json({ success: false, reason: 'Malformed request path.' });
   }
 
+  // Advertise Tor v3 `.onion` mirror on clearnet HTTPS HTML responses (Tor Browser `.onion available` badge)
+  const cleanOnionHost = getConfiguredOnionHost();
+  if (cleanOnionHost && !isOnionRequest(req) && isSecureRequest(req)) {
+    const method = req.method.toUpperCase();
+    if (method === 'GET' || method === 'HEAD') {
+      const safeOnionPath = sanitizeRedirectPath(req.originalUrl || '/');
+      if (safeOnionPath) {
+        const origWriteHead = res.writeHead;
+        res.writeHead = function patchedWriteHead(statusCode, statusMessage, headers) {
+          const code = Number(statusCode || res.statusCode || 200);
+          const hdrObj = typeof statusMessage === 'object' && statusMessage !== null ? statusMessage : headers;
+          const ct = String(
+            res.getHeader('Content-Type') ||
+            hdrObj?.['Content-Type'] ||
+            hdrObj?.['content-type'] ||
+            ''
+          ).toLowerCase();
+          if (
+            !res.headersSent &&
+            (code < 300 || code >= 400) &&
+            ct.includes('text/html') &&
+            !res.getHeader('Onion-Location')
+          ) {
+            res.setHeader('Onion-Location', `http://${cleanOnionHost}${safeOnionPath}`);
+          }
+          return origWriteHead.apply(this, arguments);
+        };
+      }
+    }
+  }
+
   next();
 });
 
@@ -139,9 +213,18 @@ function pruneRateLimits(now = Date.now()) {
     }
   }
   while (ipRateLimits.size >= MAX_RATE_LIMIT_ENTRIES) {
-    const oldestKey = ipRateLimits.keys().next().value;
-    if (oldestKey === undefined) break;
-    ipRateLimits.delete(oldestKey);
+    let victimKey;
+    for (const [key, record] of ipRateLimits.entries()) {
+      if (!record.lockedUntil || now >= record.lockedUntil) {
+        victimKey = key;
+        break;
+      }
+    }
+    if (victimKey === undefined) {
+      victimKey = ipRateLimits.keys().next().value;
+    }
+    if (victimKey === undefined) break;
+    ipRateLimits.delete(victimKey);
   }
 }
 
@@ -154,6 +237,49 @@ if (typeof rateLimitCleanupTimer.unref === 'function') {
 
 function getClientIp(req) {
   return String(req.ip || req.socket?.remoteAddress || 'unknown').slice(0, 64);
+}
+
+// Aggregate flood caps for unauthenticated `.onion` traffic (shared Tor container IP).
+// Never set `lockMs > 0` on `onion_anon`, otherwise one troll could lock out every Tor visitor worldwide.
+const ONION_ANON_LIMITS = Object.freeze({
+  api_global: { maxAttempts: 1200, windowMs: 60 * 1000, lockMs: 0 },
+  auth_reg: { maxAttempts: 20, windowMs: 10 * 60 * 1000, lockMs: 0 },
+  auth_logout: { maxAttempts: 60, windowMs: 60 * 1000, lockMs: 0 },
+  auth_pw_change: { maxAttempts: 30, windowMs: 60 * 1000, lockMs: 0 },
+  auth_delete: { maxAttempts: 30, windowMs: 60 * 1000, lockMs: 0 },
+  lb_start: { maxAttempts: 120, windowMs: 60 * 1000, lockMs: 0 },
+  score_submit: { maxAttempts: 60, windowMs: 60 * 1000, lockMs: 0 },
+  sec_challenge: { maxAttempts: 180, windowMs: 60 * 1000, lockMs: 0 },
+  sec_verify_puzzle: { maxAttempts: 120, windowMs: 5 * 60 * 1000, lockMs: 0 },
+  sec_verify_code: { maxAttempts: 120, windowMs: 5 * 60 * 1000, lockMs: 0 },
+  sec_clear: { maxAttempts: 60, windowMs: 60 * 1000, lockMs: 0 }
+});
+
+function hashTokenPrefix(token) {
+  return crypto.createHash('sha256').update(token).digest('hex').slice(0, 16);
+}
+
+function getOnionRateLimitIdentity(req) {
+  if (req._onionRateIdentity) return req._onionRateIdentity;
+
+  const cookies = parseCookies(req);
+  let sessionToken = cookies['astra_session'];
+  if (!sessionToken && typeof req.headers.authorization === 'string' && req.headers.authorization.startsWith('Bearer ')) {
+    sessionToken = req.headers.authorization.slice(7).trim();
+  }
+  if (sessionToken && db.getUserFromToken(sessionToken)) {
+    req._onionRateIdentity = { key: `onion_sess:${hashTokenPrefix(sessionToken)}`, scoped: true };
+    return req._onionRateIdentity;
+  }
+
+  const clearanceToken = cookies['z340_clearance'];
+  if (clearanceToken && verifyClearanceToken(clearanceToken)) {
+    req._onionRateIdentity = { key: `onion_clr:${hashTokenPrefix(clearanceToken)}`, scoped: true };
+    return req._onionRateIdentity;
+  }
+
+  req._onionRateIdentity = { key: 'onion_anon', scoped: false };
+  return req._onionRateIdentity;
 }
 
 function checkRateLimit(ip, action, maxAttempts, windowMs, lockMs = 0) {
@@ -201,15 +327,57 @@ function checkRateLimit(ip, action, maxAttempts, windowMs, lockMs = 0) {
   return { allowed: true };
 }
 
+function sendRateLimitExceeded(res, check) {
+  res.setHeader('Retry-After', String(check.retryAfter));
+  res.status(429).json({
+    success: false,
+    reason: check.message,
+    retryAfter: check.retryAfter
+  });
+}
+
 function enforceRateLimit(req, res, action, maxAttempts, windowMs, lockMs = 0) {
-  const check = checkRateLimit(getClientIp(req), action, maxAttempts, windowMs, lockMs);
+  if (!isOnionRequest(req)) {
+    const check = checkRateLimit(getClientIp(req), action, maxAttempts, windowMs, lockMs);
+    if (!check.allowed) {
+      sendRateLimitExceeded(res, check);
+      return false;
+    }
+    return true;
+  }
+
+  const identity = getOnionRateLimitIdentity(req);
+  if (identity.scoped) {
+    if (action === 'auth_reg') {
+      const aggCheck = checkRateLimit(
+        'onion_anon',
+        'auth_reg',
+        ONION_ANON_LIMITS.auth_reg.maxAttempts,
+        ONION_ANON_LIMITS.auth_reg.windowMs,
+        0
+      );
+      if (!aggCheck.allowed) {
+        sendRateLimitExceeded(res, aggCheck);
+        return false;
+      }
+    }
+    const scopedLockMs = action === 'auth_pw_change' ? lockMs : 0;
+    const check = checkRateLimit(identity.key, action, maxAttempts, windowMs, scopedLockMs);
+    if (!check.allowed) {
+      sendRateLimitExceeded(res, check);
+      return false;
+    }
+    return true;
+  }
+
+  const anonCfg = ONION_ANON_LIMITS[action] || {
+    maxAttempts: Math.max(maxAttempts * 4, 60),
+    windowMs,
+    lockMs: 0
+  };
+  const check = checkRateLimit('onion_anon', action, anonCfg.maxAttempts, anonCfg.windowMs, 0);
   if (!check.allowed) {
-    res.setHeader('Retry-After', String(check.retryAfter));
-    res.status(429).json({
-      success: false,
-      reason: check.message,
-      retryAfter: check.retryAfter
-    });
+    sendRateLimitExceeded(res, check);
     return false;
   }
   return true;
@@ -225,9 +393,11 @@ const BODY_OPTIONAL_ROUTES = new Set([
 
 function getAllowedHosts(req) {
   const hosts = new Set();
-  const forwardedHost = req.headers['x-forwarded-host'];
-  if (typeof forwardedHost === 'string' && forwardedHost.trim()) {
-    hosts.add(forwardedHost.split(',')[0].trim().toLowerCase());
+  if (!isOnionRequest(req)) {
+    const forwardedHost = req.headers['x-forwarded-host'];
+    if (typeof forwardedHost === 'string' && forwardedHost.trim()) {
+      hosts.add(forwardedHost.split(',')[0].trim().toLowerCase());
+    }
   }
   const reqHost = req.headers.host;
   if (typeof reqHost === 'string' && reqHost.trim()) {
@@ -240,6 +410,10 @@ function getAllowedHosts(req) {
     } catch {
       // Ignore invalid DOMAIN format
     }
+  }
+  const cleanOnionHost = getConfiguredOnionHost();
+  if (cleanOnionHost) {
+    hosts.add(cleanOnionHost);
   }
   return hosts;
 }
@@ -368,12 +542,39 @@ app.post('/api/auth/register', (req, res) => {
 });
 
 app.post('/api/auth/login', (req, res) => {
+  const onion = isOnionRequest(req);
   const clientIp = getClientIp(req);
-  if (!enforceRateLimit(req, res, 'auth_login', 8, 5 * 60 * 1000, 15 * 60 * 1000)) return;
+
+  if (!onion) {
+    if (!enforceRateLimit(req, res, 'auth_login', 8, 5 * 60 * 1000, 15 * 60 * 1000)) return;
+  } else {
+    // Bound overall .onion login rate without locking out the shared Tor container IP
+    const floodCheck = checkRateLimit('onion_anon', 'auth_login_flood', 120, 60 * 1000, 0);
+    if (!floodCheck.allowed) {
+      sendRateLimitExceeded(res, floodCheck);
+      return;
+    }
+  }
 
   const { username, password } = req.body || {};
   if (typeof username !== 'string' || typeof password !== 'string' || !username.trim() || !password) {
     return res.status(400).json({ success: false, reason: 'Username and password are required.' });
+  }
+
+  const normalizedUsername = username.trim().toLowerCase().slice(0, 64);
+  if (onion) {
+    // Protect individual accounts against password brute-forcing over Tor without locking out other users
+    const userCheck = checkRateLimit(
+      `onion_user:${normalizedUsername}`,
+      'auth_login',
+      8,
+      5 * 60 * 1000,
+      15 * 60 * 1000
+    );
+    if (!userCheck.allowed) {
+      sendRateLimitExceeded(res, userCheck);
+      return;
+    }
   }
 
   const auth = db.authenticate(username, password);
@@ -381,7 +582,11 @@ app.post('/api/auth/login', (req, res) => {
     return res.status(400).json({ success: false, reason: auth.reason });
   }
 
-  ipRateLimits.delete(`${clientIp}:auth_login`);
+  if (onion) {
+    ipRateLimits.delete(`onion_user:${normalizedUsername}:auth_login`);
+  } else {
+    ipRateLimits.delete(`${clientIp}:auth_login`);
+  }
   res.setHeader('Set-Cookie', buildCookieHeader(req, 'astra_session', auth.token, 30 * 24 * 3600));
 
   return res.status(200).json({
@@ -728,6 +933,10 @@ export function startServer(port = PORT, host = BIND_HOST) {
     console.log(`🚀 Swiss Knife Server running at http://${host}:${boundPort}`);
     if (DOMAIN && DOMAIN !== 'yourdomain.com') {
       console.log(`🌐 Public Domain: ${publicBase}`);
+    }
+    const cleanOnion = getConfiguredOnionHost();
+    if (cleanOnion) {
+      console.log(`🧅 Tor Onion Service: http://${cleanOnion}`);
     }
     console.log(`- Dashboard:      ${publicBase}/`);
     for (const subApp of SUB_APPS) {

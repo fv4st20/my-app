@@ -6,17 +6,11 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: swiss-knife-hub
-    # Run as non-root `node` user (UID 1000 / GID 1000 in node:22-alpine)
     user: "1000:1000"
     restart: unless-stopped
     stop_grace_period: 15s
-
-    # Resource & fork-bomb safety bounds
     mem_limit: 512m
     pids_limit: 128
-
-    # Container security hardening: drop all Linux capabilities, prevent privilege escalation,
-    # and mount root filesystem read-only (only /app/data and /tmp are writable)
     cap_drop:
       - ALL
     security_opt:
@@ -24,50 +18,65 @@ services:
     read_only: true
     tmpfs:
       - /tmp:size=64m,mode=1777,nosuid,nodev
-
     ports:
-      # Bind to 127.0.0.1 by default so Docker's iptables rules do NOT expose port 3000
-      # publicly around UFW or host reverse proxies (Nginx / Caddy).
-      # Set BIND_HOST=0.0.0.0 in .env only for direct LAN testing without a reverse proxy.
       - "${BIND_HOST:-127.0.0.1}:${PORT:-3000}:3000"
-
     env_file:
       - path: .env
         required: false
-
     environment:
       - NODE_ENV=${NODE_ENV:-production}
       - PORT=3000
       - DOMAIN=${DOMAIN:-}
+      - ONION_DOMAIN=${ONION_DOMAIN:-}
       - DB_PATH=${DB_PATH:-/app/data/hub_db.json}
-      # Cryptographic secret used by security.js, database.js, and quantumCrypto.js.
-      # MUST be set in production .env (generate with: openssl rand -hex 32).
       - SECURITY_SECRET=${SECURITY_SECRET:-}
-
     volumes:
-      # Named volume automatically inherits `node:node` (1000:1000) ownership from the image.
-      # If switching to a host bind mount (`./data:/app/data`), run `mkdir -p data && sudo chown -R 1000:1000 data` first.
       - hub_data:/app/data
+    networks:
+      - tor_net
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: [ "CMD", "node", "-e", "fetch('http://127.0.0.1:3000/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))" ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
 
-    # Bounded log rotation for disk safety & GDPR log-retention minimization (max 30 MB total)
+  # Tor v3 Hidden Service (.onion)
+  # Retrieve the generated v3 .onion hostname once containers are healthy:
+  #   docker exec swiss-knife-tor cat /var/lib/tor/hidden_service/hub/hostname
+  # IMPORTANT: Back up the `tor_keys` volume to keep the same .onion address across server migrations.
+  tor:
+    image: goldy/tor-hidden-service:latest
+    container_name: swiss-knife-tor
+    restart: unless-stopped
+    mem_limit: 128m
+    pids_limit: 64
+    environment:
+      # Maps external port 80 on your .onion address to swiss-knife-hub:3000
+      HUB_TOR_SERVICE_HOSTS: 80:swiss-knife-hub:3000
+      HUB_TOR_SERVICE_VERSION: "3"
+    volumes:
+      - tor_keys:/var/lib/tor/hidden_service/
+    networks:
+      - tor_net
+    depends_on:
+      swiss-knife-hub:
+        condition: service_healthy
     logging:
       driver: json-file
       options:
         max-size: "10m"
         max-file: "3"
 
-    healthcheck:
-      test:
-        [
-          "CMD",
-          "node",
-          "-e",
-          "fetch('http://127.0.0.1:3000/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
-        ]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 15s
-
 volumes:
   hub_data:
+  tor_keys:
+
+networks:
+  tor_net:
+    driver: bridge
