@@ -26,6 +26,7 @@ services:
     environment:
       - NODE_ENV=${NODE_ENV:-production}
       - PORT=3000
+      - BIND_HOST=0.0.0.0
       - DOMAIN=${DOMAIN:-}
       - ONION_DOMAIN=${ONION_DOMAIN:-}
       - DB_PATH=${DB_PATH:-/app/data/hub_db.json}

@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo } from 'react';
-import { MapContainer, TileLayer, Marker, useMapEvents, useMap, LayersControl } from 'react-leaflet';
+import { MapContainer, TileLayer, LayerGroup, Marker, useMapEvents, useMap, LayersControl } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
+import '../App.css';
 import L from 'leaflet';
 
 // Self-contained SVG marker data URL — works offline and avoids third-party CDN leaks
@@ -85,15 +86,33 @@ const Map2D = ({ latitude, longitude, onLocationChange }) => {
         <MapResizeHandler />
         <LayersControl position="topright">
           <LayersControl.BaseLayer checked name="Dark Mode">
+            <LayerGroup>
+              <TileLayer
+                attribution="&copy; Esri, HERE, Garmin, OpenStreetMap"
+                url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}"
+                maxNativeZoom={16}
+                maxZoom={19}
+              />
+              <TileLayer
+                url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}"
+                maxNativeZoom={16}
+                maxZoom={19}
+              />
+            </LayerGroup>
+          </LayersControl.BaseLayer>
+          <LayersControl.BaseLayer name="Dark Streets (OSM)">
             <TileLayer
-              attribution="&copy; OpenStreetMap &copy; CARTO"
-              url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+              attribution="&copy; OpenStreetMap"
+              url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+              className="osm-dark-tiles"
+              maxZoom={19}
             />
           </LayersControl.BaseLayer>
           <LayersControl.BaseLayer name="Standard">
             <TileLayer
               attribution="&copy; OpenStreetMap"
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+              maxZoom={19}
             />
           </LayersControl.BaseLayer>
           <LayersControl.BaseLayer name="Satellite">
