@@ -5,6 +5,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport"
     content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <title>Neon Orbit</title>
 </head>
 
@@ -14,9 +15,10 @@
 
     <!-- UI Overlay -->
     <div id="ui-layer">
-      <a href="/" class="neon-btn hub-btn"
-        style="position: absolute; top: 15px; right: 15px; font-size: 0.85rem; padding: 8px 16px; z-index: 1000; pointer-events: auto; text-decoration: none;">←
-        HUB</a>
+      <div class="top-right-actions">
+        <button id="neon-mute-btn" class="neon-btn hub-btn" type="button" aria-label="Toggle Sound">🔊 SFX</button>
+        <a href="/" class="neon-btn hub-btn" style="text-decoration: none;">← HUB</a>
+      </div>
 
       <!-- On-Screen Mobile Controls -->
       <div id="mobile-orbit-controls" class="mobile-controls-cluster">
@@ -65,6 +67,7 @@
         <p id="neon-rank-alert" style="color: var(--neon-blue); font-size: 0.9rem; margin-top: 8px;"></p>
         <button id="restart-btn" class="neon-btn" style="margin-top: 12px;">REBOOT</button>
         <button id="neon-open-lb-over" class="neon-btn" style="margin-top: 8px; background: rgba(0, 243, 255, 0.15); border-color: var(--neon-blue);">🏆 LEADERBOARD</button>
+        <button id="download-logs-btn" class="neon-btn" type="button" style="margin-top: 6px; font-size: 0.85rem; padding: 10px 22px; opacity: 0.85;">📄 EXPORT SESSION LOGS</button>
       </div>
 
       <!-- Global Leaderboard Modal -->

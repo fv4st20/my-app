@@ -1,100 +1,266 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+
+const CHEMICALS = [
+  { id: 'water', name: 'Water (H₂O)', icon: '💧' },
+  { id: 'sodium', name: 'Sodium Metal (Na)', icon: '🧊' },
+  { id: 'hcl', name: 'Hydrochloric Acid (HCl)', icon: '🧪' },
+  { id: 'naoh', name: 'Sodium Hydroxide (NaOH)', icon: '🧪' },
+  { id: 'coke', name: 'Diet Coke (Carbonated Acidic)', icon: '🥤' },
+  { id: 'mentos', name: 'Mentos Candy', icon: '🍬' },
+  { id: 'bleach', name: 'Household Bleach (NaClO)', icon: '🧴' },
+  { id: 'ammonia', name: 'Ammonia Solution (NH₃)', icon: '🧴' }
+];
+
+function computeReaction(a, b) {
+  if (a === b) {
+    const chem = CHEMICALS.find((c) => c.id === a);
+    return {
+      title: 'Same Substance (No Reaction)',
+      desc: `Combining ${chem ? chem.name : a} with itself simply increases total volume with no chemical change.`,
+      type: 'neutral',
+      eq: 'No net chemical reaction'
+    };
+  }
+
+  const pair = [a, b].sort().join('+');
+
+  switch (pair) {
+    case 'sodium+water':
+      return {
+        title: 'Violent Exothermic Reaction!',
+        desc: 'Metallic sodium reacts rapidly with water to produce corrosive sodium hydroxide and flammable hydrogen gas, which frequently ignites.',
+        type: 'explosion',
+        eq: '2Na(s) + 2H₂O(l) → 2NaOH(aq) + H₂(g)↑'
+      };
+    case 'hcl+sodium':
+      return {
+        title: 'Extreme Acid-Metal Explosion!',
+        desc: 'DANGER (Simulation Only): Metallic sodium reacts even more violently with hydrochloric acid than with water, releasing extreme heat and hydrogen gas.',
+        type: 'explosion',
+        eq: '2Na(s) + 2HCl(aq) → 2NaCl(aq) + H₂(g)↑'
+      };
+    case 'ammonia+sodium':
+    case 'bleach+sodium':
+    case 'coke+sodium':
+    case 'naoh+sodium':
+      return {
+        title: 'Violent Aqueous Sodium Reaction!',
+        desc: 'Aqueous solutions contain water that violently oxidizes metallic sodium, releasing flammable hydrogen gas and intense heat.',
+        type: 'explosion',
+        eq: '2Na(s) + 2H₂O(l) → 2NaOH(aq) + H₂(g)↑'
+      };
+    case 'hcl+naoh':
+      return {
+        title: 'Exothermic Acid-Base Neutralization',
+        desc: 'Strong hydrochloric acid and strong sodium hydroxide base neutralize each other to form aqueous table salt (NaCl), water, and heat.',
+        type: 'neutralization',
+        eq: 'HCl(aq) + NaOH(aq) → NaCl(aq) + H₂O(l)'
+      };
+    case 'ammonia+hcl':
+      return {
+        title: 'Acid-Base Reaction (White Fumes)',
+        desc: 'Ammonia reacts with hydrochloric acid to form ammonium chloride, visible as dense white vapor when concentrated.',
+        type: 'neutralization',
+        eq: 'NH₃(aq) + HCl(aq) → NH₄Cl(aq)'
+      };
+    case 'coke+mentos':
+      return {
+        title: 'Rapid CO₂ Nucleation Geyser!',
+        desc: 'Microscopic pits on the Mentos surface act as nucleation sites for dissolved carbon dioxide, triggering a rapid physical foam geyser.',
+        type: 'geyser',
+        eq: 'CO₂(aq) → CO₂(g)↑ (Physical Nucleation)'
+      };
+    case 'ammonia+bleach':
+      return {
+        title: 'TOXIC GAS HAZARD: Chloramine!',
+        desc: 'DANGER — NEVER MIX IN REAL LIFE! Bleach and ammonia react to release toxic chloramine vapors that cause severe respiratory injury.',
+        type: 'toxic',
+        eq: 'NH₃(aq) + NaClO(aq) → NH₂Cl(g)↑ + NaOH(aq)'
+      };
+    case 'bleach+hcl':
+      return {
+        title: 'DEADLY GAS HAZARD: Chlorine Gas!',
+        desc: 'EXTREME DANGER — NEVER MIX IN REAL LIFE! Mixing bleach with any acid releases lethal yellow-green chlorine gas (Cl₂).',
+        type: 'toxic',
+        eq: 'NaClO(aq) + 2HCl(aq) → Cl₂(g)↑ + NaCl(aq) + H₂O(l)'
+      };
+    case 'bleach+coke':
+      return {
+        title: 'Hazardous Acidic Bleach Reaction!',
+        desc: 'WARNING: Phosphoric and carbonic acids in soda lower the pH of bleach, risking release of irritating toxic chlorine fumes.',
+        type: 'toxic',
+        eq: 'NaClO(aq) + H⁺(aq) ⇌ HClO(aq) → Cl₂(g)↑'
+      };
+    case 'coke+naoh':
+      return {
+        title: 'Acid Neutralization',
+        desc: 'Sodium hydroxide neutralizes the carbonic and phosphoric acids in Diet Coke, absorbing dissolved CO₂ into sodium carbonate/bicarbonate.',
+        type: 'neutralization',
+        eq: 'H₂CO₃(aq) + 2NaOH(aq) → Na₂CO₃(aq) + 2H₂O(l)'
+      };
+    case 'hcl+water':
+    case 'naoh+water':
+      return {
+        title: 'Exothermic Dilution',
+        desc: 'Dissolving/diluting strong acid or strong base in water releases heat. In real labs: always add acid slowly to water, never water to concentrated acid!',
+        type: 'neutral',
+        eq: 'Aqueous Dilution (ΔH < 0)'
+      };
+    case 'ammonia+water':
+    case 'bleach+water':
+    case 'coke+water':
+      return {
+        title: 'Aqueous Dilution',
+        desc: 'Water dilutes the concentration of the solution without producing a hazardous byproduct.',
+        type: 'neutral',
+        eq: 'Physical Dilution'
+      };
+    case 'hcl+mentos':
+      return {
+        title: 'Acidic Dissolution',
+        desc: 'Hydrochloric acid slowly dissolves the sugar and gum arabic coating of the candy without carbonated geyser nucleation.',
+        type: 'neutral',
+        eq: 'Sucrose Hydrolysis / Dissolution'
+      };
+    case 'mentos+water':
+      return {
+        title: 'Slow Sugar Dissolution',
+        desc: 'Unlike carbonated soda, flat water contains no pressurized CO₂ gas—so the Mentos candy simply dissolves calmly.',
+        type: 'neutral',
+        eq: 'C₁₂H₂₂O₁₁(s) → C₁₂H₂₂O₁₁(aq)'
+      };
+    default:
+      return {
+        title: 'No Significant Reaction',
+        desc: 'Under standard conditions, mixing these two items produces a physical mixture or mild equilibrium shift without dramatic reaction.',
+        type: 'neutral',
+        eq: 'No dramatic reaction'
+      };
+  }
+}
 
 const Reactions = () => {
   const [reactantA, setReactantA] = useState('');
   const [reactantB, setReactantB] = useState('');
   const [reactionResult, setReactionResult] = useState(null);
   const [isAnimating, setIsAnimating] = useState(false);
+  const mixTimerRef = useRef(null);
 
-  const chemicals = [
-    { id: 'water', name: 'Water (H₂O)', color: '#3b82f6', icon: '💧' },
-    { id: 'sodium', name: 'Sodium (Na)', color: '#94a3b8', icon: '🧊' },
-    { id: 'hcl', name: 'Hydrochloric Acid (HCl)', color: '#ef4444', icon: '🧪' },
-    { id: 'naoh', name: 'Sodium Hydroxide (NaOH)', color: '#a855f7', icon: '🧪' },
-    { id: 'coke', name: 'Diet Coke', color: '#451a03', icon: '🥤' },
-    { id: 'mentos', name: 'Mentos', color: '#e2e8f0', icon: '🍬' },
-    { id: 'bleach', name: 'Bleach (NaClO)', color: '#fcd34d', icon: '🧴' },
-    { id: 'ammonia', name: 'Ammonia (NH₃)', color: '#6ee7b7', icon: '🧴' },
-  ];
+  useEffect(() => {
+    return () => {
+      if (mixTimerRef.current !== null) {
+        clearTimeout(mixTimerRef.current);
+      }
+    };
+  }, []);
 
   const handleMix = () => {
-    if (!reactantA || !reactantB) return;
-    
+    if (!reactantA || !reactantB || isAnimating) return;
+
+    const chosenA = reactantA;
+    const chosenB = reactantB;
     setIsAnimating(true);
     setReactionResult(null);
 
-    setTimeout(() => {
+    if (mixTimerRef.current !== null) {
+      clearTimeout(mixTimerRef.current);
+    }
+
+    mixTimerRef.current = setTimeout(() => {
+      mixTimerRef.current = null;
       setIsAnimating(false);
-      determineReaction(reactantA, reactantB);
-    }, 1500); // 1.5s animation
+      setReactionResult(computeReaction(chosenA, chosenB));
+    }, 1200);
   };
 
-  const determineReaction = (a, b) => {
-    const pair = [a, b].sort().join('+');
-    let result = {};
+  const handleSelectA = (val) => {
+    setReactantA(val);
+    setReactionResult(null);
+  };
 
-    switch(pair) {
-      case 'sodium+water':
-        result = { title: "Explosive Reaction!", desc: "Sodium violently reacts with water to form sodium hydroxide and hydrogen gas, which ignites from the heat.", type: "explosion", eq: "2Na + 2H₂O → 2NaOH + H₂" };
-        break;
-      case 'hcl+naoh':
-        result = { title: "Neutralization", desc: "A strong acid and a strong base react to form saltwater and heat.", type: "neutralization", eq: "HCl + NaOH → NaCl + H₂O" };
-        break;
-      case 'coke+mentos':
-        result = { title: "Nucleation Geyser", desc: "The porous surface of Mentos causes rapid nucleation of carbon dioxide gas in the soda, creating a massive geyser.", type: "geyser", eq: "Physical Reaction (CO₂ rapid release)" };
-        break;
-      case 'ammonia+bleach':
-        result = { title: "Toxic Gas!", desc: "WARNING! Mixing bleach and ammonia creates highly toxic chloramine gas. Never do this in real life!", type: "toxic", eq: "NH₃ + NaOCl → NH₂Cl + NaOH" };
-        break;
-      case 'water+water':
-        result = { title: "More Water", desc: "You mixed water with water. You now have more water.", type: "neutral", eq: "H₂O + H₂O → 2H₂O" };
-        break;
-      case 'hcl+water':
-      case 'naoh+water':
-        result = { title: "Dilution", desc: "You diluted the chemical with water. It releases some heat.", type: "neutral", eq: "Dilution" };
-        break;
-      default:
-        result = { title: "No Reaction", desc: "These two chemicals don't do anything interesting when mixed at room temperature.", type: "neutral", eq: "N/A" };
-    }
-    
-    setReactionResult(result);
+  const handleSelectB = (val) => {
+    setReactantB(val);
+    setReactionResult(null);
   };
 
   return (
     <div className="reactions-container">
       <header className="header">
-        <h1>Interactive Lab Bench</h1>
-        <p>Mix chemicals to see what happens. Warning: Some reactions are dangerous!</p>
+        <h1>Interactive Lab Bench (Simulation)</h1>
+        <p>Select two reagents to simulate chemical &amp; physical interactions safely in your browser.</p>
       </header>
 
       <div className="lab-bench glass-panel">
         <div className="selectors">
           <div className="selector">
-            <h3>Reactant A</h3>
-            <select value={reactantA} onChange={(e) => setReactantA(e.target.value)}>
+            <label htmlFor="reactant-a" style={{ fontWeight: 'bold' }}>Reactant A</label>
+            <select
+              id="reactant-a"
+              value={reactantA}
+              disabled={isAnimating}
+              onChange={(e) => handleSelectA(e.target.value)}
+            >
               <option value="">-- Select Chemical --</option>
-              {chemicals.map(c => <option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}
+              {CHEMICALS.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.icon} {c.name}
+                </option>
+              ))}
             </select>
           </div>
 
-          <div className="mix-control">
-            <button className="mix-btn" onClick={handleMix} disabled={!reactantA || !reactantB || isAnimating}>
+          <div className="mix-control" style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+            <button
+              type="button"
+              className="mix-btn"
+              onClick={handleMix}
+              disabled={!reactantA || !reactantB || isAnimating}
+            >
               {isAnimating ? 'MIXING...' : 'MIX CHEMICALS'}
             </button>
+            {(reactantA || reactantB || reactionResult) && !isAnimating && (
+              <button
+                type="button"
+                onClick={() => {
+                  setReactantA('');
+                  setReactantB('');
+                  setReactionResult(null);
+                }}
+                style={{
+                  padding: '15px 16px',
+                  borderRadius: '8px',
+                  border: '1px solid var(--border-color)',
+                  background: 'rgba(255,255,255,0.08)',
+                  color: 'var(--text-main)',
+                  cursor: 'pointer'
+                }}
+              >
+                Reset
+              </button>
+            )}
           </div>
 
           <div className="selector">
-            <h3>Reactant B</h3>
-            <select value={reactantB} onChange={(e) => setReactantB(e.target.value)}>
+            <label htmlFor="reactant-b" style={{ fontWeight: 'bold' }}>Reactant B</label>
+            <select
+              id="reactant-b"
+              value={reactantB}
+              disabled={isAnimating}
+              onChange={(e) => handleSelectB(e.target.value)}
+            >
               <option value="">-- Select Chemical --</option>
-              {chemicals.map(c => <option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}
+              {CHEMICALS.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.icon} {c.name}
+                </option>
+              ))}
             </select>
           </div>
         </div>
 
         <div className="reaction-stage">
           {isAnimating && (
-            <div className="animating-flask">
+            <div className="animating-flask" aria-label="Mixing chemicals">
               <div className="liquid shaking"></div>
             </div>
           )}
@@ -112,7 +278,7 @@ const Reactions = () => {
 
           {!isAnimating && !reactionResult && (
             <div className="empty-stage">
-              <p>Select two chemicals and click Mix.</p>
+              <p>Select two chemicals above and click Mix Chemicals to run the virtual simulation.</p>
             </div>
           )}
         </div>

@@ -18,9 +18,10 @@ export class Particle {
   }
 
   update(dt: number) {
+    const step = Math.max(0.1, Math.min(3, dt * 60));
     this.position = this.position.add(this.velocity.mult(dt));
-    this.velocity = this.velocity.mult(0.95); // Friction
-    this.alpha -= this.decay;
+    this.velocity = this.velocity.mult(Math.pow(0.95, step));
+    this.alpha = Math.max(0, this.alpha - this.decay * step);
     if (this.alpha <= 0) {
       this.markedForDeletion = true;
     }

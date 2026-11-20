@@ -1,13 +1,10 @@
 /**
- * Sonic Soccer Next-Gen Cybernetic Game & Physics Engine
- * Features:
- * - Cyber-Droid player models with plasma thrusters, armor rings, and aiming reticles
- * - Multi-band audio-reactive holographic pitch grid with impact wave ripples
- * - Physics-based elastic laser goal nets
- * - Plasma comet ball trail with "SONIC STRIKE" on-beat hyperkick mechanics
- * - Audio-reactive stadium lighting & visualizer waves
- * - Screen shake and geometric shockwave rings
+ * Sonic Soccer Cybernetic Game & Physics Engine
  */
+
+function isReducedMotionPreferred() {
+  return typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+}
 
 export class Particle {
   constructor(x, y, color, type = 'spark', speed = 6) {
@@ -22,30 +19,31 @@ export class Particle {
     this.decay = Math.random() * 0.035 + 0.02;
     this.color = color;
     this.size = Math.random() * 4 + 2;
-    this.type = type; // 'spark', 'ring', 'laserDebris'
+    this.type = type;
     this.radius = 2;
   }
 
-  update() {
-    this.x += this.vx;
-    this.y += this.vy;
-    this.vx *= 0.94;
-    this.vy *= 0.94;
-    this.life -= this.decay;
+  update(dtScale = 1) {
+    this.x += this.vx * dtScale;
+    this.y += this.vy * dtScale;
+    const damp = Math.pow(0.94, dtScale);
+    this.vx *= damp;
+    this.vy *= damp;
+    this.life -= this.decay * dtScale;
     if (this.type === 'ring') {
-      this.radius += 5.5;
+      this.radius += 5.5 * dtScale;
     }
   }
 
   draw(ctx) {
     if (this.life <= 0) return;
-    const alpha = Math.max(0, this.life / this.maxLife);
+    const alpha = Math.max(0, Math.min(1, this.life / this.maxLife));
     ctx.save();
     ctx.globalAlpha = alpha;
 
     if (this.type === 'ring') {
       ctx.strokeStyle = this.color;
-      ctx.lineWidth = 2.5 * alpha;
+      ctx.lineWidth = Math.max(0.5, 2.5 * alpha);
       ctx.beginPath();
       ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
       ctx.stroke();
@@ -54,7 +52,7 @@ export class Particle {
       ctx.shadowBlur = 8;
       ctx.shadowColor = this.color;
       ctx.beginPath();
-      ctx.arc(this.x, this.y, this.size * alpha, 0, Math.PI * 2);
+      ctx.arc(this.x, this.y, Math.max(0.5, this.size * alpha), 0, Math.PI * 2);
       ctx.fill();
     }
     ctx.restore();
@@ -67,18 +65,25 @@ export class LaserNet {
     this.y = y;
     this.width = width;
     this.height = height;
-    this.side = side; // 'left' or 'right'
+    this.side = side;
     this.tension = 0;
     this.cols = 5;
     this.rows = 8;
+  }
+
+  setGeometry(x, y, width, height) {
+    this.x = x;
+    this.y = y;
+    this.width = width;
+    this.height = height;
   }
 
   impact(intensity = 1.0) {
     this.tension = Math.min(30, this.tension + 25 * intensity);
   }
 
-  update() {
-    this.tension *= 0.88;
+  update(dtScale = 1) {
+    this.tension *= Math.pow(0.88, dtScale);
     if (this.tension < 0.2) this.tension = 0;
   }
 
@@ -86,14 +91,12 @@ export class LaserNet {
     ctx.save();
     const cellW = this.width / this.cols;
     const cellH = this.height / this.rows;
-    const netGlow = teamColor;
 
-    ctx.strokeStyle = netGlow;
+    ctx.strokeStyle = teamColor;
     ctx.lineWidth = 1.5;
-    ctx.shadowBlur = 10 + beatPulse * 15;
-    ctx.shadowColor = netGlow;
+    ctx.shadowBlur = 10 + beatPulse * 8;
+    ctx.shadowColor = teamColor;
 
-    // Horizontal grid cables with displacement
     for (let r = 0; r <= this.rows; r++) {
       const cy = this.y + r * cellH;
       const bulge = Math.sin((r / this.rows) * Math.PI) * this.tension * (this.side === 'left' ? -1 : 1);
@@ -103,7 +106,6 @@ export class LaserNet {
       ctx.stroke();
     }
 
-    // Vertical grid cables
     for (let c = 0; c <= this.cols; c++) {
       const cx = this.x + c * cellW;
       ctx.beginPath();
@@ -112,7 +114,6 @@ export class LaserNet {
       ctx.stroke();
     }
 
-    // Goal Post Framing
     ctx.lineWidth = 4;
     ctx.strokeStyle = '#ffffff';
     ctx.strokeRect(this.x, this.y, this.width, this.height);
@@ -145,8 +146,7 @@ export class Ball {
     }
   }
 
-  update(width, height, energyLevel, beatPulse, onBounce) {
-    // Record comet trail
+  update(width, height, energyLevel, dtScale, onBounce) {
     this.trail.unshift({
       x: this.x,
       y: this.y,
@@ -156,106 +156,101 @@ export class Ball {
     if (this.trail.length > 24) this.trail.pop();
 
     if (this.sonicTimer > 0) {
-      this.sonicTimer--;
+      this.sonicTimer -= dtScale;
       if (this.sonicTimer <= 0) this.isSonic = false;
     }
 
-    const effectiveEnergy = Math.max(0.6, energyLevel);
-    this.x += this.vx * effectiveEnergy;
-    this.y += this.vy * effectiveEnergy;
-    this.vx *= this.friction;
-    this.vy *= this.friction;
+    const effectiveEnergy = Math.max(0.6, Math.min(2.2, energyLevel));
+    this.x += this.vx * effectiveEnergy * dtScale;
+    this.y += this.vy * effectiveEnergy * dtScale;
+    const damp = Math.pow(this.friction, dtScale);
+    this.vx *= damp;
+    this.vy *= damp;
 
-    // Pitch Wall Collisions
     const margin = 50;
     if (this.y < margin + this.radius) {
       this.y = margin + this.radius;
-      this.vy = -this.vy * 0.9;
+      this.vy = Math.abs(this.vy) * 0.9;
       if (onBounce) onBounce(this.x, this.y);
     }
     if (this.y > height - margin - this.radius) {
       this.y = height - margin - this.radius;
-      this.vy = -this.vy * 0.9;
+      this.vy = -Math.abs(this.vy) * 0.9;
       if (onBounce) onBounce(this.x, this.y);
     }
 
     const goalTop = height / 2 - 110;
     const goalBottom = height / 2 + 110;
 
-    // Left Goal
     if (this.x < margin) {
       if (this.y > goalTop && this.y < goalBottom) {
-        return 'red'; // Red scores on Blue goal
+        return 'red';
       }
       this.x = margin;
-      this.vx = -this.vx * 0.92;
+      this.vx = Math.abs(this.vx) * 0.92;
       if (onBounce) onBounce(this.x, this.y);
     }
 
-    // Right Goal
     if (this.x > width - margin) {
       if (this.y > goalTop && this.y < goalBottom) {
-        return 'blue'; // Blue scores on Red goal
+        return 'blue';
       }
       this.x = width - margin;
-      this.vx = -this.vx * 0.92;
+      this.vx = -Math.abs(this.vx) * 0.92;
       if (onBounce) onBounce(this.x, this.y);
     }
 
     return null;
   }
 
-  draw(ctx, beatPulse) {
+  draw(ctx, beatPulse, reducedMotion = false) {
     ctx.save();
-    const currentRadius = this.baseRadius + beatPulse * 8 + (this.isSonic ? 5 : 0);
+    const pulseBoost = reducedMotion ? 0 : beatPulse * 5;
+    const currentRadius = this.baseRadius + pulseBoost + (this.isSonic ? 4 : 0);
 
-    // Multi-Layer Plasma Comet Trail
-    if (this.trail.length > 1) {
+    if (!reducedMotion && this.trail.length > 1) {
       for (let i = this.trail.length - 1; i >= 1; i--) {
         const pt = this.trail[i];
         const nextPt = this.trail[i - 1];
         const progress = 1 - i / this.trail.length;
         const trailColor = pt.isSonic
-          ? `rgba(255, 230, 0, ${progress * 0.85})`
+          ? `rgba(255, 230, 0, ${progress * 0.75})`
           : pt.team === 'blue'
-          ? `rgba(0, 240, 255, ${progress * 0.7})`
-          : `rgba(255, 0, 85, ${progress * 0.7})`;
+          ? `rgba(0, 240, 255, ${progress * 0.65})`
+          : `rgba(255, 0, 85, ${progress * 0.65})`;
 
         ctx.beginPath();
         ctx.moveTo(pt.x, pt.y);
         ctx.lineTo(nextPt.x, nextPt.y);
         ctx.strokeStyle = trailColor;
-        ctx.lineWidth = currentRadius * 2.2 * progress;
+        ctx.lineWidth = Math.max(1, currentRadius * 2.0 * progress);
         ctx.lineCap = 'round';
         ctx.stroke();
       }
     }
 
-    // Outer Sonic Shock Glow
-    if (this.isSonic) {
-      ctx.shadowBlur = 35 + beatPulse * 25;
+    if (this.isSonic && !reducedMotion) {
+      ctx.shadowBlur = 24;
       ctx.shadowColor = '#ffe600';
-      ctx.fillStyle = 'rgba(255, 230, 0, 0.35)';
+      ctx.fillStyle = 'rgba(255, 230, 0, 0.3)';
       ctx.beginPath();
-      ctx.arc(this.x, this.y, currentRadius * 1.8, 0, Math.PI * 2);
+      ctx.arc(this.x, this.y, currentRadius * 1.6, 0, Math.PI * 2);
       ctx.fill();
     }
 
-    // Ball Core Glow
     const coreGlow = this.isSonic
       ? '#ffe600'
       : this.lastKickerTeam === 'blue'
       ? '#00f0ff'
       : '#ff0055';
 
-    ctx.shadowBlur = 20 + beatPulse * 30;
+    ctx.shadowBlur = reducedMotion ? 8 : 16 + beatPulse * 12;
     ctx.shadowColor = coreGlow;
     ctx.fillStyle = '#ffffff';
     ctx.beginPath();
     ctx.arc(this.x, this.y, currentRadius, 0, Math.PI * 2);
     ctx.fill();
 
-    // Inner Cyber Core Ring
     ctx.lineWidth = 2.5;
     ctx.strokeStyle = coreGlow;
     ctx.beginPath();
@@ -281,13 +276,12 @@ export class Player {
     this.homeY = y;
     this.angle = team === 'blue' ? 0 : Math.PI;
     this.color = team === 'blue' ? '#00f0ff' : '#ff0055';
-    this.accentColor = team === 'blue' ? '#6366f1' : '#ec4899';
     this.kickCooldown = 0;
     this.thrustPower = 0;
   }
 
-  update(ball, energyLevel, aggression, kickPulse, beatPulse, particles, onKick) {
-    if (this.kickCooldown > 0) this.kickCooldown--;
+  update(ball, width, height, energyLevel, aggression, kickPulse, beatPulse, dtScale, pushParticle, onKick) {
+    if (this.kickCooldown > 0) this.kickCooldown -= dtScale;
 
     const dxBall = ball.x - this.x;
     const dyBall = ball.y - this.y;
@@ -296,26 +290,22 @@ export class Player {
     let targetX = this.homeX;
     let targetY = this.homeY;
 
-    // Tactical Positioning by Role
+    const goalHalf = 105;
     if (this.role === 'goalkeeper') {
-      const goalX = this.team === 'blue' ? 100 : this.homeX;
-      targetX = goalX;
-      targetY = Math.max(220, Math.min(500, ball.y));
+      targetX = this.team === 'blue' ? 95 : Math.max(95, width - 95);
+      targetY = Math.max(height / 2 - goalHalf, Math.min(height / 2 + goalHalf, ball.y));
     } else if (this.role === 'striker') {
-      // Aggressive chase towards opponent goal
       targetX = ball.x + (this.team === 'blue' ? -25 : 25);
       targetY = ball.y;
     } else {
-      // Midfielders support the play
       const chaseRadius = 260 + aggression * 220;
       if (distBall < chaseRadius) {
         targetX = ball.x;
         targetY = ball.y;
       } else {
-        // Dance in formation on heavy beats
-        const shift = beatPulse > 0.4 ? (Math.sin(this.number * 2) * 45) : 0;
+        const shift = beatPulse > 0.4 ? Math.sin(this.number * 2) * 35 : 0;
         targetX = this.homeX + shift;
-        targetY = this.homeY + (beatPulse > 0.4 ? Math.cos(this.number * 2) * 35 : 0);
+        targetY = this.homeY + (beatPulse > 0.4 ? Math.cos(this.number * 2) * 28 : 0);
       }
     }
 
@@ -324,32 +314,31 @@ export class Player {
     const dist = Math.hypot(dx, dy);
 
     if (dist > 4) {
-      const snapSteer = beatPulse > 0.5 ? 0.35 : 0.16;
-      const speed = this.baseSpeed * (0.85 + energyLevel * 0.4);
+      const snapSteer = Math.min(1, (beatPulse > 0.5 ? 0.35 : 0.16) * dtScale);
+      const speed = this.baseSpeed * (0.85 + Math.min(1.5, energyLevel) * 0.4);
       this.vx += ((dx / dist) * speed - this.vx) * snapSteer;
       this.vy += ((dy / dist) * speed - this.vy) * snapSteer;
-      this.thrustPower = Math.min(1.0, this.thrustPower + 0.15);
+      this.thrustPower = Math.min(1.0, this.thrustPower + 0.15 * dtScale);
       this.angle = Math.atan2(this.vy, this.vx);
     } else {
-      this.vx *= 0.85;
-      this.vy *= 0.85;
-      this.thrustPower *= 0.8;
+      const damp = Math.pow(0.85, dtScale);
+      this.vx *= damp;
+      this.vy *= damp;
+      this.thrustPower *= Math.pow(0.8, dtScale);
     }
 
-    this.x += this.vx;
-    this.y += this.vy;
+    this.x = Math.max(55, Math.min(width - 55, this.x + this.vx * dtScale));
+    this.y = Math.max(55, Math.min(height - 55, this.y + this.vy * dtScale));
 
-    // Kick Collision Logic
     if (distBall < this.radius + ball.radius && this.kickCooldown <= 0) {
       this.kickCooldown = 18;
 
-      // On-Beat "Sonic Strike" detection
       const isSonic = kickPulse > 0.55 || beatPulse > 0.65;
-      const basePower = 9 + energyLevel * 5 + aggression * 10;
-      const kickPower = isSonic ? basePower * 1.6 : basePower;
+      const basePower = 9 + Math.min(1.5, energyLevel) * 5 + Math.min(1.5, aggression) * 10;
+      const kickPower = isSonic ? basePower * 1.55 : basePower;
 
-      const targetGoalX = this.team === 'blue' ? 1400 : -200;
-      const targetGoalY = 360 + (Math.random() - 0.5) * 220;
+      const targetGoalX = this.team === 'blue' ? width : 0;
+      const targetGoalY = height / 2 + (Math.random() - 0.5) * 180;
 
       const kx = targetGoalX - this.x;
       const ky = (targetGoalY - this.y) * 0.65;
@@ -357,13 +346,12 @@ export class Player {
 
       ball.kick((kx / kDist) * kickPower, (ky / kDist) * kickPower, isSonic, this.team);
 
-      // Spawn impact particles
-      const sparkCount = isSonic ? 35 : 16;
+      const sparkCount = isSonic ? 24 : 12;
       for (let i = 0; i < sparkCount; i++) {
-        particles.push(new Particle(ball.x, ball.y, isSonic ? '#ffe600' : this.color, 'spark', isSonic ? 12 : 7));
+        pushParticle(new Particle(ball.x, ball.y, isSonic ? '#ffe600' : this.color, 'spark', isSonic ? 11 : 7));
       }
       if (isSonic) {
-        particles.push(new Particle(ball.x, ball.y, '#ffe600', 'ring'));
+        pushParticle(new Particle(ball.x, ball.y, '#ffe600', 'ring'));
       }
 
       if (onKick) {
@@ -372,15 +360,14 @@ export class Player {
     }
   }
 
-  draw(ctx, beatPulse, kickPulse) {
+  draw(ctx, beatPulse, kickPulse, reducedMotion = false) {
     ctx.save();
     ctx.translate(this.x, this.y);
 
-    const pulseSize = this.radius + beatPulse * 4;
+    const pulseSize = this.radius + (reducedMotion ? 0 : beatPulse * 3);
 
-    // 1. Plasma Thruster Exhaust
-    if (this.thrustPower > 0.1) {
-      const exhaustLen = 14 * this.thrustPower + (kickPulse * 15);
+    if (!reducedMotion && this.thrustPower > 0.1) {
+      const exhaustLen = Math.max(2, 14 * this.thrustPower + kickPulse * 10);
       const exAngle = this.angle + Math.PI;
       ctx.save();
       ctx.rotate(exAngle);
@@ -397,13 +384,12 @@ export class Player {
       grad.addColorStop(0.4, this.color);
       grad.addColorStop(1, 'transparent');
       ctx.fillStyle = grad;
-      ctx.shadowBlur = 15;
+      ctx.shadowBlur = 12;
       ctx.shadowColor = this.color;
       ctx.fill();
       ctx.restore();
     }
 
-    // 2. Tactical Aiming Reticle (Subtle laser vector)
     ctx.save();
     ctx.rotate(this.angle);
     ctx.strokeStyle = `rgba(${this.team === 'blue' ? '0, 240, 255' : '255, 0, 85'}, 0.45)`;
@@ -415,8 +401,7 @@ export class Player {
     ctx.stroke();
     ctx.restore();
 
-    // 3. Chassis Armor Outer Ring
-    ctx.shadowBlur = 15 + beatPulse * 20;
+    ctx.shadowBlur = reducedMotion ? 6 : 12 + beatPulse * 10;
     ctx.shadowColor = this.color;
     ctx.fillStyle = '#060a14';
     ctx.strokeStyle = this.color;
@@ -426,13 +411,11 @@ export class Player {
     ctx.fill();
     ctx.stroke();
 
-    // 4. Team Core Gem & Number
     ctx.fillStyle = this.color;
     ctx.beginPath();
     ctx.arc(0, 0, pulseSize * 0.55, 0, Math.PI * 2);
     ctx.fill();
 
-    // Number font
     ctx.fillStyle = '#060a14';
     ctx.font = 'bold 10px monospace';
     ctx.textAlign = 'center';
@@ -448,75 +431,128 @@ export class GameEngine {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d');
     this.audioEngine = audioEngine;
-    this.width = canvas.width;
-    this.height = canvas.height;
+    this.width = Math.max(360, canvas.clientWidth || window.innerWidth);
+    this.height = Math.max(280, canvas.clientHeight || window.innerHeight);
 
     this.score = { blue: 0, red: 0 };
     this.sonicStrikes = 0;
     this.particles = [];
+    this.players = [];
     this.isResetting = false;
+    this.resetTimer = null;
+    this.lastTime = 0;
+    this.reducedMotion = isReducedMotionPreferred();
 
-    // Screen Shake & Flash
     this.screenShake = 0;
     this.bannerText = null;
     this.bannerColor = '#00f0ff';
     this.bannerAlpha = 0;
 
-    // Pitch Grid Ripple Matrix
     this.gridCols = 24;
     this.gridRows = 14;
-    this.gridWaves = []; // { x, y, radius, power }
+    this.gridWaves = [];
 
     this.resetPitch();
   }
 
-  resetPitch() {
-    this.isResetting = false;
-    this.ball = new Ball(this.width / 2, this.height / 2);
-    this.players = [];
-    this.particles = [];
-    this.gridWaves = [];
+  pushParticle = (p) => {
+    if (this.particles.length >= 280) {
+      this.particles.shift();
+    }
+    this.particles.push(p);
+  };
 
+  computeFormation(w, h) {
+    return [
+      { x: Math.min(120, w * 0.12), y: h / 2, team: 'blue', role: 'goalkeeper', num: 1 },
+      { x: w * 0.25, y: h / 3, team: 'blue', role: 'defender', num: 2 },
+      { x: w * 0.25, y: (h * 2) / 3, team: 'blue', role: 'defender', num: 3 },
+      { x: w * 0.38, y: h / 4, team: 'blue', role: 'midfielder', num: 4 },
+      { x: w * 0.38, y: (h * 3) / 4, team: 'blue', role: 'midfielder', num: 5 },
+      { x: w * 0.44, y: h / 2, team: 'blue', role: 'striker', num: 9 },
+
+      { x: Math.max(w - 120, w * 0.88), y: h / 2, team: 'red', role: 'goalkeeper', num: 1 },
+      { x: w * 0.75, y: h / 3, team: 'red', role: 'defender', num: 2 },
+      { x: w * 0.75, y: (h * 2) / 3, team: 'red', role: 'defender', num: 3 },
+      { x: w * 0.62, y: h / 4, team: 'red', role: 'midfielder', num: 4 },
+      { x: w * 0.62, y: (h * 3) / 4, team: 'red', role: 'midfielder', num: 5 },
+      { x: w * 0.56, y: h / 2, team: 'red', role: 'striker', num: 9 }
+    ];
+  }
+
+  resetPitch() {
+    if (this.resetTimer) {
+      clearTimeout(this.resetTimer);
+      this.resetTimer = null;
+    }
+    this.isResetting = false;
     const w = this.width;
     const h = this.height;
 
-    // Laser Nets
+    this.ball = new Ball(w / 2, h / 2);
+    this.particles = [];
+    this.gridWaves = [];
+
     const goalH = 220;
     this.leftGoalNet = new LaserNet(0, h / 2 - goalH / 2, 50, goalH, 'left');
     this.rightGoalNet = new LaserNet(w - 50, h / 2 - goalH / 2, 50, goalH, 'right');
 
-    // Blue Team (Left)
-    this.players.push(new Player(120, h / 2, 'blue', 'goalkeeper', 1));
-    this.players.push(new Player(320, h / 3, 'blue', 'defender', 2));
-    this.players.push(new Player(320, (h * 2) / 3, 'blue', 'defender', 3));
-    this.players.push(new Player(w / 2 - 160, h / 4, 'blue', 'midfielder', 4));
-    this.players.push(new Player(w / 2 - 160, (h * 3) / 4, 'blue', 'midfielder', 5));
-    this.players.push(new Player(w / 2 - 80, h / 2, 'blue', 'striker', 9));
-
-    // Red Team (Right)
-    this.players.push(new Player(w - 120, h / 2, 'red', 'goalkeeper', 1));
-    this.players.push(new Player(w - 320, h / 3, 'red', 'defender', 2));
-    this.players.push(new Player(w - 320, (h * 2) / 3, 'red', 'defender', 3));
-    this.players.push(new Player(w / 2 + 160, h / 4, 'red', 'midfielder', 4));
-    this.players.push(new Player(w / 2 + 160, (h * 3) / 4, 'red', 'midfielder', 5));
-    this.players.push(new Player(w / 2 + 80, h / 2, 'red', 'striker', 9));
+    const formation = this.computeFormation(w, h);
+    this.players = formation.map(f => new Player(f.x, f.y, f.team, f.role, f.num));
   }
 
   resize(w, h) {
-    this.width = w;
-    this.height = h;
-    this.canvas.width = w;
-    this.canvas.height = h;
-    this.resetPitch();
+    const safeW = Math.max(360, w);
+    const safeH = Math.max(280, h);
+    const prevW = this.width || safeW;
+    const prevH = this.height || safeH;
+    const dpr = typeof window !== 'undefined' ? Math.min(window.devicePixelRatio || 1, 2) : 1;
+
+    this.width = safeW;
+    this.height = safeH;
+    this.canvas.width = Math.floor(safeW * dpr);
+    this.canvas.height = Math.floor(safeH * dpr);
+    if (this.ctx) {
+      this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+
+    const goalH = 220;
+    if (this.leftGoalNet) this.leftGoalNet.setGeometry(0, safeH / 2 - goalH / 2, 50, goalH);
+    if (this.rightGoalNet) this.rightGoalNet.setGeometry(safeW - 50, safeH / 2 - goalH / 2, 50, goalH);
+
+    if (this.players.length === 0) {
+      this.resetPitch();
+      return;
+    }
+
+    const formation = this.computeFormation(safeW, safeH);
+    this.players.forEach((p, idx) => {
+      if (formation[idx]) {
+        p.homeX = formation[idx].x;
+        p.homeY = formation[idx].y;
+      }
+      p.x = Math.max(55, Math.min(safeW - 55, (p.x / prevW) * safeW));
+      p.y = Math.max(55, Math.min(safeH - 55, (p.y / prevH) * safeH));
+    });
+
+    if (this.ball && !this.isResetting) {
+      this.ball.x = Math.max(55, Math.min(safeW - 55, (this.ball.x / prevW) * safeW));
+      this.ball.y = Math.max(55, Math.min(safeH - 55, (this.ball.y / prevH) * safeH));
+      this.ball.trail = [];
+    }
   }
 
-  triggerSonicStrikeBanner(team, x, y) {
+  triggerSonicStrikeBanner(_team, x, y) {
     this.sonicStrikes++;
     this.bannerText = '⚡ SONIC STRIKE ⚡';
     this.bannerColor = '#ffe600';
     this.bannerAlpha = 1.0;
-    this.screenShake = 16;
-    this.gridWaves.push({ x, y, radius: 0, power: 25 });
+    if (!this.reducedMotion) {
+      this.screenShake = 10;
+      if (this.gridWaves.length < 8) {
+        this.gridWaves.push({ x, y, radius: 0, power: 20 });
+      }
+    }
 
     if (this.audioEngine) {
       this.audioEngine.playSonicStrikeSound();
@@ -524,11 +560,11 @@ export class GameEngine {
   }
 
   touchKick(x, y) {
-    if (!this.ball) return;
+    if (!this.ball || this.isResetting) return;
     const dx = x - this.ball.x;
     const dy = y - this.ball.y;
     const dist = Math.max(1, Math.hypot(dx, dy));
-    const isSonic = this.audioEngine?.kickPulse > 0.5;
+    const isSonic = (this.audioEngine?.kickPulse || 0) > 0.5;
 
     this.ball.kick((dx / dist) * (isSonic ? 22 : 14), (dy / dist) * (isSonic ? 22 : 14), isSonic, 'blue');
 
@@ -538,13 +574,22 @@ export class GameEngine {
       this.audioEngine.playKickSound(1.2);
     }
 
-    for (let i = 0; i < 20; i++) {
-      this.particles.push(new Particle(this.ball.x, this.ball.y, isSonic ? '#ffe600' : '#00f0ff', 'spark', 10));
+    const sparkCount = this.reducedMotion ? 6 : 18;
+    for (let i = 0; i < sparkCount; i++) {
+      this.pushParticle(new Particle(this.ball.x, this.ball.y, isSonic ? '#ffe600' : '#00f0ff', 'spark', 10));
     }
   }
 
-  update() {
-    // 1. Audio DSP Analysis
+  update(now = performance.now()) {
+    let dtScale = 1;
+    if (this.lastTime > 0) {
+      const rawDt = (now - this.lastTime) / 1000;
+      const clampedDt = Number.isFinite(rawDt) ? Math.min(0.05, Math.max(0.004, rawDt)) : 0.016;
+      dtScale = clampedDt * 60;
+    }
+    this.lastTime = now;
+    this.reducedMotion = isReducedMotionPreferred();
+
     let energyLevel = 1.0;
     let aggression = 0.3;
     let beatPulse = 0;
@@ -556,51 +601,43 @@ export class GameEngine {
       aggression = 0.2 + this.audioEngine.bands.kick * 2.8;
       beatPulse = this.audioEngine.beatPulse;
       kickPulse = this.audioEngine.kickPulse;
-
-      if (this.audioEngine.isKickBeat) {
-        this.screenShake = Math.max(this.screenShake, 5);
-      }
     }
 
-    // 2. Screen Shake Decay
-    this.screenShake *= 0.88;
+    this.screenShake = this.reducedMotion ? 0 : this.screenShake * Math.pow(0.86, dtScale);
     if (this.screenShake < 0.2) this.screenShake = 0;
 
-    // 3. Grid Wave Ripples
     for (let i = this.gridWaves.length - 1; i >= 0; i--) {
       const w = this.gridWaves[i];
-      w.radius += 12;
-      w.power *= 0.92;
+      w.radius += 12 * dtScale;
+      w.power *= Math.pow(0.92, dtScale);
       if (w.power < 0.5 || w.radius > 600) {
         this.gridWaves.splice(i, 1);
       }
     }
 
-    // 4. Banner Decay
     if (this.bannerAlpha > 0) {
-      this.bannerAlpha -= 0.025;
-      if (this.bannerAlpha < 0) this.bannerAlpha = 0;
+      this.bannerAlpha = Math.max(0, this.bannerAlpha - 0.025 * dtScale);
     }
 
     if (this.isResetting) {
       for (let i = this.particles.length - 1; i >= 0; i--) {
-        this.particles[i].update();
+        this.particles[i].update(dtScale);
         if (this.particles[i].life <= 0) this.particles.splice(i, 1);
       }
-      this.leftGoalNet?.update();
-      this.rightGoalNet?.update();
+      this.leftGoalNet?.update(dtScale);
+      this.rightGoalNet?.update(dtScale);
       return;
     }
 
-    // 5. Ball Physics & Goal Detection
     const goal = this.ball.update(
       this.width,
       this.height,
       energyLevel,
-      beatPulse,
+      dtScale,
       (bx, by) => {
-        // Bounce callback
-        this.gridWaves.push({ x: bx, y: by, radius: 0, power: 12 });
+        if (!this.reducedMotion && this.gridWaves.length < 8) {
+          this.gridWaves.push({ x: bx, y: by, radius: 0, power: 10 });
+        }
         this.audioEngine?.playBounceSound();
       }
     );
@@ -610,7 +647,6 @@ export class GameEngine {
       const isBlue = goal === 'blue';
       const scoringColor = isBlue ? '#00f0ff' : '#ff0055';
 
-      // Goal impact on nets
       if (isBlue) {
         this.rightGoalNet.impact(1.5);
       } else {
@@ -618,98 +654,103 @@ export class GameEngine {
       }
 
       this.audioEngine?.playGoalBlast(isBlue);
-      this.screenShake = 24;
+      if (!this.reducedMotion) this.screenShake = 14;
       this.bannerText = isBlue ? '⚽ BLUE GOAL! ⚽' : '💥 RED GOAL! 💥';
       this.bannerColor = scoringColor;
       this.bannerAlpha = 1.0;
 
-      // Massive goal particle shockwave
-      for (let i = 0; i < 90; i++) {
-        this.particles.push(new Particle(this.ball.x, this.ball.y, scoringColor, 'spark', 14));
+      const sparkCount = this.reducedMotion ? 16 : 65;
+      for (let i = 0; i < sparkCount; i++) {
+        this.pushParticle(new Particle(this.ball.x, this.ball.y, scoringColor, 'spark', 13));
       }
-      this.particles.push(new Particle(this.ball.x, this.ball.y, scoringColor, 'ring'));
-      this.particles.push(new Particle(this.ball.x, this.ball.y, '#ffffff', 'ring'));
+      this.pushParticle(new Particle(this.ball.x, this.ball.y, scoringColor, 'ring'));
 
       this.isResetting = true;
-      setTimeout(() => this.resetPitch(), 2200);
-      this.ball.x = -2000; // hide ball during celebration
+      if (this.resetTimer) clearTimeout(this.resetTimer);
+      this.resetTimer = setTimeout(() => {
+        this.resetTimer = null;
+        this.resetPitch();
+      }, 2200);
+      this.ball.x = -2000;
       return;
     }
 
-    // 6. Players Update
     this.players.forEach(p => {
       p.update(
         this.ball,
+        this.width,
+        this.height,
         energyLevel,
         aggression,
         kickPulse,
         beatPulse,
-        this.particles,
+        dtScale,
+        this.pushParticle,
         (isSonic, team, kx, ky) => {
           if (isSonic) {
             this.triggerSonicStrikeBanner(team, kx, ky);
           } else {
             this.audioEngine?.playKickSound(1.0);
-            this.gridWaves.push({ x: kx, y: ky, radius: 0, power: 10 });
+            if (!this.reducedMotion && this.gridWaves.length < 8) {
+              this.gridWaves.push({ x: kx, y: ky, radius: 0, power: 8 });
+            }
           }
         }
       );
     });
 
-    // 7. Particles Update
     for (let i = this.particles.length - 1; i >= 0; i--) {
-      this.particles[i].update();
+      this.particles[i].update(dtScale);
       if (this.particles[i].life <= 0) this.particles.splice(i, 1);
     }
 
-    this.leftGoalNet?.update();
-    this.rightGoalNet?.update();
+    this.leftGoalNet?.update(dtScale);
+    this.rightGoalNet?.update(dtScale);
   }
 
   draw() {
+    if (!this.ctx) return;
     const ctx = this.ctx;
     const w = this.width;
     const h = this.height;
-    const beatPulse = this.audioEngine?.beatPulse || 0;
-    const kickPulse = this.audioEngine?.kickPulse || 0;
+    const beatPulse = this.reducedMotion ? 0 : (this.audioEngine?.beatPulse || 0);
+    const kickPulse = this.reducedMotion ? 0 : (this.audioEngine?.kickPulse || 0);
 
     ctx.save();
 
-    // 1. Screen Shake Matrix
-    if (this.screenShake > 0) {
+    if (this.screenShake > 0 && !this.reducedMotion) {
       const shakeX = (Math.random() - 0.5) * this.screenShake;
       const shakeY = (Math.random() - 0.5) * this.screenShake;
       ctx.translate(shakeX, shakeY);
     }
 
-    // 2. High-Tech Motion Trail (Fade out)
-    ctx.globalCompositeOperation = 'destination-out';
-    ctx.fillStyle = `rgba(0, 0, 0, ${0.35 + beatPulse * 0.25})`;
-    ctx.fillRect(0, 0, w, h);
-    ctx.globalCompositeOperation = 'source-over';
+    // Steady clear without full-screen strobe flashing (>3 Hz photosensitivity safe)
+    if (this.reducedMotion) {
+      ctx.clearRect(0, 0, w, h);
+    } else {
+      ctx.globalCompositeOperation = 'destination-out';
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.42)';
+      ctx.fillRect(0, 0, w, h);
+      ctx.globalCompositeOperation = 'source-over';
+    }
 
-    // 3. Draw Holographic Reactive Pitch Grid
     this.drawPitchGrid(ctx, w, h, beatPulse);
 
-    // 4. Draw Laser Goal Nets
     this.leftGoalNet?.draw(ctx, beatPulse, '#00f0ff');
     this.rightGoalNet?.draw(ctx, beatPulse, '#ff0055');
 
-    // 5. Draw Stadium Audio Equalizer Floodlights
     this.drawStadiumVisualizers(ctx, w, h, beatPulse);
 
-    // 6. Draw Ball, Players, and Particles
     this.particles.forEach(p => p.draw(ctx));
-    this.players.forEach(p => p.draw(ctx, beatPulse, kickPulse));
+    this.players.forEach(p => p.draw(ctx, beatPulse, kickPulse, this.reducedMotion));
     if (!this.isResetting) {
-      this.ball.draw(ctx, beatPulse);
+      this.ball.draw(ctx, beatPulse, this.reducedMotion);
     }
 
-    // 7. Holographic Banner (Sonic Strike / Goal)
     if (this.bannerAlpha > 0 && this.bannerText) {
       ctx.save();
       ctx.globalAlpha = this.bannerAlpha;
-      ctx.shadowBlur = 30;
+      ctx.shadowBlur = this.reducedMotion ? 8 : 22;
       ctx.shadowColor = this.bannerColor;
       ctx.fillStyle = this.bannerColor;
       ctx.font = '900 clamp(28px, 6vw, 56px) "Outfit", sans-serif';
@@ -724,31 +765,31 @@ export class GameEngine {
 
   drawPitchGrid(ctx, w, h, beatPulse) {
     const margin = 50;
-    const pitchW = w - margin * 2;
-    const pitchH = h - margin * 2;
+    const pitchW = Math.max(100, w - margin * 2);
+    const pitchH = Math.max(100, h - margin * 2);
     const cellW = pitchW / this.gridCols;
     const cellH = pitchH / this.gridRows;
 
     ctx.save();
-    ctx.strokeStyle = `rgba(0, 240, 255, ${0.08 + beatPulse * 0.15})`;
+    ctx.strokeStyle = `rgba(0, 240, 255, ${0.1 + beatPulse * 0.06})`;
     ctx.lineWidth = 1;
 
-    // Grid nodes displacement by shockwaves
     for (let r = 0; r <= this.gridRows; r++) {
       ctx.beginPath();
       for (let c = 0; c <= this.gridCols; c++) {
         let gx = margin + c * cellW;
         let gy = margin + r * cellH;
 
-        // Apply wave ripple distortion
-        for (const wave of this.gridWaves) {
-          const d = Math.hypot(gx - wave.x, gy - wave.y);
-          const diff = Math.abs(d - wave.radius);
-          if (diff < 40) {
-            const ripple = Math.sin((diff / 40) * Math.PI) * wave.power;
-            const angle = Math.atan2(gy - wave.y, gx - wave.x);
-            gx += Math.cos(angle) * ripple;
-            gy += Math.sin(angle) * ripple;
+        if (!this.reducedMotion) {
+          for (const wave of this.gridWaves) {
+            const d = Math.hypot(gx - wave.x, gy - wave.y);
+            const diff = Math.abs(d - wave.radius);
+            if (diff < 40) {
+              const ripple = Math.sin((diff / 40) * Math.PI) * wave.power;
+              const angle = Math.atan2(gy - wave.y, gx - wave.x);
+              gx += Math.cos(angle) * ripple;
+              gy += Math.sin(angle) * ripple;
+            }
           }
         }
 
@@ -758,33 +799,29 @@ export class GameEngine {
       ctx.stroke();
     }
 
-    // Outer Pitch Glowing Boundary Lines
-    const pitchColor = `hsl(${180 + beatPulse * 40}, 100%, 55%)`;
+    const pitchColor = `hsl(${185 + beatPulse * 15}, 100%, 55%)`;
     ctx.strokeStyle = pitchColor;
-    ctx.lineWidth = 3 + beatPulse * 4;
-    ctx.shadowBlur = 15 + beatPulse * 25;
+    ctx.lineWidth = 3 + beatPulse * 1.5;
+    ctx.shadowBlur = this.reducedMotion ? 0 : 12 + beatPulse * 8;
     ctx.shadowColor = pitchColor;
     ctx.strokeRect(margin, margin, pitchW, pitchH);
 
-    // Halfway Line
     ctx.beginPath();
     ctx.moveTo(w / 2, margin);
     ctx.lineTo(w / 2, h - margin);
     ctx.stroke();
 
-    // Center Cyber Circle & Core Ring
     ctx.beginPath();
-    ctx.arc(w / 2, h / 2, 95 + beatPulse * 20, 0, Math.PI * 2);
+    ctx.arc(w / 2, h / 2, Math.min(pitchH * 0.35, 95 + beatPulse * 8), 0, Math.PI * 2);
     ctx.stroke();
 
     ctx.fillStyle = pitchColor;
     ctx.beginPath();
-    ctx.arc(w / 2, h / 2, 8 + beatPulse * 6, 0, Math.PI * 2);
+    ctx.arc(w / 2, h / 2, 8 + beatPulse * 3, 0, Math.PI * 2);
     ctx.fill();
 
-    // Penalty Areas
-    const penaltyW = 140;
-    const penaltyH = 280;
+    const penaltyW = Math.min(140, pitchW * 0.22);
+    const penaltyH = Math.min(280, pitchH * 0.65);
     ctx.strokeRect(margin, h / 2 - penaltyH / 2, penaltyW, penaltyH);
     ctx.strokeRect(w - margin - penaltyW, h / 2 - penaltyH / 2, penaltyW, penaltyH);
 
@@ -795,27 +832,31 @@ export class GameEngine {
     if (!this.audioEngine || !this.audioEngine.frequencyData) return;
     const freq = this.audioEngine.frequencyData;
     const bars = 64;
-    const barWidth = (w - 100) / bars;
+    const barWidth = Math.max(2, (w - 100) / bars);
 
     ctx.save();
-    ctx.shadowBlur = 12 + beatPulse * 15;
+    ctx.shadowBlur = this.reducedMotion ? 0 : 10;
 
     for (let i = 0; i < bars; i++) {
       const idx = Math.floor((i / bars) * (freq.length / 2));
-      const val = (freq[idx] / 255.0);
-      const barH = val * 55 + (beatPulse * 20);
+      const val = freq[idx] / 255.0;
+      const barH = val * 48 + beatPulse * 10;
       const bx = 50 + i * barWidth;
 
       const hue = 180 + (i / bars) * 120;
-      ctx.fillStyle = `hsla(${hue}, 100%, 60%, ${0.25 + val * 0.6})`;
+      ctx.fillStyle = `hsla(${hue}, 100%, 60%, ${0.22 + val * 0.5})`;
       ctx.shadowColor = `hsl(${hue}, 100%, 60%)`;
 
-      // Top stadium floodlight bar
-      ctx.fillRect(bx, 50 - barH - 4, barWidth - 2, barH);
-
-      // Bottom stadium floodlight bar
-      ctx.fillRect(bx, h - 50 + 4, barWidth - 2, barH);
+      ctx.fillRect(bx, 50 - barH - 4, Math.max(1, barWidth - 2), barH);
+      ctx.fillRect(bx, h - 50 + 4, Math.max(1, barWidth - 2), barH);
     }
     ctx.restore();
+  }
+
+  destroy() {
+    if (this.resetTimer) {
+      clearTimeout(this.resetTimer);
+      this.resetTimer = null;
+    }
   }
 }

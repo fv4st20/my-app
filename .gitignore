@@ -1,23 +1,57 @@
 # Dependencies
 node_modules/
 **/node_modules/
+.npm/
 
 # Production builds
 dist/
 **/dist/
 build/
 **/build/
+.vite/
+**/.vite/
 
-# Environment files & Secrets
+# Environment files & Secrets (keep .env.example tracked)
 .env
+.env.*
+!.env.example
 *.pem
 *.key
+*.crt
+*.pfx
+*.p12
+
+# Runtime Database & Atomic-Write Temporary Files
+data/*.json
+data/*.tmp
+data/*.db
+data/*.sqlite*
+data/*.bak
+*.db
+*.sqlite
+*.sqlite3
+*.tmp
+**/*.tmp
+*.bak
+
+# PM2 & Process Runtime Files
+.pm2/
+pids/
+*.pid
+*.seed
+*.pid.lock
+.eslintcache
 
 # Archives
 *.zip
 *.tar.gz
+*.tgz
 
 # System & Logs
 .DS_Store
+**/.DS_Store
 Thumbs.db
+**/Thumbs.db
 *.log
+**/*.log
+logs/

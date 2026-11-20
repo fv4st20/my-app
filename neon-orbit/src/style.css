@@ -1,7 +1,6 @@
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
-
 :root {
   --neon-blue: #00f3ff;
+  --neon-cyan: #00f3ff;
   --neon-pink: #ff00ff;
   --neon-purple: #9d00ff;
   --bg-dark: #050510;
@@ -23,7 +22,7 @@ body {
   background-size: 40px 40px;
   animation: gridMove 20s linear infinite;
   color: white;
-  font-family: 'Orbitron', sans-serif;
+  font-family: 'Orbitron', 'Rajdhani', 'Segoe UI', system-ui, sans-serif;
   overflow: hidden;
   user-select: none;
 }
@@ -171,7 +170,7 @@ canvas {
 
 #crypto-terminal {
   position: absolute;
-  top: 20px;
+  top: 68px;
   right: 20px;
   width: 350px;
   height: 400px;
@@ -333,5 +332,37 @@ canvas {
   /* On wide desktop screens with mouse/keyboard, keep controls visible but subtly dimmed */
   .mobile-touch-btn {
     opacity: 0.75;
+  }
+}
+
+.top-right-actions {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 1000;
+  pointer-events: auto;
+}
+
+.hub-btn {
+  font-size: 0.82rem;
+  padding: 8px 14px;
+}
+
+.hub-btn.muted {
+  border-color: var(--neon-pink);
+  color: var(--neon-pink);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body {
+    animation: none;
+  }
+  .neon-btn,
+  .mobile-touch-btn,
+  #health-bar {
+    transition: none;
   }
 }

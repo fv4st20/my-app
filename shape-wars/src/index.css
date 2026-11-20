@@ -350,3 +350,15 @@ button:hover {
     font-size: 0.85rem;
   }
 }
+
+@media (prefers-reduced-motion: reduce) {
+  body,
+  button,
+  .shape-board-btn,
+  .shape-hud-btn,
+  .shape-close-btn,
+  .shape-toast-banner {
+    transition: none;
+    animation: none;
+  }
+}

@@ -1,162 +1,254 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, Play, Bomb, Shield, Circle, Trophy, CheckCircle, X } from 'lucide-react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { ArrowLeft, Play, Bomb, Shield, Circle, Trophy, CheckCircle, X, Volume2, VolumeX } from 'lucide-react';
 import { GameEngine } from './Engine';
 import './index.css';
+
+function formatRecordDate(item) {
+  const raw = item?.date ?? item?.timestamp ?? item?.createdAt;
+  if (!raw) return '—';
+  const parsed = new Date(raw);
+  return Number.isNaN(parsed.getTime()) ? '—' : parsed.toLocaleDateString();
+}
 
 function App() {
   const canvasRef = useRef(null);
   const engineRef = useRef(null);
   const reqRef = useRef(null);
+  const lastScoreRef = useRef(0);
+  const challengeRef = useRef(null);
+  const toastTimerRef = useRef(null);
+  const mutedRef = useRef(false);
+
   const [started, setStarted] = useState(false);
   const [score, setScore] = useState(0);
+  const [muted, setMuted] = useState(false);
 
   // Auth & Leaderboard
   const [user, setUser] = useState(null);
-  const [challenge, setChallenge] = useState(null);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [leaderboard, setLeaderboard] = useState([]);
   const [loadingLeaderboard, setLoadingLeaderboard] = useState(false);
   const [submitStatus, setSubmitStatus] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
+  const showToast = useCallback((msg, durationMs = 3500) => {
+    setSubmitStatus(msg);
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = setTimeout(() => {
+      setSubmitStatus(null);
+      toastTimerRef.current = null;
+    }, durationMs);
+  }, []);
+
+  const requestChallenge = useCallback(async () => {
+    try {
+      const res = await fetch('/api/leaderboard/start', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ gameId: 'shape-wars' })
+      });
+      if (!res.ok) return null;
+      const data = await res.json();
+      if (data?.success && data?.challenge) {
+        challengeRef.current = data.challenge;
+        return data.challenge;
+      }
+    } catch {
+      // Offline or unauthenticated
+    }
+    return null;
+  }, []);
+
   useEffect(() => {
-    fetch('/api/auth/me')
-      .then(r => r.json())
+    fetch('/api/auth/me', { credentials: 'same-origin' })
+      .then(r => (r.ok ? r.json() : null))
       .then(data => {
         if (data?.authenticated && data?.user) {
           setUser(data.user);
         }
       })
       .catch(() => {});
+
+    return () => {
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        try {
+          window.speechSynthesis.cancel();
+        } catch {
+          // Ignore speech cancel error
+        }
+      }
+    };
   }, []);
 
-  const fetchLeaderboard = async () => {
+  useEffect(() => {
+    mutedRef.current = muted;
+    if (engineRef.current) {
+      engineRef.current.setMuted(muted);
+    }
+  }, [muted]);
+
+  const fetchLeaderboard = useCallback(async () => {
     setLoadingLeaderboard(true);
     try {
-      const res = await fetch('/api/leaderboard/shape-wars?limit=25');
-      const data = await res.json();
-      if (data?.success) {
-        setLeaderboard(data.leaderboard || []);
+      const res = await fetch('/api/leaderboard/shape-wars?limit=25', {
+        credentials: 'same-origin'
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.success && Array.isArray(data.leaderboard)) {
+          setLeaderboard(data.leaderboard);
+        }
       }
-    } catch (e) {
-      console.warn('Failed to load leaderboard:', e);
+    } catch {
+      // Network error ignored
     } finally {
       setLoadingLeaderboard(false);
     }
-  };
+  }, []);
 
   const openLeaderboard = () => {
     setShowLeaderboard(true);
     fetchLeaderboard();
   };
 
+  const toggleMute = () => {
+    setMuted(prev => !prev);
+  };
+
   const submitScore = async () => {
-    if (score <= 0) {
-      alert('Obliterate at least 1 unit to record a battle score on the Global Leaderboard!');
+    if (!Number.isFinite(score) || score <= 0) {
+      showToast('Obliterate at least 1 unit to record a battle score!');
       return;
     }
+    if (submitting) return;
     setSubmitting(true);
+
     try {
+      let activeChallenge = challengeRef.current;
+      if (!activeChallenge) {
+        activeChallenge = await requestChallenge();
+      }
+      challengeRef.current = null;
+
       const res = await fetch('/api/leaderboard/submit', {
         method: 'POST',
+        credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           gameId: 'shape-wars',
-          score,
-          challenge,
-          username: user ? user.username : 'Guest Commander',
-          details: { casualties: score }
+          score: Math.min(100000, Math.floor(score)),
+          challenge: activeChallenge,
+          username: user ? user.username : 'Guest_Commander',
+          details: { casualties: Math.floor(score) }
         })
       });
-      const data = await res.json();
-      if (data?.success) {
-        setSubmitStatus(`Rank #${data.rank} Recorded on Global Board!`);
-        setTimeout(() => setSubmitStatus(null), 4000);
+      const data = await res.json().catch(() => null);
+      if (res.ok && data?.success) {
+        showToast(`Rank #${data.rank || 1} Recorded on Global Board!`, 4000);
       } else {
-        setSubmitStatus(data?.error || 'Submission failed');
-        setTimeout(() => setSubmitStatus(null), 3000);
+        showToast(data?.reason || data?.error || 'Submission failed', 3500);
       }
     } catch {
-      setSubmitStatus('Network error submitting score');
-      setTimeout(() => setSubmitStatus(null), 3000);
+      showToast('Network error submitting score', 3000);
     } finally {
       setSubmitting(false);
+      // Prepare fresh one-time challenge for subsequent submissions in this battle
+      requestChallenge();
     }
   };
 
   useEffect(() => {
     if (!started) return;
 
-    // Fetch challenge token for verified session
-    fetch('/api/leaderboard/start?gameId=shape-wars', { method: 'POST' })
-      .then(r => r.json())
-      .then(d => {
-        if (d?.success && d?.challenge) setChallenge(d.challenge);
-      })
-      .catch(() => {});
+    requestChallenge();
 
     const canvas = canvasRef.current;
-    engineRef.current = new GameEngine(canvas);
-    
+    if (!canvas) return;
+
+    const engine = new GameEngine(canvas, mutedRef.current);
+    engineRef.current = engine;
+    lastScoreRef.current = 0;
+
     const handleResize = () => {
-      engineRef.current.resize(window.innerWidth, window.innerHeight);
+      engine.resize(window.innerWidth, window.innerHeight);
     };
-    
+
     window.addEventListener('resize', handleResize);
     handleResize();
 
-    const loop = () => {
-      engineRef.current.update();
-      engineRef.current.draw();
-      if (engineRef.current.totalCasualties !== score) {
-        setScore(engineRef.current.totalCasualties);
+    const loop = (now) => {
+      engine.update(now);
+      engine.draw();
+      if (engine.totalCasualties !== lastScoreRef.current) {
+        lastScoreRef.current = engine.totalCasualties;
+        setScore(engine.totalCasualties);
       }
       reqRef.current = requestAnimationFrame(loop);
     };
-    
+
     reqRef.current = requestAnimationFrame(loop);
 
     return () => {
       window.removeEventListener('resize', handleResize);
-      cancelAnimationFrame(reqRef.current);
+      if (reqRef.current) cancelAnimationFrame(reqRef.current);
+      engine.destroy();
+      engineRef.current = null;
     };
-  }, [started]);
+  }, [started, requestChallenge]);
 
   const handleStart = () => {
     setStarted(true);
-    // Initialize speech synthesis by speaking an empty string on user interaction
-    const u = new SpeechSynthesisUtterance("Welcome to Shape Wars!");
-    u.volume = 0; // Just to unlock it
-    window.speechSynthesis.speak(u);
+    if (!muted && typeof window !== 'undefined' && 'speechSynthesis' in window && typeof SpeechSynthesisUtterance !== 'undefined') {
+      try {
+        const u = new SpeechSynthesisUtterance('Welcome to Shape Wars!');
+        u.volume = 0;
+        window.speechSynthesis.speak(u);
+      } catch {
+        // Speech synthesis blocked or unsupported
+      }
+    }
   };
 
-  const handleCanvasTap = (e) => {
-    if (!engineRef.current) return;
-    const clientX = e.clientX ?? (e.touches && e.touches[0] ? e.touches[0].clientX : null);
-    const clientY = e.clientY ?? (e.touches && e.touches[0] ? e.touches[0].clientY : null);
-    if (clientX == null || clientY == null) return;
-    
-    // Tap left side: Blue Cubes, Tap right side: Red Circles
-    const team = clientX < window.innerWidth / 2 ? 'blue' : 'red';
-    engineRef.current.spawnAt(team, clientX, clientY, 2);
+  const handleCanvasPointerDown = (e) => {
+    if (!engineRef.current || !canvasRef.current) return;
+    const rect = canvasRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    if (!Number.isFinite(x) || !Number.isFinite(y)) return;
+
+    const team = x < rect.width / 2 ? 'blue' : 'red';
+    engineRef.current.spawnAt(team, x, y, 2);
   };
 
   return (
     <>
       {!started && (
         <div className="start-overlay">
-          <div style={{ position: 'absolute', top: '20px', left: '20px' }}>
-            <a href="/" style={{color: 'white', textDecoration: 'none', pointerEvents: 'auto'}}><ArrowLeft size={32} /></a>
+          <div style={{ position: 'absolute', top: '20px', left: '20px', display: 'flex', gap: '12px', alignItems: 'center' }}>
+            <a href="/" style={{ color: 'white', textDecoration: 'none', pointerEvents: 'auto' }} title="Back to Hub">
+              <ArrowLeft size={32} />
+            </a>
+            <button
+              type="button"
+              className="shape-hud-btn"
+              onClick={toggleMute}
+              title={muted ? 'Unmute Narrator' : 'Mute Narrator'}
+            >
+              {muted ? <VolumeX size={16} /> : <Volume2 size={16} />}
+              {muted ? 'Muted' : 'Voice On'}
+            </button>
           </div>
-          <h1 style={{fontSize: '4rem', marginBottom: '16px', textShadow: '0 0 20px #fff'}}>Shape Wars</h1>
-          <p style={{marginBottom: '32px', fontSize: '1.2rem', color: '#ccc'}}>The Emotional Battle Simulator</p>
-          
+          <h1 style={{ fontSize: 'clamp(2.4rem, 7vw, 4rem)', marginBottom: '16px', textShadow: '0 0 20px #fff' }}>Shape Wars</h1>
+          <p style={{ marginBottom: '32px', fontSize: '1.2rem', color: '#ccc' }}>The Emotional Battle Simulator</p>
+
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px' }}>
-            <button className="start-btn" onClick={handleStart}>
+            <button type="button" className="start-btn" onClick={handleStart}>
               <Play fill="white" size={32} /> Start Simulation
             </button>
 
-            <button className="shape-board-btn" onClick={openLeaderboard}>
+            <button type="button" className="shape-board-btn" onClick={openLeaderboard}>
               <Trophy size={18} /> View Hall of Fame
             </button>
 
@@ -175,20 +267,31 @@ function App() {
 
       {started && (
         <div className="hud">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <a href="/" style={{color: 'white', textDecoration: 'none', pointerEvents: 'auto'}}><ArrowLeft size={32} /></a>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', pointerEvents: 'auto' }}>
+            <a href="/" style={{ color: 'white', textDecoration: 'none' }} title="Back to Hub">
+              <ArrowLeft size={32} />
+            </a>
             <div className="battle-score-pill">
               <span>Casualties:</span>
               <strong style={{ color: '#ef4444', fontSize: '1.2rem' }}>{score}</strong>
             </div>
+            <button
+              type="button"
+              className="shape-hud-btn"
+              onClick={toggleMute}
+              title={muted ? 'Unmute Narrator' : 'Mute Narrator'}
+            >
+              {muted ? <VolumeX size={16} /> : <Volume2 size={16} />}
+            </button>
           </div>
 
           <div style={{ display: 'flex', gap: '10px', alignItems: 'center', pointerEvents: 'auto' }}>
-            <button className="shape-hud-btn" onClick={openLeaderboard} title="View Leaderboards">
+            <button type="button" className="shape-hud-btn" onClick={openLeaderboard} title="View Leaderboards">
               <Trophy size={16} /> Hall of Fame
             </button>
-            <button 
-              className="shape-hud-btn submit" 
+            <button
+              type="button"
+              className="shape-hud-btn submit"
               onClick={submitScore}
               disabled={submitting}
               title="Broadcast battle record"
@@ -196,32 +299,32 @@ function App() {
               {submitting ? 'Submitting...' : `Submit Record (${score})`}
             </button>
           </div>
-          
+
           <div className="hud-panel controls">
-            <h3 style={{textAlign: 'center', marginBottom: '10px'}}>Tactical Dashboard</h3>
-            
+            <h3 style={{ textAlign: 'center', marginBottom: '10px' }}>Tactical Dashboard</h3>
+
             <div className="btn-group">
-              <button className="btn-blue" onClick={() => engineRef.current?.spawn('blue', 10)}>
-                <Shield size={16}/> +10 Cubes
+              <button type="button" className="btn-blue" onClick={() => engineRef.current?.spawn('blue', 10)}>
+                <Shield size={16} /> +10 Cubes
               </button>
-              <button className="btn-blue" onClick={() => engineRef.current?.spawn('blue', 50)}>
+              <button type="button" className="btn-blue" onClick={() => engineRef.current?.spawn('blue', 50)}>
                 +50
               </button>
             </div>
 
             <div className="btn-group">
-              <button className="btn-red" onClick={() => engineRef.current?.spawn('red', 10)}>
-                <Circle size={16}/> +10 Circles
+              <button type="button" className="btn-red" onClick={() => engineRef.current?.spawn('red', 10)}>
+                <Circle size={16} /> +10 Circles
               </button>
-              <button className="btn-red" onClick={() => engineRef.current?.spawn('red', 50)}>
+              <button type="button" className="btn-red" onClick={() => engineRef.current?.spawn('red', 50)}>
                 +50
               </button>
             </div>
 
-            <button className="btn-bomb" onClick={() => engineRef.current?.mathBomb()}>
+            <button type="button" className="btn-bomb" onClick={() => engineRef.current?.mathBomb()}>
               <Bomb size={16} /> Deploy Math Bomb
             </button>
-            <p style={{textAlign: 'center', fontSize: '0.75rem', color: '#94a3b8', margin: '4px 0 0'}}>
+            <p style={{ textAlign: 'center', fontSize: '0.75rem', color: '#94a3b8', margin: '4px 0 0' }}>
               ✨ Tap anywhere on screen to spawn units directly!
             </p>
           </div>
@@ -243,7 +346,7 @@ function App() {
                 <Trophy size={22} color="#facc15" />
                 <h2>Shape Wars Hall of Fame</h2>
               </div>
-              <button className="shape-close-btn" onClick={() => setShowLeaderboard(false)}>
+              <button type="button" className="shape-close-btn" onClick={() => setShowLeaderboard(false)}>
                 <X size={20} />
               </button>
             </div>
@@ -269,29 +372,33 @@ function App() {
                       </tr>
                     </thead>
                     <tbody>
-                      {leaderboard.map((item, idx) => (
-                        <tr key={idx} className={item.username === user?.username ? 'highlight-row' : ''}>
-                          <td>
-                            <span className={`rank-badge ${idx === 0 ? 'gold' : idx === 1 ? 'silver' : idx === 2 ? 'bronze' : ''}`}>
-                              {idx === 0 ? '🥇 1' : idx === 1 ? '🥈 2' : idx === 2 ? '🥉 3' : `#${idx + 1}`}
-                            </span>
-                          </td>
-                          <td>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                              <span style={{ fontWeight: 600 }}>{item.username}</span>
-                              {item.isRegistered && (
-                                <span title="Verified Hub Member" style={{ color: '#22c55e', fontSize: '0.85rem' }}>✓</span>
-                              )}
-                            </div>
-                          </td>
-                          <td style={{ fontWeight: 'bold', color: '#ef4444' }}>
-                            {item.score} units
-                          </td>
-                          <td style={{ color: '#94a3b8', fontSize: '0.8rem' }}>
-                            {new Date(item.timestamp).toLocaleDateString()}
-                          </td>
-                        </tr>
-                      ))}
+                      {leaderboard.map((item, idx) => {
+                        const safeName = String(item.username || 'Anonymous').slice(0, 24);
+                        const safeScore = Number.isFinite(Number(item.score)) ? Number(item.score) : 0;
+                        return (
+                          <tr key={item.id || idx} className={safeName === user?.username ? 'highlight-row' : ''}>
+                            <td>
+                              <span className={`rank-badge ${idx === 0 ? 'gold' : idx === 1 ? 'silver' : idx === 2 ? 'bronze' : ''}`}>
+                                {idx === 0 ? '🥇 1' : idx === 1 ? '🥈 2' : idx === 2 ? '🥉 3' : `#${idx + 1}`}
+                              </span>
+                            </td>
+                            <td>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <span style={{ fontWeight: 600 }}>{safeName}</span>
+                                {(item.isRegistered || item.isVerified) && (
+                                  <span title="Verified Hub Record" style={{ color: '#22c55e', fontSize: '0.85rem' }}>✓</span>
+                                )}
+                              </div>
+                            </td>
+                            <td style={{ fontWeight: 'bold', color: '#ef4444' }}>
+                              {safeScore.toLocaleString()} units
+                            </td>
+                            <td style={{ color: '#94a3b8', fontSize: '0.8rem' }}>
+                              {formatRecordDate(item)}
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -300,9 +407,9 @@ function App() {
 
             <div className="shape-modal-footer">
               <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>
-                Hashed & signed battle records with anti-cheat verification.
+                Signed battle records with anti-cheat verification.
               </span>
-              <button className="shape-hud-btn" onClick={() => setShowLeaderboard(false)}>
+              <button type="button" className="shape-hud-btn" onClick={() => setShowLeaderboard(false)}>
                 Close
               </button>
             </div>
@@ -310,11 +417,10 @@ function App() {
         </div>
       )}
 
-      <canvas 
-        ref={canvasRef} 
-        onClick={handleCanvasTap}
-        onTouchStart={handleCanvasTap}
-        style={{ display: 'block', width: '100vw', height: '100vh', touchAction: 'none' }} 
+      <canvas
+        ref={canvasRef}
+        onPointerDown={handleCanvasPointerDown}
+        style={{ display: 'block', width: '100vw', height: '100vh', touchAction: 'none' }}
       />
     </>
   );

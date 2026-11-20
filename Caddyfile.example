@@ -1,18 +1,93 @@
-# Alternative: Caddyfile configuration for Swiss Knife Hub
-# Caddy automatically provisions and renews SSL certificates (HTTPS) with zero manual setup.
+# ==============================================================================
+# Production Caddyfile Configuration — Swiss Knife Hub
+# ==============================================================================
+# Caddy automatically provisions and renews Let's Encrypt / ZeroSSL HTTPS certificates.
 #
 # Usage:
-# 1. Replace 'yourdomain.com' with your domain.
-# 2. Start Caddy:
-#      caddy reverse-proxy --from yourdomain.com --to 127.0.0.1:3000
-#    or place this Caddyfile in /etc/caddy/Caddyfile and run:
+# 1. Replace `yourdomain.com` with your actual domain.
+# 2. Copy to `/etc/caddy/Caddyfile`, validate, and reload:
+#      sudo cp Caddyfile.example /etc/caddy/Caddyfile
+#      sudo sed -i 's/yourdomain.com/YOUR_ACTUAL_DOMAIN.COM/g' /etc/caddy/Caddyfile
+#      sudo caddy validate --config /etc/caddy/Caddyfile
 #      sudo systemctl reload caddy
+# ==============================================================================
 
-yourdomain.com, www.yourdomain.com {
-    # Encode with gzip and zstd
-    encode gzip zstd
-
-    # Reverse proxy to the Express server
-    reverse_proxy 127.0.0.1:3000
+# Redirect www to canonical domain so cookies and Origin headers match
+www.yourdomain.com {
+    tls {
+        protocols tls1.2 tls1.3
+    }
+    header Strict-Transport-Security "max-age=63072000; includeSubDomains"
+    redir https://yourdomain.com{uri} permanent
 }
 
+yourdomain.com {
+    # Enforce modern TLS versions only
+    tls {
+        protocols tls1.2 tls1.3
+    }
+
+    # GDPR-compliant rolling access log (max 30 MiB, auto-purged after 7 days / 168h, masked IPs)
+    log {
+        output file /var/log/caddy/swiss-knife.access.log {
+            roll_size 10MiB
+            roll_keep 3
+            roll_keep_for 168h
+        }
+        format filter {
+            wrap json
+            fields {
+                request>remote_ip ip_mask {
+                    ipv4 24
+                    ipv6 48
+                }
+                request>client_ip ip_mask {
+                    ipv4 24
+                    ipv6 48
+                }
+            }
+        }
+    }
+
+    # Compress text/JS/CSS/JSON/SVG payloads
+    encode zstd gzip
+
+    # Block hidden dotfiles (.env, .git, etc.) while preserving /.well-known/* for ACME
+    @dotfiles {
+        path */.*
+        not path /.well-known/*
+    }
+    respond @dotfiles 403
+
+    # Bound request body size at proxy edge (matches Express 10kb JSON limit with safe margin)
+    request_body {
+        max_size 64KB
+    }
+
+    # Hardened response headers (`?` sets default without duplicating headers already set by server.js;
+    # Content-Security-Policy from server.js passes through untouched)
+    header {
+        Strict-Transport-Security "max-age=63072000; includeSubDomains"
+        ?X-Content-Type-Options "nosniff"
+        ?X-Frame-Options "SAMEORIGIN"
+        ?Referrer-Policy "strict-origin-when-cross-origin"
+        ?Permissions-Policy "camera=(), microphone=(self), geolocation=(self), payment=(), usb=()"
+        -Server
+        -X-Powered-By
+    }
+
+    # Reverse proxy all routes (`/`, `/health`, `/api/*`, `/neon-orbit`, `/star-locator`,
+    # `/chem-lab`, `/chill-hub`, `/shape-wars`, `/sonic-soccer`, `/nond_ex`,
+    # `/alien-echo`, `/pirate-fishing`) to Express.
+    # Caddy natively forwards `Host`, `X-Forwarded-For`, `X-Forwarded-Proto`, and `X-Forwarded-Host`.
+    reverse_proxy 127.0.0.1:3000 {
+        header_up Host {host}
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+
+        health_uri /health
+        health_interval 30s
+        health_timeout 5s
+    }
+}

@@ -1,21 +1,73 @@
+name: swiss-knife
+
 services:
   swiss-knife-hub:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: swiss-knife-hub
+    # Run as non-root `node` user (UID 1000 / GID 1000 in node:22-alpine)
+    user: "1000:1000"
     restart: unless-stopped
+    stop_grace_period: 15s
+
+    # Resource & fork-bomb safety bounds
+    mem_limit: 512m
+    pids_limit: 128
+
+    # Container security hardening: drop all Linux capabilities, prevent privilege escalation,
+    # and mount root filesystem read-only (only /app/data and /tmp are writable)
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777,nosuid,nodev
+
     ports:
-      # Port mapped to host. If using a host reverse proxy like Nginx or Caddy,
-      # requests on port 80/443 will forward here (port 3000).
-      - "${PORT:-3000}:3000"
+      # Bind to 127.0.0.1 by default so Docker's iptables rules do NOT expose port 3000
+      # publicly around UFW or host reverse proxies (Nginx / Caddy).
+      # Set BIND_HOST=0.0.0.0 in .env only for direct LAN testing without a reverse proxy.
+      - "${BIND_HOST:-127.0.0.1}:${PORT:-3000}:3000"
+
+    env_file:
+      - path: .env
+        required: false
+
     environment:
       - NODE_ENV=${NODE_ENV:-production}
       - PORT=3000
       - DOMAIN=${DOMAIN:-}
+      - DB_PATH=${DB_PATH:-/app/data/hub_db.json}
+      # Cryptographic secret used by security.js, database.js, and quantumCrypto.js.
+      # MUST be set in production .env (generate with: openssl rand -hex 32).
+      - SECURITY_SECRET=${SECURITY_SECRET:-}
+
     volumes:
-      - ./data:/app/data
+      # Named volume automatically inherits `node:node` (1000:1000) ownership from the image.
+      # If switching to a host bind mount (`./data:/app/data`), run `mkdir -p data && sudo chown -R 1000:1000 data` first.
+      - hub_data:/app/data
+
+    # Bounded log rotation for disk safety & GDPR log-retention minimization (max 30 MB total)
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/health || exit 1"]
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
+        ]
       interval: 30s
       timeout: 5s
       retries: 3
       start_period: 15s
+
+volumes:
+  hub_data:

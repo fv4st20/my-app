@@ -195,10 +195,32 @@ body {
 }
 
 /* In-game Leaderboard & User Elements */
-.leaderboard-btn-top {
+.top-controls-right {
   position: absolute;
   top: 15px;
   right: 15px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mute-btn-top {
+  background: rgba(248, 250, 252, 0.1);
+  border: 2px solid #94a3b8;
+  color: #f8fafc;
+  padding: 5px 9px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.mute-btn-top.muted {
+  border-color: #ef4444;
+  color: #fca5a5;
+}
+
+.leaderboard-btn-top {
   background: rgba(56, 189, 248, 0.2);
   border: 2px solid #38bdf8;
   color: #38bdf8;
@@ -347,4 +369,21 @@ body {
   font-weight: 900;
   font-size: 0.9rem;
   cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .alien-btn,
+  .alien-emoji,
+  .start-btn,
+  .return-btn,
+  .leaderboard-btn-top,
+  .mute-btn-top {
+    transition: none;
+  }
+  .alien-top.active,
+  .alien-right.active,
+  .alien-bottom.active,
+  .alien-left.active {
+    transform: none;
+  }
 }

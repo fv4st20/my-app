@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import {
   Anchor,
   Fish,
@@ -12,14 +12,10 @@ import {
   Volume2,
   VolumeX,
   BookOpen,
-  RefreshCw,
   Trophy,
   ArrowLeft,
   Star,
-  Check,
-  Zap,
-  Info,
-  Waves
+  Zap
 } from 'lucide-react';
 import { ZONES, RARITIES, FISH_DATABASE } from './data/fishDatabase';
 import { RODS, BAITS, SHIPS, CAPTAIN_PERKS } from './data/equipment';
@@ -28,44 +24,192 @@ import './index.css';
 
 const SAVE_KEY = 'pirate_fishing_save_v3';
 
-function App() {
-  // Load initial persistent state
-  const [saveLoaded, setSaveLoaded] = useState(false);
-  const [gold, setGold] = useState(0);
-  const [lifetimeGold, setLifetimeGold] = useState(0);
-  const [allTimeGold, setAllTimeGold] = useState(0);
-  const [totalFishCaught, setTotalFishCaught] = useState(0);
-  const [highestFishValue, setHighestFishValue] = useState(0);
+const DEFAULT_PERK_LEVELS = {
+  perk_greed: 0,
+  perk_power: 0,
+  perk_crew: 0,
+  perk_double: 0,
+};
 
-  const [cargo, setCargo] = useState([]);
-  const [equippedRodId, setEquippedRodId] = useState('rod_1');
-  const [unlockedRods, setUnlockedRods] = useState(['rod_1']);
-  const [equippedBaitId, setEquippedBaitId] = useState('bait_1');
-  const [unlockedBaits, setUnlockedBaits] = useState(['bait_1']);
-  const [equippedShipId, setEquippedShipId] = useState('ship_1');
-  const [unlockedShips, setUnlockedShips] = useState(['ship_1']);
+function isFiniteNonNegative(val) {
+  return typeof val === 'number' && Number.isFinite(val) && val >= 0;
+}
 
-  const [crewCount, setCrewCount] = useState(0);
-  const [currentZoneId, setCurrentZoneId] = useState('cove');
-  const [unlockedZones, setUnlockedZones] = useState(['cove']);
+function isPlainObject(val) {
+  return typeof val === 'object' && val !== null && !Array.isArray(val);
+}
 
-  // Prestige / Infamy Ascension System
-  const [infamySkulls, setInfamySkulls] = useState(0);
-  const [totalAscensions, setTotalAscensions] = useState(0);
-  const [perkLevels, setPerkLevels] = useState({
-    perk_greed: 0,
-    perk_power: 0,
-    perk_crew: 0,
-    perk_double: 0,
+function loadInitialSave() {
+  const defaults = {
+    gold: 0,
+    lifetimeGold: 0,
+    allTimeGold: 0,
+    totalFishCaught: 0,
+    highestFishValue: 0,
+    cargo: [],
+    equippedRodId: 'rod_1',
+    unlockedRods: ['rod_1'],
+    equippedBaitId: 'bait_1',
+    unlockedBaits: ['bait_1'],
+    equippedShipId: 'ship_1',
+    unlockedShips: ['ship_1'],
+    crewCount: 0,
+    currentZoneId: 'cove',
+    unlockedZones: ['cove'],
+    infamySkulls: 0,
+    totalAscensions: 0,
+    perkLevels: { ...DEFAULT_PERK_LEVELS },
+    bestiary: {},
+    soundMuted: false,
+  };
+
+  if (typeof window === 'undefined') return defaults;
+
+  try {
+    const saved = localStorage.getItem(SAVE_KEY);
+    if (!saved) return defaults;
+    const data = JSON.parse(saved);
+    if (!isPlainObject(data)) return defaults;
+
+    const validRodIds = new Set(RODS.map(r => r.id));
+    const validBaitIds = new Set(BAITS.map(b => b.id));
+    const validShipIds = new Set(SHIPS.map(s => s.id));
+    const validZoneIds = new Set(ZONES.map(z => z.id));
+
+    const safeUnlockedRods = Array.isArray(data.unlockedRods)
+      ? Array.from(new Set(['rod_1', ...data.unlockedRods.filter(id => validRodIds.has(id))]))
+      : ['rod_1'];
+    const safeUnlockedBaits = Array.isArray(data.unlockedBaits)
+      ? Array.from(new Set(['bait_1', ...data.unlockedBaits.filter(id => validBaitIds.has(id))]))
+      : ['bait_1'];
+    const safeUnlockedShips = Array.isArray(data.unlockedShips)
+      ? Array.from(new Set(['ship_1', ...data.unlockedShips.filter(id => validShipIds.has(id))]))
+      : ['ship_1'];
+    const safeUnlockedZones = Array.isArray(data.unlockedZones)
+      ? Array.from(new Set(['cove', ...data.unlockedZones.filter(id => validZoneIds.has(id))]))
+      : ['cove'];
+
+    const safeCargo = Array.isArray(data.cargo)
+      ? data.cargo.filter(item => isPlainObject(item) && typeof item.id === 'string' && isFiniteNonNegative(item.value)).slice(0, 800)
+      : [];
+
+    const safePerkLevels = { ...DEFAULT_PERK_LEVELS };
+    if (isPlainObject(data.perkLevels)) {
+      for (const perk of CAPTAIN_PERKS) {
+        const lvl = data.perkLevels[perk.id];
+        if (isFiniteNonNegative(lvl)) {
+          safePerkLevels[perk.id] = Math.min(perk.maxLevel, Math.floor(lvl));
+        }
+      }
+    }
+
+    const safeBestiary = {};
+    if (isPlainObject(data.bestiary)) {
+      for (const fish of FISH_DATABASE) {
+        const entry = data.bestiary[fish.id];
+        if (isPlainObject(entry) && isFiniteNonNegative(entry.count) && entry.count > 0) {
+          safeBestiary[fish.id] = {
+            count: Math.floor(entry.count),
+            maxWeight: isFiniteNonNegative(entry.maxWeight) ? entry.maxWeight : 0,
+            firstCaught: isFiniteNonNegative(entry.firstCaught) ? entry.firstCaught : Date.now(),
+          };
+        }
+      }
+    }
+
+    return {
+      gold: isFiniteNonNegative(data.gold) ? Math.floor(data.gold) : 0,
+      lifetimeGold: isFiniteNonNegative(data.lifetimeGold) ? Math.floor(data.lifetimeGold) : 0,
+      allTimeGold: isFiniteNonNegative(data.allTimeGold) ? Math.floor(data.allTimeGold) : 0,
+      totalFishCaught: isFiniteNonNegative(data.totalFishCaught) ? Math.floor(data.totalFishCaught) : 0,
+      highestFishValue: isFiniteNonNegative(data.highestFishValue) ? Math.floor(data.highestFishValue) : 0,
+      cargo: safeCargo,
+      equippedRodId: validRodIds.has(data.equippedRodId) && safeUnlockedRods.includes(data.equippedRodId) ? data.equippedRodId : 'rod_1',
+      unlockedRods: safeUnlockedRods,
+      equippedBaitId: validBaitIds.has(data.equippedBaitId) && safeUnlockedBaits.includes(data.equippedBaitId) ? data.equippedBaitId : 'bait_1',
+      unlockedBaits: safeUnlockedBaits,
+      equippedShipId: validShipIds.has(data.equippedShipId) && safeUnlockedShips.includes(data.equippedShipId) ? data.equippedShipId : 'ship_1',
+      unlockedShips: safeUnlockedShips,
+      crewCount: isFiniteNonNegative(data.crewCount) ? Math.floor(data.crewCount) : 0,
+      currentZoneId: validZoneIds.has(data.currentZoneId) && safeUnlockedZones.includes(data.currentZoneId) ? data.currentZoneId : 'cove',
+      unlockedZones: safeUnlockedZones,
+      infamySkulls: isFiniteNonNegative(data.infamySkulls) ? Math.floor(data.infamySkulls) : 0,
+      totalAscensions: isFiniteNonNegative(data.totalAscensions) ? Math.floor(data.totalAscensions) : 0,
+      perkLevels: safePerkLevels,
+      bestiary: safeBestiary,
+      soundMuted: typeof data.soundMuted === 'boolean' ? data.soundMuted : false,
+    };
+  } catch {
+    return defaults;
+  }
+}
+
+function rollFishForZone(zoneId, bait) {
+  const available = FISH_DATABASE.filter(f => f.zone === zoneId || (zoneId === 'bermuda' && f.rarity === 'Mythic'));
+  if (available.length === 0) {
+    return { ...FISH_DATABASE[0], weightLbs: 2.0, caughtAt: Date.now() };
+  }
+
+  const luck = bait?.luckBonus || 0;
+  const rareLuck = bait?.rareBonus || 0;
+
+  const weightedList = available.map(f => {
+    let weight = f.weight;
+    if (f.rarity === 'Uncommon') weight += luck * 0.15;
+    if (f.rarity === 'Rare') weight += luck * 0.3 + rareLuck * 0.2;
+    if (f.rarity === 'Epic') weight += luck * 0.15 + rareLuck * 0.4;
+    if (f.rarity === 'Legendary') weight += luck * 0.08 + rareLuck * 0.3;
+    if (f.rarity === 'Mythic') weight += luck * 0.04 + rareLuck * 0.25;
+    return { fish: f, weight: Math.max(0.1, weight) };
   });
 
-  // Compendium Bestiary: { [fishId]: { count, maxWeight, firstCaught } }
-  const [bestiary, setBestiary] = useState({});
+  const totalWeight = weightedList.reduce((sum, item) => sum + item.weight, 0);
+  let rand = Math.random() * totalWeight;
 
-  // Active UI Tab: 'cargo' | 'shop' | 'bestiary' | 'ascension' | 'stats'
+  for (const item of weightedList) {
+    if (rand < item.weight) {
+      const baseLbs = item.fish.value * 0.08 + 1.2;
+      const actualWeight = Number((baseLbs * (0.8 + Math.random() * 0.5)).toFixed(1));
+      return { ...item.fish, weightLbs: actualWeight, caughtAt: Date.now() + Math.random() };
+    }
+    rand -= item.weight;
+  }
+  return { ...available[0], weightLbs: 2.5, caughtAt: Date.now() + Math.random() };
+}
+
+function App() {
+  const [initialSave] = useState(loadInitialSave);
+
+  const [gold, setGold] = useState(initialSave.gold);
+  const [lifetimeGold, setLifetimeGold] = useState(initialSave.lifetimeGold);
+  const [allTimeGold, setAllTimeGold] = useState(initialSave.allTimeGold);
+  const [totalFishCaught, setTotalFishCaught] = useState(initialSave.totalFishCaught);
+  const [highestFishValue, setHighestFishValue] = useState(initialSave.highestFishValue);
+
+  const [cargo, setCargo] = useState(initialSave.cargo);
+  const [equippedRodId, setEquippedRodId] = useState(initialSave.equippedRodId);
+  const [unlockedRods, setUnlockedRods] = useState(initialSave.unlockedRods);
+  const [equippedBaitId, setEquippedBaitId] = useState(initialSave.equippedBaitId);
+  const [unlockedBaits, setUnlockedBaits] = useState(initialSave.unlockedBaits);
+  const [equippedShipId, setEquippedShipId] = useState(initialSave.equippedShipId);
+  const [unlockedShips, setUnlockedShips] = useState(initialSave.unlockedShips);
+
+  const [crewCount, setCrewCount] = useState(initialSave.crewCount);
+  const [currentZoneId, setCurrentZoneId] = useState(initialSave.currentZoneId);
+  const [unlockedZones, setUnlockedZones] = useState(initialSave.unlockedZones);
+
+  // Prestige / Infamy Ascension System
+  const [infamySkulls, setInfamySkulls] = useState(initialSave.infamySkulls);
+  const [totalAscensions, setTotalAscensions] = useState(initialSave.totalAscensions);
+  const [perkLevels, setPerkLevels] = useState(initialSave.perkLevels);
+
+  // Compendium Bestiary
+  const [bestiary, setBestiary] = useState(initialSave.bestiary);
+
+  // Active UI State
   const [activeTab, setActiveTab] = useState('cargo');
-  const [bestiaryFilter, setBestiaryFilter] = useState('all'); // 'all' | 'caught' | 'undiscovered' | zoneId
-  const [soundMuted, setSoundMuted] = useState(false);
+  const [bestiaryFilter, setBestiaryFilter] = useState('all');
+  const [soundMuted, setSoundMuted] = useState(initialSave.soundMuted);
   const [showPrestigeModal, setShowPrestigeModal] = useState(false);
   const [recentCatchAlert, setRecentCatchAlert] = useState(null);
 
@@ -79,106 +223,129 @@ function App() {
   const [fishState, setFishState] = useState('idle');
   const [reelProgress, setReelProgress] = useState(0);
   const [currentBite, setCurrentBite] = useState(null);
-  const [doubleCatchTriggered, setDoubleCatchTriggered] = useState(false);
   const [zoneNotice, setZoneNotice] = useState(null);
 
   const reelTimerRef = useRef(null);
   const castTimerRef = useRef(null);
   const finishTimerRef = useRef(null);
-  const cargoRef = useRef(cargo);
-  cargoRef.current = cargo;
+  const zoneTimerRef = useRef(null);
+  const cargoRef = useRef(initialSave.cargo);
+  const fishStateRef = useRef('idle');
+  const reelProgressRef = useRef(0);
+  const challengeRef = useRef(null);
 
-  // 1. Initial Load from LocalStorage
+  // Derived Equipment Objects
+  const currentRod = useMemo(() => RODS.find(r => r.id === equippedRodId) || RODS[0], [equippedRodId]);
+  const currentBait = useMemo(() => BAITS.find(b => b.id === equippedBaitId) || BAITS[0], [equippedBaitId]);
+  const currentShip = useMemo(() => SHIPS.find(s => s.id === equippedShipId) || SHIPS[0], [equippedShipId]);
+  const currentZone = useMemo(() => ZONES.find(z => z.id === currentZoneId) || ZONES[0], [currentZoneId]);
+
+  const goldMultiplier = useMemo(() => {
+    const infamyBonus = totalAscensions * 0.25;
+    const greedBonus = (perkLevels.perk_greed || 0) * 0.15;
+    const shipBonus = currentShip.goldBonus || 0;
+    return Number((1 + infamyBonus + greedBonus + shipBonus).toFixed(2));
+  }, [totalAscensions, perkLevels.perk_greed, currentShip.goldBonus]);
+
+  // Keep refs synchronized outside render
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem(SAVE_KEY);
-      if (saved) {
-        const data = JSON.parse(saved);
-        if (typeof data.gold === 'number') setGold(data.gold);
-        if (typeof data.lifetimeGold === 'number') setLifetimeGold(data.lifetimeGold);
-        if (typeof data.allTimeGold === 'number') setAllTimeGold(data.allTimeGold);
-        if (typeof data.totalFishCaught === 'number') setTotalFishCaught(data.totalFishCaught);
-        if (typeof data.highestFishValue === 'number') setHighestFishValue(data.highestFishValue);
-        if (Array.isArray(data.cargo)) setCargo(data.cargo);
-        if (data.equippedRodId) setEquippedRodId(data.equippedRodId);
-        if (Array.isArray(data.unlockedRods)) setUnlockedRods(data.unlockedRods);
-        if (data.equippedBaitId) setEquippedBaitId(data.equippedBaitId);
-        if (Array.isArray(data.unlockedBaits)) setUnlockedBaits(data.unlockedBaits);
-        if (data.equippedShipId) setEquippedShipId(data.equippedShipId);
-        if (Array.isArray(data.unlockedShips)) setUnlockedShips(data.unlockedShips);
-        if (typeof data.crewCount === 'number') setCrewCount(data.crewCount);
-        if (data.currentZoneId) setCurrentZoneId(data.currentZoneId);
-        if (Array.isArray(data.unlockedZones)) setUnlockedZones(data.unlockedZones);
-        if (typeof data.infamySkulls === 'number') setInfamySkulls(data.infamySkulls);
-        if (typeof data.totalAscensions === 'number') setTotalAscensions(data.totalAscensions);
-        if (data.perkLevels) setPerkLevels(data.perkLevels);
-        if (data.bestiary) setBestiary(data.bestiary);
-        if (typeof data.soundMuted === 'boolean') {
-          setSoundMuted(data.soundMuted);
-          sounds.muted = data.soundMuted;
-        }
-      }
-    } catch (e) {
-      console.warn('Could not load pirate fishing save:', e);
+    cargoRef.current = cargo;
+  }, [cargo]);
+
+  useEffect(() => {
+    fishStateRef.current = fishState;
+  }, [fishState]);
+
+  useEffect(() => {
+    sounds.muted = soundMuted;
+  }, [soundMuted]);
+
+  const clearFishingTimers = useCallback(() => {
+    if (reelTimerRef.current) {
+      clearInterval(reelTimerRef.current);
+      reelTimerRef.current = null;
     }
-    setSaveLoaded(true);
+    if (castTimerRef.current) {
+      clearTimeout(castTimerRef.current);
+      castTimerRef.current = null;
+    }
+    if (finishTimerRef.current) {
+      clearTimeout(finishTimerRef.current);
+      finishTimerRef.current = null;
+    }
   }, []);
 
-  // Fetch authenticated user & leaderboard
+  const fetchPirateLeaderboard = useCallback(async () => {
+    try {
+      const res = await fetch('/api/leaderboard/pirate-fishing?limit=25', {
+        credentials: 'same-origin'
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.success && Array.isArray(data.leaderboard)) {
+          setPirateLeaderboard(data.leaderboard);
+        }
+      }
+    } catch {
+      // Network error ignored
+    }
+  }, []);
+
+  const requestPirateChallenge = useCallback(async () => {
+    try {
+      const res = await fetch('/api/leaderboard/start', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ gameId: 'pirate-fishing' })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.success && data.challenge) {
+          challengeRef.current = data.challenge;
+          return data.challenge;
+        }
+      }
+    } catch {
+      // Offline or unauthenticated
+    }
+    return null;
+  }, []);
+
+  // Fetch authenticated user, challenge token & leaderboard, and clean up timers on unmount
   useEffect(() => {
-    fetch('/api/auth/me')
-      .then(res => res.json())
+    fetch('/api/auth/me', { credentials: 'same-origin' })
+      .then(res => (res.ok ? res.json() : null))
       .then(data => {
         if (data && data.authenticated && data.user) {
           setAuthUser(data.user);
         }
       })
       .catch(() => {});
-    fetchPirateLeaderboard();
-  }, []);
 
-  const fetchPirateLeaderboard = async () => {
-    try {
-      const res = await fetch('/api/leaderboard/pirate-fishing?limit=25');
-      const data = await res.json();
-      if (data && data.success) {
-        setPirateLeaderboard(data.leaderboard || []);
+    requestPirateChallenge();
+
+    fetch('/api/leaderboard/pirate-fishing?limit=25', { credentials: 'same-origin' })
+      .then(res => (res.ok ? res.json() : null))
+      .then(data => {
+        if (data && data.success && Array.isArray(data.leaderboard)) {
+          setPirateLeaderboard(data.leaderboard);
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      clearFishingTimers();
+      if (zoneTimerRef.current) {
+        clearTimeout(zoneTimerRef.current);
+        zoneTimerRef.current = null;
       }
-    } catch (e) {}
-  };
+      sounds.dispose();
+    };
+  }, [clearFishingTimers, requestPirateChallenge]);
 
-  const submitToGlobalLeaderboard = async () => {
-    if (allTimeGold <= 0) return;
-    setSubmittingLeaderboard(true);
-    setLeaderboardNotice(null);
-    try {
-      const res = await fetch('/api/leaderboard/submit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          gameId: 'pirate-fishing',
-          score: allTimeGold,
-          username: authUser ? authUser.username : 'Captain Anonymous',
-          details: { infamy: totalAscensions, caught: totalFishCaught }
-        })
-      });
-      const data = await res.json();
-      if (data && data.success) {
-        setLeaderboardNotice(`⚓ Glory Broadcast! You hold Global Rank #${data.rank || 1}!`);
-        fetchPirateLeaderboard();
-      } else {
-        setLeaderboardNotice(data.reason || 'Broadcast failed.');
-      }
-    } catch (e) {
-      setLeaderboardNotice('Network connection error.');
-    } finally {
-      setSubmittingLeaderboard(false);
-    }
-  };
-
-  // 2. Auto-save to LocalStorage
+  // Auto-save to LocalStorage
   useEffect(() => {
-    if (!saveLoaded) return;
     try {
       const stateToSave = {
         gold,
@@ -203,11 +370,10 @@ function App() {
         soundMuted,
       };
       localStorage.setItem(SAVE_KEY, JSON.stringify(stateToSave));
-    } catch (e) {
-      console.warn('Failed to save to localStorage:', e);
+    } catch {
+      // Storage quota or privacy mode restriction
     }
   }, [
-    saveLoaded,
     gold,
     lifetimeGold,
     allTimeGold,
@@ -230,150 +396,196 @@ function App() {
     soundMuted,
   ]);
 
-  // Derived Equipment Objects
-  const currentRod = useMemo(() => RODS.find(r => r.id === equippedRodId) || RODS[0], [equippedRodId]);
-  const currentBait = useMemo(() => BAITS.find(b => b.id === equippedBaitId) || BAITS[0], [equippedBaitId]);
-  const currentShip = useMemo(() => SHIPS.find(s => s.id === equippedShipId) || SHIPS[0], [equippedShipId]);
-  const currentZone = useMemo(() => ZONES.find(z => z.id === currentZoneId) || ZONES[0], [currentZoneId]);
+  const submitToGlobalLeaderboard = async () => {
+    if (!isFiniteNonNegative(allTimeGold) || allTimeGold <= 0 || submittingLeaderboard) return;
+    setSubmittingLeaderboard(true);
+    setLeaderboardNotice(null);
 
-  // Total Gold Multiplier Calculation
-  // Base 1.0 + (Total Ascensions * 0.25) + Greed Perk + Ship Bonus
-  const goldMultiplier = useMemo(() => {
-    const infamyBonus = totalAscensions * 0.25;
-    const greedBonus = (perkLevels.perk_greed || 0) * 0.15;
-    const shipBonus = currentShip.goldBonus || 0;
-    return Number((1 + infamyBonus + greedBonus + shipBonus).toFixed(2));
-  }, [totalAscensions, perkLevels.perk_greed, currentShip.goldBonus]);
+    try {
+      let activeChallenge = challengeRef.current;
+      if (!activeChallenge) {
+        activeChallenge = await requestPirateChallenge();
+      }
+      challengeRef.current = null;
 
-  // Toggle Sound
-  const toggleSound = () => {
-    const next = !soundMuted;
-    setSoundMuted(next);
-    sounds.muted = next;
+      const res = await fetch('/api/leaderboard/submit', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          gameId: 'pirate-fishing',
+          score: Math.min(100000000, Math.floor(allTimeGold)),
+          challenge: activeChallenge,
+          username: authUser ? authUser.username : 'Guest_Captain',
+          details: { infamy: totalAscensions, caught: totalFishCaught }
+        })
+      });
+      const data = await res.json().catch(() => null);
+      if (res.ok && data && data.success) {
+        setLeaderboardNotice(`⚓ Glory Broadcast! You hold Global Rank #${data.rank || 1}!`);
+        fetchPirateLeaderboard();
+      } else {
+        setLeaderboardNotice(data?.reason || 'Broadcast failed.');
+      }
+    } catch {
+      setLeaderboardNotice('Network connection error.');
+    } finally {
+      setSubmittingLeaderboard(false);
+      requestPirateChallenge();
+    }
   };
 
-  // Roll a Random Fish based on Zone and Bait Luck
-  const rollFish = () => {
-    // Candidates for current zone (plus small chance for wanderers in Bermuda)
-    const available = FISH_DATABASE.filter(f => f.zone === currentZoneId || (currentZoneId === 'bermuda' && f.rarity === 'Mythic'));
-    if (available.length === 0) return FISH_DATABASE[0];
+  const toggleSound = () => {
+    setSoundMuted(prev => !prev);
+  };
 
-    const luck = currentBait.luckBonus || 0;
-    const rareLuck = currentBait.rareBonus || 0;
+  // Handle successful fish catch (idempotent against duplicate triggers)
+  const handleCatchSuccess = useCallback((caughtFish) => {
+    if (fishStateRef.current !== 'reeling' || !caughtFish) return;
+    fishStateRef.current = 'caught';
+    if (reelTimerRef.current) {
+      clearInterval(reelTimerRef.current);
+      reelTimerRef.current = null;
+    }
 
-    let weightedList = available.map(f => {
-      let weight = f.weight;
-      if (f.rarity === 'Uncommon') weight += luck * 0.15;
-      if (f.rarity === 'Rare') weight += luck * 0.3 + rareLuck * 0.2;
-      if (f.rarity === 'Epic') weight += luck * 0.15 + rareLuck * 0.4;
-      if (f.rarity === 'Legendary') weight += luck * 0.08 + rareLuck * 0.3;
-      if (f.rarity === 'Mythic') weight += luck * 0.04 + rareLuck * 0.25;
-      return { fish: f, weight: Math.max(0.1, weight) };
+    setFishState('caught');
+    sounds.playCatch(caughtFish.rarity);
+
+    const doublePerkChance = (perkLevels.perk_double || 0) * 0.06;
+    const isDouble = Math.random() < doublePerkChance;
+    const candidates = isDouble ? [caughtFish, { ...caughtFish, caughtAt: Date.now() + 1 }] : [caughtFish];
+
+    const availableSlots = Math.max(0, currentShip.cargoCap - cargoRef.current.length);
+    const addedFish = candidates.slice(0, availableSlots);
+    const addedCount = addedFish.length;
+
+    if (addedCount > 0) {
+      setCargo(c => {
+        const slots = Math.max(0, currentShip.cargoCap - c.length);
+        return [...c, ...candidates.slice(0, slots)];
+      });
+
+      setTotalFishCaught(prev => prev + addedCount);
+      setHighestFishValue(prev => Math.max(prev, caughtFish.value));
+
+      setBestiary(prev => {
+        const existing = prev[caughtFish.id] || { count: 0, maxWeight: 0, firstCaught: Date.now() };
+        return {
+          ...prev,
+          [caughtFish.id]: {
+            count: existing.count + addedCount,
+            maxWeight: Math.max(existing.maxWeight, caughtFish.weightLbs),
+            firstCaught: existing.firstCaught || Date.now(),
+          }
+        };
+      });
+    }
+
+    setRecentCatchAlert({
+      fish: caughtFish,
+      isDouble: addedCount > 1,
     });
 
-    const totalWeight = weightedList.reduce((sum, item) => sum + item.weight, 0);
-    let rand = Math.random() * totalWeight;
+    if (finishTimerRef.current) clearTimeout(finishTimerRef.current);
+    finishTimerRef.current = setTimeout(() => {
+      fishStateRef.current = 'idle';
+      setFishState('idle');
+      setRecentCatchAlert(null);
+    }, 1800);
+  }, [currentShip.cargoCap, perkLevels.perk_double]);
 
-    for (let item of weightedList) {
-      if (rand < item.weight) {
-        // Generate random realistic weight in lbs based on baseValue
-        const baseLbs = (item.fish.value * 0.08) + 1.2;
-        const actualWeight = Number((baseLbs * (0.8 + Math.random() * 0.5)).toFixed(1));
-        return { ...item.fish, weightLbs: actualWeight, caughtAt: Date.now() };
-      }
-      rand -= item.weight;
-    }
-    return { ...available[0], weightLbs: 2.5, caughtAt: Date.now() };
-  };
-
-  // Cast Line
-  const castLine = () => {
-    if (fishState !== 'idle') return;
-    if (cargo.length >= currentShip.cargoCap) {
+  const castLine = useCallback(() => {
+    if (fishStateRef.current !== 'idle') return;
+    if (cargoRef.current.length >= currentShip.cargoCap) {
       setActiveTab('cargo');
       return;
     }
 
     sounds.playCast();
+    fishStateRef.current = 'waiting';
     setFishState('waiting');
-    setDoubleCatchTriggered(false);
 
-    // Random wait between 1.5s and 3.8s
     const waitTime = 1500 + Math.random() * 2300;
     if (castTimerRef.current) clearTimeout(castTimerRef.current);
     castTimerRef.current = setTimeout(() => {
-      const rolled = rollFish();
+      if (fishStateRef.current !== 'waiting') return;
+      const rolled = rollFishForZone(currentZoneId, currentBait);
       setCurrentBite(rolled);
+      reelProgressRef.current = 35;
+      setReelProgress(35);
+      fishStateRef.current = 'reeling';
       setFishState('reeling');
-      setReelProgress(35); // Start at 35%
       sounds.playBite();
     }, waitTime);
-  };
+  }, [currentBait, currentShip.cargoCap, currentZoneId]);
 
-  // Reeling Drain Loop
+  const reelClick = useCallback(() => {
+    if (fishStateRef.current !== 'reeling' || !currentBite) return;
+
+    sounds.playReelClick();
+    const rodPower = currentRod.power + (perkLevels.perk_power || 0) * 10;
+    const nextP = Math.min(100, reelProgressRef.current + rodPower);
+    reelProgressRef.current = nextP;
+    setReelProgress(nextP);
+
+    if (nextP >= 100) {
+      handleCatchSuccess(currentBite);
+    }
+  }, [currentBite, currentRod.power, handleCatchSuccess, perkLevels.perk_power]);
+
+  // Reeling Drain Loop (no impure state-updater side effects)
   useEffect(() => {
-    if (fishState === 'reeling') {
-      reelTimerRef.current = setInterval(() => {
-        setReelProgress(p => {
-          const drainReduction = currentRod.drainReduction || 0;
-          const diff = currentBite?.difficulty || 1.0;
-          const drainRate = (2.2 * diff) * (1 - drainReduction);
-
-          const newP = p - drainRate;
-          if (newP <= 0) {
-            setTimeout(() => {
-              setFishState('lost');
-              if (finishTimerRef.current) clearTimeout(finishTimerRef.current);
-              finishTimerRef.current = setTimeout(() => setFishState('idle'), 1400);
-            }, 0);
-            return 0;
-          }
-          return newP;
-        });
-      }, 100);
-    } else {
+    if (fishState !== 'reeling' || !currentBite) {
       if (reelTimerRef.current) {
         clearInterval(reelTimerRef.current);
         reelTimerRef.current = null;
       }
+      return;
     }
+
+    reelTimerRef.current = setInterval(() => {
+      if (fishStateRef.current !== 'reeling') return;
+      const drainReduction = currentRod.drainReduction || 0;
+      const diff = currentBite.difficulty || 1.0;
+      const drainRate = 2.2 * diff * (1 - drainReduction);
+
+      const nextP = Math.max(0, reelProgressRef.current - drainRate);
+      reelProgressRef.current = nextP;
+      setReelProgress(nextP);
+
+      if (nextP <= 0) {
+        if (reelTimerRef.current) {
+          clearInterval(reelTimerRef.current);
+          reelTimerRef.current = null;
+        }
+        fishStateRef.current = 'lost';
+        setFishState('lost');
+        if (finishTimerRef.current) clearTimeout(finishTimerRef.current);
+        finishTimerRef.current = setTimeout(() => {
+          fishStateRef.current = 'idle';
+          setFishState('idle');
+        }, 1400);
+      }
+    }, 100);
+
     return () => {
       if (reelTimerRef.current) {
         clearInterval(reelTimerRef.current);
         reelTimerRef.current = null;
       }
     };
-  }, [fishState, currentBite, currentRod]);
-
-  // Reel Click Handler
-  const reelClick = () => {
-    if (fishState !== 'reeling' || !currentBite) return;
-
-    sounds.playReelClick();
-
-    setReelProgress(p => {
-      const rodPower = currentRod.power + ((perkLevels.perk_power || 0) * 10);
-      const newP = p + rodPower;
-
-      if (newP >= 100) {
-        // Schedule catch outside of state reducer
-        setTimeout(() => handleCatchSuccess(currentBite), 0);
-        return 100;
-      }
-      return newP;
-    });
-  };
+  }, [fishState, currentBite, currentRod.drainReduction]);
 
   // Spacebar Desktop Support
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.code === 'Space' && !e.repeat) {
         const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
-        if (activeTag === 'input' || activeTag === 'textarea') return;
-        if (fishState === 'idle') {
+        if (activeTag === 'input' || activeTag === 'textarea' || activeTag === 'button') return;
+        if (fishStateRef.current === 'idle') {
           e.preventDefault();
           castLine();
-        } else if (fishState === 'reeling') {
+        } else if (fishStateRef.current === 'reeling') {
           e.preventDefault();
           reelClick();
         }
@@ -381,88 +593,51 @@ function App() {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [fishState, cargo.length, currentShip.cargoCap, currentBite, currentRod, perkLevels]);
+  }, [castLine, reelClick]);
 
-  // Handle successful fish catch
-  const handleCatchSuccess = (caughtFish) => {
-    if (fishState !== 'reeling') return;
-    setFishState('caught');
-    sounds.playCatch(caughtFish.rarity);
-
-    // Check Davy Jones double catch perk
-    const doublePerkChance = (perkLevels.perk_double || 0) * 0.06;
-    const isDouble = Math.random() < doublePerkChance;
-    setDoubleCatchTriggered(isDouble);
-
-    const fishToAdd = isDouble ? [caughtFish, { ...caughtFish, caughtAt: Date.now() + 1 }] : [caughtFish];
-
-    setCargo(c => {
-      const remainingSlots = Math.max(0, currentShip.cargoCap - c.length);
-      return [...c, ...fishToAdd.slice(0, remainingSlots)];
-    });
-
-    setTotalFishCaught(prev => prev + (isDouble ? 2 : 1));
-    setHighestFishValue(prev => Math.max(prev, caughtFish.value));
-
-    // Update Bestiary
-    setBestiary(prev => {
-      const existing = prev[caughtFish.id] || { count: 0, maxWeight: 0, firstCaught: Date.now() };
-      return {
-        ...prev,
-        [caughtFish.id]: {
-          count: existing.count + (isDouble ? 2 : 1),
-          maxWeight: Math.max(existing.maxWeight, caughtFish.weightLbs),
-          firstCaught: existing.firstCaught || Date.now(),
-        }
-      };
-    });
-
-    setRecentCatchAlert({
-      fish: caughtFish,
-      isDouble,
-    });
-
-    if (finishTimerRef.current) clearTimeout(finishTimerRef.current);
-    finishTimerRef.current = setTimeout(() => {
-      setFishState('idle');
-      setRecentCatchAlert(null);
-    }, 1800);
-  };
-
-  // Passive Crew Auto-Fishing (Decoupled from setCargo)
+  // Passive Crew Auto-Fishing (scales properly with crewCount & perk_crew)
   useEffect(() => {
     if (crewCount <= 0) return;
 
-    const intervalTime = Math.max(2500, Math.floor(10000 / (1 + (perkLevels.perk_crew || 0) * 0.2)));
+    const speedMultiplier = crewCount * (1 + (perkLevels.perk_crew || 0) * 0.2);
+    const intervalTime = Math.max(1000, Math.floor(10000 / speedMultiplier));
+    const batchPerTick = Math.max(1, Math.floor(speedMultiplier / 10));
 
     const interval = setInterval(() => {
-      if (cargoRef.current.length >= currentShip.cargoCap) return;
+      const slotsLeft = currentShip.cargoCap - cargoRef.current.length;
+      if (slotsLeft <= 0) return;
 
-      const autoFish = rollFish();
+      const catchCount = Math.min(slotsLeft, batchPerTick);
+      const caughtBatch = [];
+      for (let i = 0; i < catchCount; i++) {
+        caughtBatch.push(rollFishForZone(currentZoneId, currentBait));
+      }
 
       setCargo(prevCargo => {
-        if (prevCargo.length >= currentShip.cargoCap) return prevCargo;
-        return [...prevCargo, autoFish];
+        const capLeft = Math.max(0, currentShip.cargoCap - prevCargo.length);
+        return [...prevCargo, ...caughtBatch.slice(0, capLeft)];
       });
 
       setBestiary(b => {
-        const ex = b[autoFish.id] || { count: 0, maxWeight: 0, firstCaught: Date.now() };
-        return {
-          ...b,
-          [autoFish.id]: {
+        const next = { ...b };
+        for (const autoFish of caughtBatch) {
+          const ex = next[autoFish.id] || { count: 0, maxWeight: 0, firstCaught: Date.now() };
+          next[autoFish.id] = {
             count: ex.count + 1,
             maxWeight: Math.max(ex.maxWeight, autoFish.weightLbs),
             firstCaught: ex.firstCaught || Date.now(),
-          }
-        };
+          };
+        }
+        return next;
       });
 
-      setTotalFishCaught(t => t + 1);
-      setHighestFishValue(h => Math.max(h, autoFish.value));
+      setTotalFishCaught(t => t + caughtBatch.length);
+      const maxVal = caughtBatch.reduce((m, f) => Math.max(m, f.value), 0);
+      setHighestFishValue(h => Math.max(h, maxVal));
     }, intervalTime);
 
     return () => clearInterval(interval);
-  }, [crewCount, currentZoneId, equippedBaitId, perkLevels.perk_crew, currentShip.cargoCap]);
+  }, [crewCount, currentZoneId, currentBait, perkLevels.perk_crew, currentShip.cargoCap]);
 
   // Sell Cargo
   const sellCargo = () => {
@@ -486,20 +661,20 @@ function App() {
       return;
     }
 
+    if (zoneTimerRef.current) clearTimeout(zoneTimerRef.current);
     if (gold >= zone.unlockGold) {
       setGold(g => g - zone.unlockGold);
       setUnlockedZones(u => [...u, zone.id]);
       setCurrentZoneId(zone.id);
       setZoneNotice(`Chartered expedition to ${zone.name}!`);
       sounds.playCoin();
-      setTimeout(() => setZoneNotice(null), 3000);
+      zoneTimerRef.current = setTimeout(() => setZoneNotice(null), 3000);
     } else {
       setZoneNotice(`Need ${zone.unlockGold.toLocaleString()} G to unlock ${zone.name}`);
-      setTimeout(() => setZoneNotice(null), 3000);
+      zoneTimerRef.current = setTimeout(() => setZoneNotice(null), 3000);
     }
   };
 
-  // Buy & Equip Rod
   const handleBuyRod = (rod) => {
     if (unlockedRods.includes(rod.id)) {
       setEquippedRodId(rod.id);
@@ -513,7 +688,6 @@ function App() {
     }
   };
 
-  // Buy & Equip Bait
   const handleBuyBait = (bait) => {
     if (unlockedBaits.includes(bait.id)) {
       setEquippedBaitId(bait.id);
@@ -527,7 +701,6 @@ function App() {
     }
   };
 
-  // Buy & Equip Ship
   const handleBuyShip = (ship) => {
     if (unlockedShips.includes(ship.id)) {
       setEquippedShipId(ship.id);
@@ -552,7 +725,6 @@ function App() {
   };
 
   // Prestige Calculations
-  // Lifetime gold >= 20,000 required for ascension
   const minPrestigeGold = 20000;
   const canPrestige = lifetimeGold >= minPrestigeGold;
   const skullsToClaim = canPrestige ? Math.max(1, Math.floor(Math.sqrt(lifetimeGold / minPrestigeGold))) : 0;
@@ -560,11 +732,18 @@ function App() {
   const performAscension = () => {
     if (!canPrestige) return;
 
+    clearFishingTimers();
+    fishStateRef.current = 'idle';
+    reelProgressRef.current = 0;
+    setFishState('idle');
+    setReelProgress(0);
+    setCurrentBite(null);
+    setRecentCatchAlert(null);
+
     sounds.playAscend();
     setInfamySkulls(s => s + skullsToClaim);
     setTotalAscensions(a => a + 1);
 
-    // Reset current run
     setGold(0);
     setLifetimeGold(0);
     setCargo([]);
@@ -582,7 +761,6 @@ function App() {
     setActiveTab('cargo');
   };
 
-  // Buy Captain Perk
   const handleBuyPerk = (perk) => {
     const curLevel = perkLevels[perk.id] || 0;
     if (curLevel >= perk.maxLevel) return;
@@ -602,7 +780,6 @@ function App() {
   const discoveredSpeciesCount = Object.keys(bestiary).length;
   const completionPercent = Math.round((discoveredSpeciesCount / totalSpecies) * 100);
 
-  // Filtered Bestiary List
   const filteredBestiary = useMemo(() => {
     return FISH_DATABASE.filter(f => {
       const isCaught = !!bestiary[f.id];
@@ -613,13 +790,20 @@ function App() {
     });
   }, [bestiaryFilter, bestiary]);
 
-  // Reset entire game data
   const handleHardReset = () => {
-    if (window.confirm("ARE YOU SURE? This will completely wipe all Pirate Fishing progress, Infamy Skulls, and Bestiary!")) {
-      localStorage.removeItem(SAVE_KEY);
+    if (window.confirm('ARE YOU SURE? This will completely wipe all Pirate Fishing progress, Infamy Skulls, and Bestiary!')) {
+      try {
+        localStorage.removeItem(SAVE_KEY);
+      } catch {
+        // Ignore storage errors
+      }
       window.location.reload();
     }
   };
+
+  const passiveFishPerMin = crewCount > 0
+    ? (crewCount * 6 * (1 + (perkLevels.perk_crew || 0) * 0.2)).toFixed(1)
+    : '0';
 
   return (
     <div className="game-layout">
@@ -650,6 +834,7 @@ function App() {
           </div>
 
           <button
+            type="button"
             onClick={() => {
               setActiveTab('stats');
               fetchPirateLeaderboard();
@@ -662,6 +847,7 @@ function App() {
           </button>
 
           <button
+            type="button"
             onClick={toggleSound}
             className={`icon-tool-btn ${soundMuted ? 'muted' : ''}`}
             title={soundMuted ? 'Unmute Sound' : 'Mute Sound'}
@@ -683,6 +869,7 @@ function App() {
             const isActive = currentZoneId === z.id;
             return (
               <button
+                type="button"
                 key={z.id}
                 className={`zone-pill ${isActive ? 'active' : ''} ${!isUnlocked ? 'locked' : ''}`}
                 onClick={() => handleZoneAction(z)}
@@ -707,7 +894,6 @@ function App() {
           background: currentZone.skyGradient,
         }}
       >
-        {/* Dynamic Sky & Weather */}
         {currentZoneId === 'cove' && <div className="sun"></div>}
         {currentZoneId === 'reef' && <div className="sun sunset-sun"></div>}
         {currentZoneId === 'graveyard' && <div className="fog-overlay"></div>}
@@ -717,7 +903,6 @@ function App() {
         <div className="cloud cloud1"></div>
         <div className="cloud cloud2"></div>
 
-        {/* Sea Waves with Dynamic Zone Colors */}
         <div
           className="sea"
           style={{
@@ -741,15 +926,10 @@ function App() {
         {/* Pirate Boat */}
         <div className="boat">
           <svg viewBox="0 0 100 100" width="100%" height="100%">
-            {/* Hull */}
             <path d="M10 80 Q 50 102 90 80 L 80 50 L 20 50 Z" fill="var(--wood-dark)" stroke="#000" strokeWidth="2" />
-            {/* Cabin */}
             <rect x="25" y="40" width="22" height="12" fill="#78350f" stroke="#000" strokeWidth="1.5" />
-            {/* Mast */}
             <line x1="55" y1="50" x2="55" y2="10" stroke="#451a03" strokeWidth="3" />
-            {/* Main Sail */}
             <path d="M57 15 Q 75 28 57 44 Z" fill="#f8fafc" stroke="#000" strokeWidth="1.5" />
-            {/* Pirate Jolly Roger Flag */}
             <rect x="36" y="8" width="18" height="11" fill="#0f172a" />
             <circle cx="43" cy="13" r="2.5" fill="#f8fafc" />
             <line x1="48" y1="11" x2="52" y2="15" stroke="#f8fafc" strokeWidth="1" />
@@ -762,6 +942,7 @@ function App() {
           {fishState === 'idle' && (
             <div className="idle-control">
               <button
+                type="button"
                 className="cast-btn"
                 onClick={castLine}
                 disabled={cargo.length >= currentShip.cargoCap}
@@ -798,7 +979,6 @@ function App() {
                 </span>
               </div>
 
-              {/* Reel Progress Track */}
               <div className="reel-track-wrapper">
                 <div className="reel-bar-container">
                   <div
@@ -810,7 +990,6 @@ function App() {
                   ></div>
                 </div>
 
-                {/* Animated Fish Icon along track */}
                 <div
                   className="reel-fish-sprite"
                   style={{
@@ -821,7 +1000,7 @@ function App() {
                 </div>
               </div>
 
-              <button className="reel-action-btn" onClick={reelClick}>
+              <button type="button" className="reel-action-btn" onClick={reelClick}>
                 REEL IN! ⚡
               </button>
             </div>
@@ -865,9 +1044,9 @@ function App() {
 
       {/* LOWER MANAGEMENT DECK */}
       <div className="management-deck">
-        {/* Navigation Tabs */}
         <div className="deck-tabs">
           <button
+            type="button"
             className={`deck-tab ${activeTab === 'cargo' ? 'active' : ''}`}
             onClick={() => setActiveTab('cargo')}
           >
@@ -876,6 +1055,7 @@ function App() {
           </button>
 
           <button
+            type="button"
             className={`deck-tab ${activeTab === 'shop' ? 'active' : ''}`}
             onClick={() => setActiveTab('shop')}
           >
@@ -884,6 +1064,7 @@ function App() {
           </button>
 
           <button
+            type="button"
             className={`deck-tab ${activeTab === 'bestiary' ? 'active' : ''}`}
             onClick={() => setActiveTab('bestiary')}
           >
@@ -892,6 +1073,7 @@ function App() {
           </button>
 
           <button
+            type="button"
             className={`deck-tab ${activeTab === 'ascension' ? 'active' : ''}`}
             onClick={() => setActiveTab('ascension')}
           >
@@ -901,15 +1083,15 @@ function App() {
           </button>
 
           <button
+            type="button"
             className={`deck-tab ${activeTab === 'stats' ? 'active' : ''}`}
             onClick={() => setActiveTab('stats')}
           >
             <Trophy size={18} />
-            <span>Captain's Log</span>
+            <span>Captain&apos;s Log</span>
           </button>
         </div>
 
-        {/* TAB CONTENTS */}
         <div className="deck-content-pane">
           {/* TAB 1: CARGO HOLD & MARKET */}
           {activeTab === 'cargo' && (
@@ -925,6 +1107,7 @@ function App() {
                 </div>
 
                 <button
+                  type="button"
                   className="sell-all-btn"
                   onClick={sellCargo}
                   disabled={cargo.length === 0}
@@ -952,7 +1135,7 @@ function App() {
                     const rarityInfo = RARITIES[item.rarity] || RARITIES.Common;
                     return (
                       <div
-                        key={idx}
+                        key={`${item.id}-${item.caughtAt || idx}`}
                         className="cargo-card"
                         style={{ borderColor: rarityInfo.border }}
                       >
@@ -981,7 +1164,6 @@ function App() {
           {/* TAB 2: SHOP, TACKLE & BLACK MARKET */}
           {activeTab === 'shop' && (
             <div className="shop-tab-view">
-              {/* SECTION: FISHING RODS */}
               <div className="shop-section">
                 <h3 className="section-title">
                   <Zap size={20} color="var(--gold)" />
@@ -1010,6 +1192,7 @@ function App() {
                           <span>Line Shield: {(rod.drainReduction * 100).toFixed(0)}%</span>
                         </div>
                         <button
+                          type="button"
                           className={`item-btn ${isEquipped ? 'equipped-btn' : isUnlocked ? 'equip-btn' : 'buy-btn'}`}
                           disabled={!isUnlocked && !canAfford}
                           onClick={() => handleBuyRod(rod)}
@@ -1026,7 +1209,6 @@ function App() {
                 </div>
               </div>
 
-              {/* SECTION: BAITS */}
               <div className="shop-section">
                 <h3 className="section-title">
                   <Sparkles size={20} color="var(--gold)" />
@@ -1055,6 +1237,7 @@ function App() {
                           <span>Rare Boost: +{bait.rareBonus}</span>
                         </div>
                         <button
+                          type="button"
                           className={`item-btn ${isEquipped ? 'equipped-btn' : isUnlocked ? 'equip-btn' : 'buy-btn'}`}
                           disabled={!isUnlocked && !canAfford}
                           onClick={() => handleBuyBait(bait)}
@@ -1071,7 +1254,6 @@ function App() {
                 </div>
               </div>
 
-              {/* SECTION: PIRATE SHIPS & FLEET */}
               <div className="shop-section">
                 <h3 className="section-title">
                   <Ship size={20} color="var(--gold)" />
@@ -1099,6 +1281,7 @@ function App() {
                           <span>Sale Boost: +{(ship.goldBonus * 100).toFixed(0)}%</span>
                         </div>
                         <button
+                          type="button"
                           className={`item-btn ${isEquipped ? 'equipped-btn' : isUnlocked ? 'equip-btn' : 'buy-btn'}`}
                           disabled={!isUnlocked && !canAfford}
                           onClick={() => handleBuyShip(ship)}
@@ -1115,7 +1298,6 @@ function App() {
                 </div>
               </div>
 
-              {/* SECTION: CREW AUTOMATION */}
               <div className="shop-section">
                 <h3 className="section-title">
                   <Anchor size={20} color="var(--gold)" />
@@ -1129,11 +1311,12 @@ function App() {
                       directly into your cargo hold even when you are browsing menus!
                     </p>
                     <span className="crew-rate">
-                      Passive Catch Rate: ~{crewCount > 0 ? (60 / (10 / (1 + (perkLevels.perk_crew || 0) * 0.2))).toFixed(1) : 0} fish / min
+                      Passive Catch Rate: ~{passiveFishPerMin} fish / min
                     </span>
                   </div>
                   <button
-                    className="buy-btn hire-btn"
+                    type="button"
+                    className="item-btn buy-btn hire-btn"
                     disabled={gold < crewCost}
                     onClick={handleHireCrew}
                   >
@@ -1149,7 +1332,7 @@ function App() {
             <div className="bestiary-tab-view">
               <div className="bestiary-header-box">
                 <div className="bestiary-summary">
-                  <h3>Captain's Marine Bestiary</h3>
+                  <h3>Captain&apos;s Marine Bestiary</h3>
                   <p>Discover and catalog all 36 species of the high seas and eldritch depths.</p>
                 </div>
                 <div className="bestiary-progress-container">
@@ -1166,21 +1349,23 @@ function App() {
                 </div>
               </div>
 
-              {/* Bestiary Filters */}
               <div className="bestiary-filter-row">
                 <button
+                  type="button"
                   className={`filter-btn ${bestiaryFilter === 'all' ? 'active' : ''}`}
                   onClick={() => setBestiaryFilter('all')}
                 >
                   All ({totalSpecies})
                 </button>
                 <button
+                  type="button"
                   className={`filter-btn ${bestiaryFilter === 'caught' ? 'active' : ''}`}
                   onClick={() => setBestiaryFilter('caught')}
                 >
                   Discovered ({discoveredSpeciesCount})
                 </button>
                 <button
+                  type="button"
                   className={`filter-btn ${bestiaryFilter === 'undiscovered' ? 'active' : ''}`}
                   onClick={() => setBestiaryFilter('undiscovered')}
                 >
@@ -1188,6 +1373,7 @@ function App() {
                 </button>
                 {ZONES.map(z => (
                   <button
+                    type="button"
                     key={z.id}
                     className={`filter-btn ${bestiaryFilter === z.id ? 'active' : ''}`}
                     onClick={() => setBestiaryFilter(z.id)}
@@ -1197,7 +1383,6 @@ function App() {
                 ))}
               </div>
 
-              {/* Fish Cards Grid */}
               <div className="bestiary-grid">
                 {filteredBestiary.map(fish => {
                   const data = bestiary[fish.id];
@@ -1263,7 +1448,7 @@ function App() {
             <div className="ascension-tab-view">
               <div className="ascension-altar-hero">
                 <Skull size={44} className="altar-skull-icon" />
-                <h2>Pirate Lord's Ascension Altar</h2>
+                <h2>Pirate Lord&apos;s Ascension Altar</h2>
                 <p>
                   Reset your current gold, gear, and crew to ascend as an infamous Pirate Sovereign.
                   Every ascension grants permanent doubloon multipliers and Infamy Skulls to unlock
@@ -1299,6 +1484,7 @@ function App() {
                   </div>
 
                   <button
+                    type="button"
                     className="ascend-btn"
                     disabled={!canPrestige}
                     onClick={() => setShowPrestigeModal(true)}
@@ -1309,7 +1495,6 @@ function App() {
                 </div>
               </div>
 
-              {/* CAPTAIN PERKS TREE */}
               <div className="perks-section">
                 <h3 className="section-title">
                   <Star size={20} color="var(--gold)" />
@@ -1333,6 +1518,7 @@ function App() {
                             Cost: {isMax ? 'MAX' : `${perk.costPerLevel} Skull${perk.costPerLevel > 1 ? 's' : ''}`}
                           </span>
                           <button
+                            type="button"
                             className="perk-buy-btn"
                             disabled={isMax || !canAfford}
                             onClick={() => handleBuyPerk(perk)}
@@ -1353,7 +1539,7 @@ function App() {
             <div className="stats-tab-view">
               <h3 className="section-title">
                 <Trophy size={20} color="var(--gold)" />
-                Captain's High Seas Logbook
+                Captain&apos;s High Seas Logbook
               </h3>
 
               <div className="stats-grid">
@@ -1384,62 +1570,69 @@ function App() {
               </div>
 
               {/* GLOBAL LEADERBOARD SECTION */}
-              <div style={{background:'#1e293b', border:'2px solid var(--gold)', borderRadius:'12px', padding:'16px', display:'flex', flexDirection:'column', gap:'12px'}}>
-                <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:'10px'}}>
+              <div style={{ background: '#1e293b', border: '2px solid var(--gold)', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
                   <div>
-                    <h4 style={{fontSize:'1.1rem', fontWeight:'900', color:'#fff', display:'flex', alignItems:'center', gap:'6px'}}>
+                    <h4 style={{ fontSize: '1.1rem', fontWeight: '900', color: '#fff', display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <Trophy size={18} color="var(--gold)" />
                       Global High Seas Sovereign Leaderboard
                     </h4>
-                    <p style={{fontSize:'0.8rem', color:'var(--text-muted)'}}>
+                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
                       {authUser ? (
-                        <span>Playing as registered captain: <strong style={{color:'#fff'}}>{authUser.username}</strong></span>
+                        <span>Playing as registered captain: <strong style={{ color: '#fff' }}>{authUser.username}</strong></span>
                       ) : (
-                        <span>Playing as guest. <a href="/" style={{color:'#38bdf8'}}>Sign in</a> on Hub for verified crown!</span>
+                        <span>Playing as guest. <a href="/" style={{ color: '#38bdf8' }}>Sign in</a> on Hub for verified crown!</span>
                       )}
                     </p>
                   </div>
                   <button
-                    className="buy-btn"
+                    type="button"
+                    className="item-btn buy-btn"
                     onClick={submitToGlobalLeaderboard}
                     disabled={submittingLeaderboard || allTimeGold <= 0}
-                    style={{padding:'8px 16px', background:'var(--gold)', color:'#000', cursor: allTimeGold > 0 ? 'pointer' : 'not-allowed'}}
+                    style={{ padding: '8px 16px', background: 'var(--gold)', color: '#000', cursor: allTimeGold > 0 ? 'pointer' : 'not-allowed' }}
                   >
                     {submittingLeaderboard ? 'Broadcasting...' : '👑 Broadcast Wealth to Leaderboard'}
                   </button>
                 </div>
 
                 {leaderboardNotice && (
-                  <div style={{background:'rgba(245,158,11,0.15)', border:'1px solid var(--gold)', color:'var(--gold)', padding:'8px 12px', borderRadius:'8px', fontSize:'0.85rem', fontWeight:'700'}}>
+                  <div style={{ background: 'rgba(245,158,11,0.15)', border: '1px solid var(--gold)', color: 'var(--gold)', padding: '8px 12px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '700' }}>
                     {leaderboardNotice}
                   </div>
                 )}
 
-                <div style={{maxHeight:'260px', overflowY:'auto'}}>
+                <div style={{ maxHeight: '260px', overflowY: 'auto' }}>
                   {pirateLeaderboard.length === 0 ? (
-                    <p style={{color:'var(--text-muted)', textAlign:'center', padding:'20px'}}>No pirate scores recorded yet. Be the first to broadcast your haul!</p>
+                    <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '20px' }}>No pirate scores recorded yet. Be the first to broadcast your haul!</p>
                   ) : (
-                    <table style={{width:'100%', borderCollapse:'collapse', fontSize:'0.85rem'}}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
                       <thead>
-                        <tr style={{color:'var(--text-muted)', borderBottom:'1px solid #334155', textAlign:'left'}}>
-                          <th style={{padding:'8px 6px'}}>Rank</th>
-                          <th style={{padding:'8px 6px'}}>Captain</th>
-                          <th style={{padding:'8px 6px'}}>Lifetime Gold</th>
-                          <th style={{padding:'8px 6px', textAlign:'right'}}>Infamy Rank</th>
+                        <tr style={{ color: 'var(--text-muted)', borderBottom: '1px solid #334155', textAlign: 'left' }}>
+                          <th style={{ padding: '8px 6px' }}>Rank</th>
+                          <th style={{ padding: '8px 6px' }}>Captain</th>
+                          <th style={{ padding: '8px 6px' }}>Lifetime Gold</th>
+                          <th style={{ padding: '8px 6px', textAlign: 'right' }}>Infamy Rank</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {pirateLeaderboard.map(entry => (
-                          <tr key={entry.id} style={{borderBottom:'1px solid #0f172a', background: authUser && authUser.username === entry.username ? 'rgba(245,158,11,0.1)' : 'transparent'}}>
-                            <td style={{padding:'8px 6px', fontWeight:'900', color: entry.rank === 1 ? 'var(--gold)' : '#fff'}}>#{entry.rank}</td>
-                            <td style={{padding:'8px 6px'}}>
-                              <strong>{entry.username}</strong>
-                              {entry.isVerified && <span style={{color:'#22c55e', marginLeft:'4px', fontWeight:'900'}}>✓</span>}
-                            </td>
-                            <td style={{padding:'8px 6px', color:'var(--gold)', fontWeight:'900'}}>{entry.score.toLocaleString()} G</td>
-                            <td style={{padding:'8px 6px', textAlign:'right', color:'#cbd5e1'}}>{entry.details?.infamy ? `Rank ${entry.details.infamy}` : 'Rank 0'}</td>
-                          </tr>
-                        ))}
+                        {pirateLeaderboard.map((entry, idx) => {
+                          const safeRank = typeof entry.rank === 'number' && Number.isFinite(entry.rank) ? entry.rank : idx + 1;
+                          const safeName = String(entry.username || 'Anonymous').slice(0, 24);
+                          const safeScore = Number.isFinite(Number(entry.score)) ? Number(entry.score) : 0;
+                          const safeInfamy = isFiniteNonNegative(entry.details?.infamy) ? Math.floor(entry.details.infamy) : 0;
+                          return (
+                            <tr key={entry.id || idx} style={{ borderBottom: '1px solid #0f172a', background: authUser && authUser.username === safeName ? 'rgba(245,158,11,0.1)' : 'transparent' }}>
+                              <td style={{ padding: '8px 6px', fontWeight: '900', color: safeRank === 1 ? 'var(--gold)' : '#fff' }}>#{safeRank}</td>
+                              <td style={{ padding: '8px 6px' }}>
+                                <strong>{safeName}</strong>
+                                {entry.isVerified && <span style={{ color: '#22c55e', marginLeft: '4px', fontWeight: '900' }}>✓</span>}
+                              </td>
+                              <td style={{ padding: '8px 6px', color: 'var(--gold)', fontWeight: '900' }}>{safeScore.toLocaleString()} G</td>
+                              <td style={{ padding: '8px 6px', textAlign: 'right', color: '#cbd5e1' }}>{`Rank ${safeInfamy}`}</td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
                   )}
@@ -1448,7 +1641,7 @@ function App() {
 
               <div className="reset-save-strip">
                 <p>Want to completely wipe local save data and begin from scratch?</p>
-                <button className="hard-reset-btn" onClick={handleHardReset}>
+                <button type="button" className="hard-reset-btn" onClick={handleHardReset}>
                   Reset All Game Save Data
                 </button>
               </div>
@@ -1472,10 +1665,10 @@ function App() {
               <div>📖 Your Bestiary Discoveries & Captain Perks will <strong>remain permanently</strong>!</div>
             </div>
             <div className="modal-buttons">
-              <button className="confirm-ascend-btn" onClick={performAscension}>
+              <button type="button" className="confirm-ascend-btn" onClick={performAscension}>
                 Yes, Ascend as Pirate Lord!
               </button>
-              <button className="cancel-modal-btn" onClick={() => setShowPrestigeModal(false)}>
+              <button type="button" className="cancel-modal-btn" onClick={() => setShowPrestigeModal(false)}>
                 Cancel
               </button>
             </div>

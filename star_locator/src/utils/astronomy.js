@@ -1,37 +1,162 @@
 import { SiderealTime, Equator, Body, Observer, Constellation } from 'astronomy-engine';
 
-// Helper: Calculate spherical angular distance in degrees
-export function angularDistanceDeg(ra1Deg, dec1Deg, ra2Deg, dec2Deg) {
-  const rad = Math.PI / 180;
-  const dLat = (dec2Deg - dec1Deg) * rad;
-  const dLon = (ra2Deg - ra1Deg) * rad;
-  const lat1 = dec1Deg * rad;
-  const lat2 = dec2Deg * rad;
+const DEG_TO_RAD = Math.PI / 180;
+const RAD_TO_DEG = 180 / Math.PI;
 
-  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-            Math.cos(lat1) * Math.cos(lat2) *
-            Math.sin(dLon / 2) * Math.sin(dLon / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return c * (180 / Math.PI);
+export function clamp(value, min = -1, max = 1) {
+  if (!Number.isFinite(value)) return min;
+  return Math.min(max, Math.max(min, value));
 }
 
-// Get the zenith coordinates (Right Ascension and Declination) for a given location and time.
+export function normalizeCoordinates(latitude, longitude) {
+  const latNum = Number(latitude);
+  const lonNum = Number(longitude);
+  const safeLat = clamp(Number.isFinite(latNum) ? latNum : 0, -90, 90);
+  const safeLon = Number.isFinite(lonNum)
+    ? ((((lonNum + 180) % 360) + 360) % 360) - 180
+    : 0;
+  return { latitude: safeLat, longitude: safeLon };
+}
+
+function ensureValidDate(date) {
+  if (date instanceof Date && !Number.isNaN(date.getTime())) {
+    return date;
+  }
+  const parsed = date != null ? new Date(date) : new Date();
+  return Number.isNaN(parsed.getTime()) ? new Date() : parsed;
+}
+
+// Helper: Calculate spherical angular distance in degrees with clamped trig inputs
+export function angularDistanceDeg(ra1Deg, dec1Deg, ra2Deg, dec2Deg) {
+  if (![ra1Deg, dec1Deg, ra2Deg, dec2Deg].every(Number.isFinite)) {
+    return 180;
+  }
+  const dLat = (dec2Deg - dec1Deg) * DEG_TO_RAD;
+  const dLon = (ra2Deg - ra1Deg) * DEG_TO_RAD;
+  const lat1 = clamp(dec1Deg, -90, 90) * DEG_TO_RAD;
+  const lat2 = clamp(dec2Deg, -90, 90) * DEG_TO_RAD;
+
+  const sinHalfLat = Math.sin(dLat / 2);
+  const sinHalfLon = Math.sin(dLon / 2);
+  const rawA =
+    sinHalfLat * sinHalfLat +
+    Math.cos(lat1) * Math.cos(lat2) * sinHalfLon * sinHalfLon;
+
+  // Clamp to [0, 1] so antipodal floating-point drift never yields Math.sqrt(< 0) -> NaN
+  const a = clamp(rawA, 0, 1);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(Math.max(0, 1 - a)));
+  return clamp(c * RAD_TO_DEG, 0, 180);
+}
+
+// Get the zenith coordinates (Right Ascension and Declination) for a given location and UTC time.
 export function getZenithCoordinates(latitude, longitude, date = new Date()) {
-  // LST is in hours (0 to 24)
-  const lst = SiderealTime(date);
-  
-  // Convert longitude degrees to hours
-  let localSiderealTime = lst + (longitude / 15.0);
-  while (localSiderealTime < 0) localSiderealTime += 24.0;
-  while (localSiderealTime >= 24) localSiderealTime -= 24.0;
-  
-  // RA is equal to LST (in hours), convert to degrees (1 hour = 15 degrees)
+  const validDate = ensureValidDate(date);
+  const { latitude: safeLat, longitude: safeLon } = normalizeCoordinates(latitude, longitude);
+
+  // Greenwich Apparent Sidereal Time in hours [0, 24)
+  const gst = SiderealTime(validDate);
+  const safeGst = Number.isFinite(gst) ? gst : 0;
+
+  // Local Sidereal Time wrapped safely into [0, 24) without unbounded loops
+  const localSiderealTime = (((safeGst + safeLon / 15.0) % 24.0) + 24.0) % 24.0;
+
+  // Right Ascension at zenith equals LST (1h = 15°)
   const ra = localSiderealTime * 15.0;
-  
-  // Declination is equal to latitude
-  const dec = latitude;
+  const dec = safeLat;
 
   return { ra, dec, localSiderealTime };
+}
+
+function formatUtcHours(utcHours) {
+  const wrapped = (((utcHours % 24) + 24) % 24);
+  const totalMinutes = Math.round(wrapped * 60) % (24 * 60);
+  const hh = String(Math.floor(totalMinutes / 60)).padStart(2, '0');
+  const mm = String(totalMinutes % 60).padStart(2, '0');
+  return `${hh}:${mm} UTC`;
+}
+
+// Compute solar sunrise/sunset (with polar day / polar night handling) and circumpolar target status
+export function getSolarAndSkyInfo(latitude, longitude, targetDec, date = new Date()) {
+  const validDate = ensureValidDate(date);
+  const { latitude: safeLat, longitude: safeLon } = normalizeCoordinates(latitude, longitude);
+  const safeTargetDec = clamp(Number.isFinite(targetDec) ? targetDec : safeLat, -90, 90);
+
+  // Circumpolar check for target object at observer latitude
+  const absLat = Math.abs(safeLat);
+  const absDec = Math.abs(safeTargetDec);
+  let visibility = 'Rises & Sets Daily';
+  if (absDec >= 90 - absLat - 1e-6) {
+    visibility = safeLat * safeTargetDec >= 0
+      ? 'Circumpolar (Never Sets)'
+      : 'Below Horizon (Never Rises)';
+  }
+
+  // Solar declination & equation-of-time approximation via astronomy-engine Equator
+  let sunDecDeg = 0;
+  let sunRaHours = 12;
+  try {
+    const observer = new Observer(safeLat, safeLon, 0);
+    const sunEq = Equator(Body.Sun, validDate, observer, true, true);
+    if (Number.isFinite(sunEq.dec)) sunDecDeg = clamp(sunEq.dec, -90, 90);
+    if (Number.isFinite(sunEq.ra)) sunRaHours = sunEq.ra;
+  } catch {
+    // Fallback solar declination from UTC day of year
+    const startOfYearUtc = Date.UTC(validDate.getUTCFullYear(), 0, 1);
+    const dayOfYear = (validDate.getTime() - startOfYearUtc) / 86400000 + 1;
+    sunDecDeg = -23.44 * Math.cos(((2 * Math.PI) / 365.24) * (dayOfYear + 10));
+  }
+
+  const latRad = safeLat * DEG_TO_RAD;
+  const decRad = sunDecDeg * DEG_TO_RAD;
+  // Standard atmospheric refraction + solar semi-diameter: -0.833° altitude
+  const sinH0 = Math.sin(-0.833 * DEG_TO_RAD);
+  const denom = Math.cos(latRad) * Math.cos(decRad);
+
+  // Current solar altitude using clamped Math.asin
+  const { localSiderealTime } = getZenithCoordinates(safeLat, safeLon, validDate);
+  const hourAngleRad = (localSiderealTime - sunRaHours) * 15.0 * DEG_TO_RAD;
+  const sinAlt = clamp(
+    Math.sin(latRad) * Math.sin(decRad) +
+      Math.cos(latRad) * Math.cos(decRad) * Math.cos(hourAngleRad),
+    -1,
+    1
+  );
+  const solarAltitudeDeg = Math.asin(sinAlt) * RAD_TO_DEG;
+
+  let sunStatus = 'Day / Night Cycle';
+  if (Math.abs(denom) < 1e-7) {
+    // Exact North or South Pole where cos(lat) ~ 0
+    const polarSin = Math.sin(latRad) * Math.sin(decRad);
+    sunStatus = polarSin >= sinH0
+      ? 'Polar Day (Midnight Sun)'
+      : 'Polar Night (24h Darkness)';
+  } else {
+    const cosOmega = (sinH0 - Math.sin(latRad) * Math.sin(decRad)) / denom;
+    if (cosOmega < -1) {
+      sunStatus = 'Polar Day (Midnight Sun)';
+    } else if (cosOmega > 1) {
+      sunStatus = 'Polar Night (24h Darkness)';
+    } else {
+      const halfDayHours = (Math.acos(clamp(cosOmega, -1, 1)) * RAD_TO_DEG) / 15.0;
+      const utcHoursNow =
+        validDate.getUTCHours() +
+        validDate.getUTCMinutes() / 60 +
+        validDate.getUTCSeconds() / 3600;
+      const gstNow = SiderealTime(validDate);
+      const transitDeltaHours = (((sunRaHours - gstNow - safeLon / 15.0) % 24) + 24) % 24;
+      const solarNoonUtc = (utcHoursNow + (transitDeltaHours > 12 ? transitDeltaHours - 24 : transitDeltaHours) + 24) % 24;
+      const sunriseUtc = formatUtcHours(solarNoonUtc - halfDayHours);
+      const sunsetUtc = formatUtcHours(solarNoonUtc + halfDayHours);
+      sunStatus = `↑ ${sunriseUtc} • ↓ ${sunsetUtc}`;
+    }
+  }
+
+  return {
+    visibility,
+    sunStatus,
+    solarAltitudeDeg,
+    utcTimeStr: `${String(validDate.getUTCHours()).padStart(2, '0')}:${String(validDate.getUTCMinutes()).padStart(2, '0')} UTC`
+  };
 }
 
 // Major Constellation Descriptions and Lore
@@ -59,8 +184,8 @@ export const CONSTELLATION_NAMES = {
   Cet: { name: 'Cetus', title: 'The Sea Monster' },
   Cha: { name: 'Chamaeleon', title: 'The Chameleon' },
   Cir: { name: 'Circinus', title: 'The Drafting Compass' },
-  Col: { name: 'Columba', title: 'Noah\'s Dove' },
-  Com: { name: 'Coma Berenices', title: 'Berenice\'s Hair' },
+  Col: { name: 'Columba', title: "Noah's Dove" },
+  Com: { name: 'Coma Berenices', title: "Berenice's Hair" },
   CrA: { name: 'Corona Australis', title: 'The Southern Crown' },
   CrB: { name: 'Corona Borealis', title: 'The Northern Crown' },
   Crv: { name: 'Corvus', title: 'The Sacred Raven' },
@@ -92,7 +217,7 @@ export const CONSTELLATION_NAMES = {
   Mic: { name: 'Microscopium', title: 'The Microscope' },
   Mon: { name: 'Monoceros', title: 'The Unicorn' },
   Mus: { name: 'Musca', title: 'The Fly' },
-  Nor: { name: 'Norma', title: 'The Surveyor\'s Level' },
+  Nor: { name: 'Norma', title: "The Surveyor's Level" },
   Oct: { name: 'Octans', title: 'The Navigational Octant' },
   Oph: { name: 'Ophiuchus', title: 'The Serpent Bearer' },
   Ori: { name: 'Orion', title: 'The Great Hunter' },
@@ -100,21 +225,21 @@ export const CONSTELLATION_NAMES = {
   Peg: { name: 'Pegasus', title: 'The Winged Horse' },
   Per: { name: 'Perseus', title: 'The Gorgon Slayer' },
   Phe: { name: 'Phoenix', title: 'The Firebird' },
-  Pic: { name: 'Pictor', title: 'The Painter\'s Easel' },
+  Pic: { name: 'Pictor', title: "The Painter's Easel" },
   Psc: { name: 'Pisces', title: 'The Two Fishes' },
   PsA: { name: 'Piscis Austrinus', title: 'The Southern Fish' },
   Pup: { name: 'Puppis', title: 'The Stern of the Argo' },
-  Pyx: { name: 'Pyxis', title: 'The Mariner\'s Compass' },
+  Pyx: { name: 'Pyxis', title: "The Mariner's Compass" },
   Ret: { name: 'Reticulum', title: 'The Reticle' },
   Sge: { name: 'Sagitta', title: 'The Golden Arrow' },
   Sgr: { name: 'Sagittarius', title: 'The Galactic Archer' },
   Sco: { name: 'Scorpius', title: 'The Giant Scorpion' },
-  Scl: { name: 'Sculptor', title: 'The Sculptor\'s Studio' },
+  Scl: { name: 'Sculptor', title: "The Sculptor's Studio" },
   Sct: { name: 'Scutum', title: 'The Sobieski Shield' },
   Ser: { name: 'Serpens', title: 'The Sacred Serpent' },
   Sex: { name: 'Sextans', title: 'The Astronomical Sextant' },
   Tau: { name: 'Taurus', title: 'The Celestial Bull' },
-  Tel: { name: 'Telescopium', title: 'The Stargazer\'s Telescope' },
+  Tel: { name: 'Telescopium', title: "The Stargazer's Telescope" },
   Tri: { name: 'Triangulum', title: 'The Triangle' },
   TrA: { name: 'Triangulum Australe', title: 'The Southern Triangle' },
   Tuc: { name: 'Tucana', title: 'The Toucan' },
@@ -126,14 +251,23 @@ export const CONSTELLATION_NAMES = {
   Vul: { name: 'Vulpecula', title: 'The Little Fox' }
 };
 
+const CONSTELLATION_TITLE_BY_NAME = new Map(
+  Object.values(CONSTELLATION_NAMES).map((c) => [c.name.toLowerCase(), c.title])
+);
+
+function getConstellationTitleByName(name, fallback = 'The Celestial Realm') {
+  if (!name) return fallback;
+  return CONSTELLATION_TITLE_BY_NAME.get(String(name).toLowerCase()) || fallback;
+}
+
 // Curated Star and Deep Sky Catalog covering the entire night sky
 export const CELESTIAL_CATALOG = [
   // Northern & Circumpolar Stars
-  { name: 'Polaris (North Star)', constellation: 'Ursa Minor', ra: 37.95, dec: 89.26, distLy: 433, type: 'Yellow Supergiant Star', desc: 'The historic navigational pole star directly aligning with Earth\'s northern rotational axis.', img: 'https://images.unsplash.com/photo-1506318137071-a8e063b4bec0?q=80&w=600&auto=format&fit=crop' },
+  { name: 'Polaris (North Star)', constellation: 'Ursa Minor', ra: 37.95, dec: 89.26, distLy: 433, type: 'Yellow Supergiant Star', desc: "The historic navigational pole star directly aligning with Earth's northern rotational axis.", img: 'https://images.unsplash.com/photo-1506318137071-a8e063b4bec0?q=80&w=600&auto=format&fit=crop' },
   { name: 'Kochab', constellation: 'Ursa Minor', ra: 222.68, dec: 74.16, distLy: 131, type: 'Orange Giant Star', desc: 'Ancient Guardian of the Pole, formerly serving as the celestial north marker in 1000 BC.', img: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=600&auto=format&fit=crop' },
-  { name: 'Alioth', constellation: 'Ursa Major', ra: 193.51, dec: 55.96, distLy: 82.6, type: 'Luminous White Star', desc: 'The brightest star in Ursa Major, forming the base of the Great Bear\'s tail.', img: 'https://images.unsplash.com/photo-1506318137071-a8e063b4bec0?q=80&w=600&auto=format&fit=crop' },
+  { name: 'Alioth', constellation: 'Ursa Major', ra: 193.51, dec: 55.96, distLy: 82.6, type: 'Luminous White Star', desc: "The brightest star in Ursa Major, forming the base of the Great Bear's tail.", img: 'https://images.unsplash.com/photo-1506318137071-a8e063b4bec0?q=80&w=600&auto=format&fit=crop' },
   { name: 'Dubhe', constellation: 'Ursa Major', ra: 165.93, dec: 61.75, distLy: 123, type: 'Orange Giant Binary Star', desc: 'The northern pointer star of the Big Dipper pointing directly across to the North Star.', img: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=600&auto=format&fit=crop' },
-  { name: 'Alkaid', constellation: 'Ursa Major', ra: 206.89, dec: 49.31, distLy: 104, type: 'Blue-White Main Sequence Star', desc: 'The glowing star at the tip of the Great Bear\'s tail, blazing at 17,000 Kelvin.', img: 'https://images.unsplash.com/photo-1506318137071-a8e063b4bec0?q=80&w=600&auto=format&fit=crop' },
+  { name: 'Alkaid', constellation: 'Ursa Major', ra: 206.89, dec: 49.31, distLy: 104, type: 'Blue-White Main Sequence Star', desc: "The glowing star at the tip of the Great Bear's tail, blazing at 17,000 Kelvin.", img: 'https://images.unsplash.com/photo-1506318137071-a8e063b4bec0?q=80&w=600&auto=format&fit=crop' },
   { name: 'Mizar & Alcor', constellation: 'Ursa Major', ra: 200.98, dec: 54.92, distLy: 83, type: 'Multiple Star System', desc: 'The ancient eyesight test star system, revealed to be a magnificent sextuple star system.', img: 'https://images.unsplash.com/photo-1506318137071-a8e063b4bec0?q=80&w=600&auto=format&fit=crop' },
   { name: 'Thuban', constellation: 'Draco', ra: 211.10, dec: 64.38, distLy: 303, type: 'White Giant Star', desc: 'The historic Pole Star during the building of the Great Pyramids of Giza around 2700 BC.', img: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=600&auto=format&fit=crop' },
   { name: 'Eltanin', constellation: 'Draco', ra: 269.15, dec: 51.49, distLy: 154, type: 'Orange Giant Star', desc: 'The luminous right eye of the Dragon, 600 times more luminous than our Sun.', img: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=600&auto=format&fit=crop' },
@@ -141,7 +275,7 @@ export const CELESTIAL_CATALOG = [
   // Perseus, Andromeda, Cassiopeia Sector
   { name: 'Mirfak (Alpha Persei)', constellation: 'Perseus', ra: 36.08, dec: 49.86, distLy: 510, type: 'Yellow-White Supergiant Star', desc: 'Brilliant supergiant 5,000 times brighter than the Sun, anchoring the Alpha Persei Cluster.', img: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=600&auto=format&fit=crop' },
   { name: 'Algol (The Demon Star)', constellation: 'Perseus', ra: 47.04, dec: 40.96, distLy: 93, type: 'Eclipsing Binary System', desc: 'The famous blinking eye of Medusa, eclipsing every 2.87 days in predictable cosmic clockwork.', img: 'https://images.unsplash.com/photo-1506318137071-a8e063b4bec0?q=80&w=600&auto=format&fit=crop' },
-  { name: 'Schedar', constellation: 'Cassiopeia', ra: 10.13, dec: 56.54, distLy: 228, type: 'Orange Giant Star', desc: 'The glowing heart of the Queen\'s Celestial Throne in the distinct cosmic W shape.', img: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=600&auto=format&fit=crop' },
+  { name: 'Schedar', constellation: 'Cassiopeia', ra: 10.13, dec: 56.54, distLy: 228, type: 'Orange Giant Star', desc: "The glowing heart of the Queen's Celestial Throne in the distinct cosmic W shape.", img: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=600&auto=format&fit=crop' },
   { name: 'Caph', constellation: 'Cassiopeia', ra: 2.29, dec: 59.15, distLy: 54.7, type: 'Yellow-White Subgiant Star', desc: 'A Delta Scuti variable star marking the western point of the Cassiopeia throne.', img: 'https://images.unsplash.com/photo-1506318137071-a8e063b4bec0?q=80&w=600&auto=format&fit=crop' },
   { name: 'Navi (Gamma Cas)', constellation: 'Cassiopeia', ra: 14.18, dec: 60.72, distLy: 550, type: 'Variable Eruptive Star', desc: 'A rapidly spinning eruptive star surrounded by a dynamic glowing disc of gas.', img: 'https://images.unsplash.com/photo-1506318137071-a8e063b4bec0?q=80&w=600&auto=format&fit=crop' },
   { name: 'Alpheratz', constellation: 'Andromeda', ra: 2.10, dec: 29.09, distLy: 97, type: 'Binary Mercury-Manganese Star', desc: 'The bridge star connecting Andromeda to the Great Square of Pegasus.', img: 'https://images.unsplash.com/photo-1506318137071-a8e063b4bec0?q=80&w=600&auto=format&fit=crop' },
@@ -154,12 +288,12 @@ export const CELESTIAL_CATALOG = [
   { name: 'Menkalinan', constellation: 'Auriga', ra: 89.88, dec: 44.95, distLy: 81, type: 'Subgiant Binary Star', desc: 'The celestial shoulder of the Charioteer, orbiting in a tight eclipsing period of 4 days.', img: 'https://images.unsplash.com/photo-1506318137071-a8e063b4bec0?q=80&w=600&auto=format&fit=crop' },
   { name: 'Aldebaran', constellation: 'Taurus', ra: 68.98, dec: 16.51, distLy: 65.3, type: 'Red Giant Star', desc: 'The glowing red Eye of the Bull, 44 times the solar diameter and anchoring the Taurus constellation.', img: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=600&auto=format&fit=crop' },
   { name: 'Pleiades / Seven Sisters (M45)', constellation: 'Taurus', ra: 56.75, dec: 24.11, distLy: 444, type: 'Open Star Cluster & Reflection Nebula', desc: 'A dazzling cluster of hot blue stars surrounded by deep sapphire interstellar dust reflection.', img: 'https://images.unsplash.com/photo-1506318137071-a8e063b4bec0?q=80&w=600&auto=format&fit=crop' },
-  { name: 'Elnath', constellation: 'Taurus', ra: 81.57, dec: 28.61, distLy: 134, type: 'Blue-White Giant Star', desc: 'The northern tip of the Bull\'s horn, blazing with mercury and manganese abundances.', img: 'https://images.unsplash.com/photo-1506318137071-a8e063b4bec0?q=80&w=600&auto=format&fit=crop' },
+  { name: 'Elnath', constellation: 'Taurus', ra: 81.57, dec: 28.61, distLy: 134, type: 'Blue-White Giant Star', desc: "The northern tip of the Bull's horn, blazing with mercury and manganese abundances.", img: 'https://images.unsplash.com/photo-1506318137071-a8e063b4bec0?q=80&w=600&auto=format&fit=crop' },
   { name: 'Betelgeuse', constellation: 'Orion', ra: 88.79, dec: 7.41, distLy: 550, type: 'Red Supergiant Star', desc: 'A gargantuan pulsating supergiant destined to explode in a glorious nearby supernova.', img: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=600&auto=format&fit=crop' },
   { name: 'Rigel', constellation: 'Orion', ra: 78.63, dec: -8.20, distLy: 860, type: 'Blue Supergiant Star', desc: 'The radiant foot of Orion, emitting 120,000 times more light energy than our Sun.', img: 'https://images.unsplash.com/photo-1506318137071-a8e063b4bec0?q=80&w=600&auto=format&fit=crop' },
-  { name: 'Alnilam', constellation: 'Orion', ra: 84.05, dec: -1.20, distLy: 2000, type: 'Blue Supergiant Star', desc: 'The massive central pearl of Orion\'s belt, 40 times the mass of the Sun.', img: 'https://images.unsplash.com/photo-1506318137071-a8e063b4bec0?q=80&w=600&auto=format&fit=crop' },
+  { name: 'Alnilam', constellation: 'Orion', ra: 84.05, dec: -1.20, distLy: 2000, type: 'Blue Supergiant Star', desc: "The massive central pearl of Orion's belt, 40 times the mass of the Sun.", img: 'https://images.unsplash.com/photo-1506318137071-a8e063b4bec0?q=80&w=600&auto=format&fit=crop' },
   { name: 'Orion Nebula (M42)', constellation: 'Orion', ra: 83.82, dec: -5.39, distLy: 1344, type: 'Diffuse Emission Nebula', desc: 'A cosmic star factory visible to the naked eye, birthing thousands of infant planetary systems.', img: 'https://images.unsplash.com/photo-1506318137071-a8e063b4bec0?q=80&w=600&auto=format&fit=crop' },
-  { name: 'Sirius (The Dog Star)', constellation: 'Canis Major', ra: 101.29, dec: -16.72, distLy: 8.6, type: 'Main Sequence Binary Star', desc: 'The brightest star in Earth\'s night sky, blazing with double the luminosity of our Sun.', img: 'https://images.unsplash.com/photo-1506318137071-a8e063b4bec0?q=80&w=600&auto=format&fit=crop' },
+  { name: 'Sirius (The Dog Star)', constellation: 'Canis Major', ra: 101.29, dec: -16.72, distLy: 8.6, type: 'Main Sequence Binary Star', desc: "The brightest star in Earth's night sky, blazing with double the luminosity of our Sun.", img: 'https://images.unsplash.com/photo-1506318137071-a8e063b4bec0?q=80&w=600&auto=format&fit=crop' },
   { name: 'Procyon', constellation: 'Canis Minor', ra: 114.83, dec: 5.22, distLy: 11.5, type: 'Yellow-White Subgiant Star', desc: 'One of the nearest star systems to Earth, accompanied by a faint white dwarf companion.', img: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=600&auto=format&fit=crop' },
   { name: 'Pollux', constellation: 'Gemini', ra: 116.33, dec: 27.99, distLy: 33.8, type: 'Orange Giant with Exoplanet', desc: 'The immortal twin of Gemini, known to harbor the massive gas giant exoplanet Thestias.', img: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=600&auto=format&fit=crop' },
   { name: 'Castor', constellation: 'Gemini', ra: 113.65, dec: 31.89, distLy: 51.6, type: 'Sextuple Star System', desc: 'Three pairs of binary stars gravitationally dancing together in one complex stellar harmony.', img: 'https://images.unsplash.com/photo-1506318137071-a8e063b4bec0?q=80&w=600&auto=format&fit=crop' },
@@ -184,15 +318,19 @@ export const CELESTIAL_CATALOG = [
   { name: 'Fomalhaut', constellation: 'Piscis Austrinus', ra: 344.41, dec: -29.62, distLy: 25.1, type: 'A-type Star with Debris Ring', desc: 'The solitary southern beacon surrounded by a spectacular ring of comet and asteroid debris.', img: 'https://images.unsplash.com/photo-1506318137071-a8e063b4bec0?q=80&w=600&auto=format&fit=crop' },
   { name: 'Markab', constellation: 'Pegasus', ra: 346.19, dec: 15.21, distLy: 133, type: 'Giant Star', desc: 'The southwest anchor of the Great Square of Pegasus, marking the wing of the mythical steed.', img: 'https://images.unsplash.com/photo-1506318137071-a8e063b4bec0?q=80&w=600&auto=format&fit=crop' },
 
-  // Southern Skies
-  { name: 'Alpha Centauri (Rigil Kentaurus)', constellation: 'Centaurus', ra: 219.90, dec: -60.83, distLy: 4.37, type: 'Closest Triple Star System', desc: 'Our Sun\'s nearest stellar neighbors, hosting Proxima Centauri and habitable zone exoplanets.', img: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=600&auto=format&fit=crop' },
+  // Southern Skies & South Pole
+  { name: 'Alpha Centauri (Rigil Kentaurus)', constellation: 'Centaurus', ra: 219.90, dec: -60.83, distLy: 4.37, type: 'Closest Triple Star System', desc: "Our Sun's nearest stellar neighbors, hosting Proxima Centauri and habitable zone exoplanets.", img: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=600&auto=format&fit=crop' },
   { name: 'Canopus', constellation: 'Carina', ra: 95.99, dec: -52.70, distLy: 310, type: 'Bright White Supergiant', desc: 'The second brightest star in the entire heavens, standard reference star for spacecraft attitude navigation.', img: 'https://images.unsplash.com/photo-1506318137071-a8e063b4bec0?q=80&w=600&auto=format&fit=crop' },
   { name: 'Acrux', constellation: 'Crux', ra: 186.65, dec: -63.10, distLy: 320, type: 'Multiple Blue Subgiant Star', desc: 'The southernmost brilliant star of the famous Southern Cross constellation.', img: 'https://images.unsplash.com/photo-1506318137071-a8e063b4bec0?q=80&w=600&auto=format&fit=crop' },
-  { name: 'Achernar', constellation: 'Eridanus', ra: 24.43, dec: -57.24, distLy: 139, type: 'Rapidly Oblate Blue Star', desc: 'The end of the celestial river, spinning so fiercely that its equatorial diameter is 56% wider than its poles.', img: 'https://images.unsplash.com/photo-1506318137071-a8e063b4bec0?q=80&w=600&auto=format&fit=crop' }
+  { name: 'Achernar', constellation: 'Eridanus', ra: 24.43, dec: -57.24, distLy: 139, type: 'Rapidly Oblate Blue Star', desc: 'The end of the celestial river, spinning so fiercely that its equatorial diameter is 56% wider than its poles.', img: 'https://images.unsplash.com/photo-1506318137071-a8e063b4bec0?q=80&w=600&auto=format&fit=crop' },
+  { name: 'Sigma Octantis (Polaris Australis)', constellation: 'Octans', ra: 317.19, dec: -88.95, distLy: 294, type: 'Yellow-White Giant Star', desc: 'The Southern Pole Star, marking the South Celestial Pole over Antarctica.', img: 'https://images.unsplash.com/photo-1506318137071-a8e063b4bec0?q=80&w=600&auto=format&fit=crop' }
 ];
 
 // Check local dynamic solar system objects (Moon, Sun, Planets)
 export function getLocalSolarSystemObject(latitude, longitude, date, zenithRa, zenithDec) {
+  const validDate = ensureValidDate(date);
+  const { latitude: safeLat, longitude: safeLon } = normalizeCoordinates(latitude, longitude);
+
   const bodies = [
     { body: Body.Moon, name: 'The Moon', type: 'Natural Satellite', img: 'https://images.unsplash.com/photo-1522030299830-16b8d3d049fe?q=80&w=600&auto=format&fit=crop' },
     { body: Body.Jupiter, name: 'Jupiter', type: 'Gas Giant Planet', img: 'https://images.unsplash.com/photo-1614730321146-b6fa6a46bcb4?q=80&w=600&auto=format&fit=crop' },
@@ -206,22 +344,24 @@ export function getLocalSolarSystemObject(latitude, longitude, date, zenithRa, z
   let closest = null;
   let minAngDist = Infinity;
 
-  const observer = new Observer(latitude, longitude, 0);
+  const observer = new Observer(safeLat, safeLon, 0);
 
   for (const item of bodies) {
     try {
-      const eq = Equator(item.body, date, observer, true, true);
+      const eq = Equator(item.body, validDate, observer, true, true);
+      if (!Number.isFinite(eq.ra) || !Number.isFinite(eq.dec) || !Number.isFinite(eq.dist)) {
+        continue;
+      }
       const bodyRaDeg = eq.ra * 15.0;
       const bodyDecDeg = eq.dec;
       const angDist = angularDistanceDeg(zenithRa, zenithDec, bodyRaDeg, bodyDecDeg);
 
-      // If a major planet or Moon is within 18 degrees of zenith, it is considered directly overhead!
       if (angDist < 18.0 && angDist < minAngDist) {
         minAngDist = angDist;
         const kmDist = eq.dist * 149597870.7;
-        const distStr = item.body === Body.Moon 
+        const distStr = item.body === Body.Moon
           ? `${Math.round(kmDist).toLocaleString()} km`
-          : kmDist > 100000000 
+          : kmDist > 100000000
             ? `${(kmDist / 1000000).toFixed(1)} Million km (${eq.dist.toFixed(2)} AU)`
             : `${Math.round(kmDist).toLocaleString()} km`;
 
@@ -238,48 +378,54 @@ export function getLocalSolarSystemObject(latitude, longitude, date, zenithRa, z
           isSolarSystem: true
         };
       }
-    } catch (e) {
-      // Continue on any calculation edge case
+    } catch {
+      // Skip individual body on extreme ephemeris edge cases
     }
   }
 
   return closest;
 }
 
-// Master function: Always returns the real star, planet, or deep sky object overhead
-export async function getClosestObject(latitude, longitude) {
-  const date = new Date();
-  const { ra, dec } = getZenithCoordinates(latitude, longitude, date);
+// Synchronous calculation for instant initial render and deterministic updates
+export function calculateClosestObject(latitude, longitude, date = new Date()) {
+  const validDate = ensureValidDate(date);
+  const { latitude: safeLat, longitude: safeLon } = normalizeCoordinates(latitude, longitude);
+  const { ra, dec } = getZenithCoordinates(safeLat, safeLon, validDate);
 
   // 1. Identify official IAU constellation directly overhead
-  let constellationName = 'Perseus';
+  let constellationName = safeLat >= 0 ? 'Ursa Minor' : 'Octans';
   let constellationTitle = 'The Celestial Realm';
   try {
-    const info = Constellation(ra / 15.0, dec);
+    // Clamp declination slightly inside [-90, 90] if astronomy-engine boundary checks exact poles
+    const lookupDec = clamp(dec, -89.9999, 89.9999);
+    const lookupRaHours = (((ra / 15.0) % 24.0) + 24.0) % 24.0;
+    const info = Constellation(lookupRaHours, lookupDec);
     if (info && info.name) {
       constellationName = info.name;
       if (CONSTELLATION_NAMES[info.symbol]) {
         constellationTitle = CONSTELLATION_NAMES[info.symbol].title;
       }
     }
-  } catch (e) {
-    console.warn('Constellation lookup error:', e);
+  } catch {
+    // Fallback constellation name already set
   }
 
   // 2. Check dynamic Solar System objects (Moon, Jupiter, Saturn, etc.)
-  const solarObj = getLocalSolarSystemObject(latitude, longitude, date, ra, dec);
+  const solarObj = getLocalSolarSystemObject(safeLat, safeLon, validDate, ra, dec);
   if (solarObj) {
+    const skyInfo = getSolarAndSkyInfo(safeLat, safeLon, solarObj.dec, validDate);
     return {
       ...solarObj,
       constellation: constellationName,
-      constellationTitle: constellationTitle,
+      constellationTitle: getConstellationTitleByName(constellationName, constellationTitle),
       zenithRa: ra,
-      zenithDec: dec
+      zenithDec: dec,
+      ...skyInfo
     };
   }
 
   // 3. Find closest cataloged Star or Deep Space Landmark to exact Zenith
-  let closestStar = CELESTIAL_CATALOG[0];
+  let closestStar = { ...CELESTIAL_CATALOG[0], angularSep: 0 };
   let minDistance = Infinity;
 
   for (const item of CELESTIAL_CATALOG) {
@@ -290,13 +436,17 @@ export async function getClosestObject(latitude, longitude) {
     }
   }
 
+  const skyInfo = getSolarAndSkyInfo(safeLat, safeLon, closestStar.dec, validDate);
+  const finalConstellation = closestStar.constellation || constellationName;
+  const finalConstellationTitle = getConstellationTitleByName(finalConstellation, constellationTitle);
+
   return {
     name: closestStar.name,
     type: closestStar.type,
-    constellation: closestStar.constellation || constellationName,
-    constellationTitle: constellationTitle,
-    distanceStr: closestStar.distLy > 10000 
-      ? `${(closestStar.distLy).toLocaleString()} Light Years` 
+    constellation: finalConstellation,
+    constellationTitle: finalConstellationTitle,
+    distanceStr: closestStar.distLy > 10000
+      ? `${closestStar.distLy.toLocaleString()} Light Years`
       : `${closestStar.distLy.toFixed(1)} Light Years`,
     angularSep: closestStar.angularSep,
     desc: closestStar.desc,
@@ -305,6 +455,12 @@ export async function getClosestObject(latitude, longitude) {
     dec: closestStar.dec,
     zenithRa: ra,
     zenithDec: dec,
-    isSolarSystem: false
+    isSolarSystem: false,
+    ...skyInfo
   };
+}
+
+// Async wrapper preserved for API compatibility
+export async function getClosestObject(latitude, longitude, date = new Date()) {
+  return calculateClosestObject(latitude, longitude, date);
 }

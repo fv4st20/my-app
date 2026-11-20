@@ -735,3 +735,20 @@ body {
     font-size: 1.6rem;
   }
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .pulse-dot,
+  .spin-slow,
+  .sonic-toast-banner {
+    animation: none;
+  }
+  .option-card,
+  .option-icon-box,
+  .btn,
+  .beat-indicator {
+    transition: none;
+  }
+  .beat-indicator.hit {
+    transform: none;
+  }
+}

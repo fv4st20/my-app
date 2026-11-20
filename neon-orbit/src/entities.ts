@@ -140,14 +140,18 @@ export class Enemy extends Entity {
 
     // Apply gradient to velocity
     const desiredVelocity = new Vector2(gradX, gradY).normalize().mult(this.speed);
-    
-    // Smooth turning (learning rate)
-    this.velocity.x += (desiredVelocity.x - this.velocity.x) * 0.1;
-    this.velocity.y += (desiredVelocity.y - this.velocity.y) * 0.1;
+    const turnBlend = Math.min(1, 0.1 * Math.max(0.2, dt * 60));
 
-    // Track path history for infinite trail rendering
+    // Smooth turning (learning rate)
+    this.velocity.x += (desiredVelocity.x - this.velocity.x) * turnBlend;
+    this.velocity.y += (desiredVelocity.y - this.velocity.y) * turnBlend;
+
+    // Track bounded path history for trail rendering
     if (this.history.length === 0 || this.position.sub(this.history[0]).mag() > 2) {
       this.history.unshift(new Vector2(this.position.x, this.position.y));
+      if (this.history.length > 50) {
+        this.history.pop();
+      }
     }
 
     super.update(dt);

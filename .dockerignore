@@ -1,7 +1,63 @@
-node_modules
-npm-debug.log
-.DS_Store
-.env
+# Version control
 .git
-*.zip
+.gitignore
+
+# Dependencies (root and all 9 sub-apps — prevents host OS binaries leaking into Linux build)
+node_modules
+**/node_modules
+.npm
+
+# Stale local build outputs (recompiled cleanly inside Docker build stage)
+dist
+**/dist
+build
+**/build
+.vite
+**/.vite
+
+# Secrets, environment files & private keys
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.crt
+*.pfx
+*.p12
+
+# Runtime database & atomic-write temporary files
 data
+data/**
+*.db
+*.sqlite
+*.sqlite3
+*.tmp
+**/*.tmp
+*.bak
+
+# Logs, PIDs, caches & OS metadata
+*.log
+**/*.log
+logs
+npm-debug.log*
+.pm2
+pids
+*.pid
+*.seed
+*.pid.lock
+.eslintcache
+.DS_Store
+**/.DS_Store
+Thumbs.db
+**/Thumbs.db
+
+# Archives & host deployment documentation/configs not needed inside container image
+*.zip
+*.tar.gz
+*.tgz
+Dockerfile*
+docker-compose*.yml
+nginx.conf*
+Caddyfile*
+ecosystem.config.*
+*.md

@@ -30,16 +30,14 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="mobile-web-app-capable" content="yes" />
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=4.0">
+  <link rel="stylesheet" href="styles.css?v=4.2">
   <style>
     /* Critical Inline CSS: Prevents modals from rendering unstyled in document flow */
     #themeModal,
     #securityModal,
     #authModal,
-    #leaderboardModal {
+    #leaderboardModal,
+    #privacyModal {
       display: none !important;
       position: fixed !important;
       inset: 0 !important;
@@ -48,7 +46,8 @@
 
     #themeModal.active,
     #authModal.active,
-    #leaderboardModal.active {
+    #leaderboardModal.active,
+    #privacyModal.active {
       display: flex !important;
       align-items: center !important;
       justify-content: center !important;
@@ -75,10 +74,10 @@
   </div>
 
   <!-- Top Floating Action Bar: Leaderboards, RGB Theme, User Account -->
-  <div class="top-nav-bar">
-    <button id="leaderboardToggleBtn" class="theme-floating-btn" aria-label="Global Leaderboards">
+  <nav class="top-nav-bar" aria-label="Hub controls">
+    <button type="button" id="leaderboardToggleBtn" class="theme-floating-btn" aria-label="Global Leaderboards">
       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
         <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
         <path d="M4 22h16" />
@@ -89,9 +88,9 @@
       <span>Leaderboards</span>
     </button>
 
-    <button id="themeToggleBtn" class="theme-floating-btn" aria-label="Customize RGB Background">
+    <button type="button" id="themeToggleBtn" class="theme-floating-btn" aria-label="Customize RGB Background">
       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <circle cx="13.5" cy="6.5" r=".5" fill="currentColor" />
         <circle cx="17.5" cy="10.5" r=".5" fill="currentColor" />
         <circle cx="8.5" cy="7.5" r=".5" fill="currentColor" />
@@ -102,16 +101,17 @@
       <span>RGB Theme</span>
     </button>
 
-    <button id="accountBtn" class="theme-floating-btn" aria-label="Account Login or Profile">
+    <button type="button" id="accountBtn" class="theme-floating-btn" aria-label="Account Login or Profile">
       <svg id="accountDefaultIcon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
-        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+        aria-hidden="true">
         <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
         <circle cx="12" cy="7" r="4" />
       </svg>
-      <span id="accountAvatarBadge" style="display:none;" class="account-badge-avatar"></span>
+      <span id="accountAvatarBadge" style="display:none;" class="account-badge-avatar" aria-hidden="true"></span>
       <span id="accountBtnText">Sign In</span>
     </button>
-  </div>
+  </nav>
 
   <main class="container">
     <header class="header">
@@ -121,7 +121,7 @@
           <span>ASTRA 13 SYSTEM</span>
         </div>
         <h1 class="main-title">Swiss Knife <span class="hub-word">Hub</span></h1>
-        <p class="hub-subtitle">Advanced Interactive Web Suite & Cyber Arcade</p>
+        <p class="hub-subtitle">Advanced Interactive Web Suite &amp; Cyber Arcade</p>
       </div>
     </header>
 
@@ -132,7 +132,8 @@
           <div class="card-top-row">
             <div class="icon neon-icon">
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                aria-hidden="true">
                 <circle cx="12" cy="12" r="10" />
                 <circle cx="12" cy="12" r="4" />
                 <line x1="21.17" y1="8" x2="12" y2="8" />
@@ -160,7 +161,8 @@
           <div class="card-top-row">
             <div class="icon star-icon">
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                aria-hidden="true">
                 <polygon
                   points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
               </svg>
@@ -185,7 +187,8 @@
           <div class="card-top-row">
             <div class="icon chem-icon">
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                aria-hidden="true">
                 <path d="M10 2v7.31" />
                 <path d="M14 9.3V1.99" />
                 <path d="M8.5 2h7" />
@@ -213,7 +216,8 @@
           <div class="card-top-row">
             <div class="icon chill-icon">
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                aria-hidden="true">
                 <path d="M2 12h4l3-9 5 18 3-9h5" />
               </svg>
             </div>
@@ -237,7 +241,8 @@
           <div class="card-top-row">
             <div class="icon shape-icon">
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                aria-hidden="true">
                 <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
                 <polyline points="14 2 14 8 20 8" />
                 <path d="M12 18v-6" />
@@ -264,7 +269,8 @@
           <div class="card-top-row">
             <div class="icon sonic-icon">
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                aria-hidden="true">
                 <circle cx="12" cy="12" r="10" />
                 <circle cx="12" cy="12" r="3" />
                 <path d="M12 2v2" />
@@ -293,7 +299,8 @@
           <div class="card-top-row">
             <div class="icon nond-icon">
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                aria-hidden="true">
                 <rect x="2" y="14" width="20" height="8" rx="2" ry="2" />
                 <rect x="2" y="2" width="20" height="8" rx="2" ry="2" />
                 <line x1="6" y1="6" x2="6" y2="6" />
@@ -320,7 +327,8 @@
           <div class="card-top-row">
             <div class="icon alien-icon">
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                aria-hidden="true">
                 <path d="M12 2a7 7 0 0 1 7 7c0 4-7 13-7 13S5 13 5 9a7 7 0 0 1 7-7z" />
                 <circle cx="9" cy="9" r="1" />
                 <circle cx="15" cy="9" r="1" />
@@ -346,7 +354,8 @@
           <div class="card-top-row">
             <div class="icon fishing-icon">
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                aria-hidden="true">
                 <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
                 <line x1="4" y1="22" x2="4" y2="15" />
               </svg>
@@ -367,35 +376,39 @@
 
     </div>
 
-    <!-- Small Subtle Footer with Copyright By Astra 13 -->
+    <!-- Footer with Copyright, Accurate Security Info & Privacy/Terms Modal Trigger -->
     <footer class="hub-footer">
       <div class="footer-divider"></div>
       <div class="footer-content">
-        <p class="copyright-text">© <span id="copyrightYear">2026</span> Astra 13's Swiss Knife Hub • All Rights
-          Reserved</p>
+        <p class="copyright-text">© <span id="copyrightYear">2026</span> Astra 13's Swiss Knife Hub • Provided "As-Is"
+          for Entertainment &amp; Education</p>
         <p class="by-author-text">Created by <span class="author-highlight">Astra 13</span></p>
-        <p class="quantum-footer-tag">🛡️ Post-Quantum AES-256-GCM Authenticated Encryption Active</p>
+        <p class="quantum-footer-tag">🛡️ AES-256-GCM Authenticated Tokens • HKDF-SHA-512 &amp; scrypt Security</p>
+        <div class="footer-links-row">
+          <button type="button" id="privacyTermsBtn" class="footer-link-btn">🔒 Privacy, Cookies &amp; Terms</button>
+        </div>
       </div>
     </footer>
   </main>
 
   <!-- RGB Gradient Customizer Modal -->
-  <div id="themeModal" class="theme-modal">
+  <div id="themeModal" class="theme-modal" role="dialog" aria-modal="true" aria-labelledby="themeModalTitle">
     <div class="theme-modal-backdrop" id="themeModalBackdrop"></div>
     <div class="theme-modal-dialog">
       <div class="theme-modal-header">
         <div class="modal-title-group">
           <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" stroke-width="2">
+            stroke="currentColor" stroke-width="2" aria-hidden="true">
             <circle cx="12" cy="12" r="10" />
             <path d="m4.93 4.93 4.24 4.24" />
             <path d="m14.83 9.17 4.24-4.24" />
             <path d="m14.83 14.83 4.24 4.24" />
             <path d="m9.17 14.83-4.24 4.24" />
           </svg>
-          <h3>RGB Background Studio</h3>
+          <h3 id="themeModalTitle">RGB Background Studio</h3>
         </div>
-        <button id="closeThemeModal" class="theme-close-btn">&times;</button>
+        <button type="button" id="closeThemeModal" class="theme-close-btn"
+          aria-label="Close RGB Background Studio">&times;</button>
       </div>
 
       <div class="theme-modal-body">
@@ -443,7 +456,7 @@
 
         <div class="angle-control-group">
           <div class="angle-label-row">
-            <span>Gradient Flow Angle:</span>
+            <label for="gradientAngleSlider">Gradient Flow Angle:</label>
             <span id="angleValueTag" class="angle-tag">45°</span>
           </div>
           <input type="range" id="gradientAngleSlider" min="0" max="360" value="45" class="angle-slider" />
@@ -452,41 +465,48 @@
         <div class="presets-section">
           <span class="presets-title">Quick Presets:</span>
           <div class="presets-chips">
-            <button class="preset-chip" data-c1="#0b0f19" data-c2="#1a1a2e" data-c3="#16213e" data-acc="#6366f1"
-              data-acc2="#ec4899" data-angle="45">🌌 Cosmic</button>
-            <button class="preset-chip" data-c1="#050510" data-c2="#1e0933" data-c3="#2a0845" data-acc="#ec4899"
-              data-acc2="#00f3ff" data-angle="135">🔮 Cyberpunk</button>
-            <button class="preset-chip" data-c1="#01140e" data-c2="#042e20" data-c3="#064e3b" data-acc="#10b981"
-              data-acc2="#34d399" data-angle="90">🌲 Matrix</button>
-            <button class="preset-chip" data-c1="#180800" data-c2="#360e00" data-c3="#571402" data-acc="#f59e0b"
-              data-acc2="#ef4444" data-angle="60">🔥 Sunset</button>
-            <button class="preset-chip" data-c1="#020b14" data-c2="#072038" data-c3="#0c365c" data-acc="#00f0ff"
-              data-acc2="#38bdf8" data-angle="120">🌊 Ocean</button>
-            <button class="preset-chip" data-c1="#12021c" data-c2="#26043b" data-c3="#3b085c" data-acc="#a855f7"
-              data-acc2="#ec4899" data-angle="210">👾 Void</button>
+            <button type="button" class="preset-chip" data-c1="#0b0f19" data-c2="#1a1a2e" data-c3="#16213e"
+              data-acc="#6366f1" data-acc2="#ec4899" data-angle="45">🌌 Cosmic</button>
+            <button type="button" class="preset-chip" data-c1="#050510" data-c2="#1e0933" data-c3="#2a0845"
+              data-acc="#ec4899" data-acc2="#00f3ff" data-angle="135">🔮 Cyberpunk</button>
+            <button type="button" class="preset-chip" data-c1="#01140e" data-c2="#042e20" data-c3="#064e3b"
+              data-acc="#10b981" data-acc2="#34d399" data-angle="90">🌲 Matrix</button>
+            <button type="button" class="preset-chip" data-c1="#180800" data-c2="#360e00" data-c3="#571402"
+              data-acc="#f59e0b" data-acc2="#ef4444" data-angle="60">🔥 Sunset</button>
+            <button type="button" class="preset-chip" data-c1="#020b14" data-c2="#072038" data-c3="#0c365c"
+              data-acc="#00f0ff" data-acc2="#38bdf8" data-angle="120">🌊 Ocean</button>
+            <button type="button" class="preset-chip" data-c1="#12021c" data-c2="#26043b" data-c3="#3b085c"
+              data-acc="#a855f7" data-acc2="#ec4899" data-angle="210">👾 Void</button>
           </div>
         </div>
       </div>
 
       <div class="theme-modal-footer">
-        <button id="resetThemeBtn" class="reset-btn">Reset Defaults</button>
-        <button id="saveThemeBtn" class="apply-btn">Done</button>
+        <button type="button" id="resetThemeBtn" class="reset-btn">Reset Defaults</button>
+        <button type="button" id="saveThemeBtn" class="apply-btn">Done</button>
       </div>
     </div>
   </div>
 
-  <!-- User Account & Auth Modal (Optional Sign In & Registration) -->
-  <div id="authModal" class="theme-modal" aria-modal="true" role="dialog">
+  <!-- User Account & Auth Modal (Optional Sign In, Registration, Password Change & GDPR Account Deletion) -->
+  <div id="authModal" class="theme-modal" aria-modal="true" role="dialog" aria-labelledby="authModalTitle">
     <div class="theme-modal-backdrop" id="authModalBackdrop"></div>
     <div class="auth-modal-dialog">
-      <div class="auth-tabs-strip" id="authTabsStrip">
-        <button id="tabSignIn" class="auth-tab-btn active">Sign In</button>
-        <button id="tabRegister" class="auth-tab-btn">Create Account</button>
+      <div class="auth-modal-header">
+        <h3 id="authModalTitle" class="auth-modal-title">Astra 13 Account</h3>
+        <button type="button" id="closeAuthModal" class="theme-close-btn"
+          aria-label="Close account dialog">&times;</button>
+      </div>
+
+      <div class="auth-tabs-strip" id="authTabsStrip" role="tablist" aria-label="Authentication mode">
+        <button type="button" id="tabSignIn" class="auth-tab-btn active" role="tab" aria-selected="true">Sign In</button>
+        <button type="button" id="tabRegister" class="auth-tab-btn" role="tab" aria-selected="false">Create
+          Account</button>
       </div>
 
       <div class="auth-body">
         <!-- Error / Status Notice -->
-        <div id="authNotice" class="auth-banner-msg"></div>
+        <div id="authNotice" class="auth-banner-msg" role="alert" aria-live="polite"></div>
 
         <!-- View 1: Sign In -->
         <form id="signInForm" class="auth-form">
@@ -494,7 +514,7 @@
             <label class="auth-label" for="loginUsername">Username</label>
             <div class="auth-input-wrapper">
               <svg class="auth-input-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
-                fill="none" stroke="currentColor" stroke-width="2">
+                fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                 <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
                 <circle cx="12" cy="7" r="4" />
               </svg>
@@ -507,12 +527,12 @@
             <label class="auth-label" for="loginPassword">Password</label>
             <div class="auth-input-wrapper">
               <svg class="auth-input-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
-                fill="none" stroke="currentColor" stroke-width="2">
+                fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                 <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
                 <path d="M7 11V7a5 5 0 0 1 10 0v4" />
               </svg>
               <input type="password" id="loginPassword" class="auth-input" placeholder="Enter password"
-                autocomplete="current-password" required />
+                autocomplete="current-password" required maxlength="100" />
             </div>
           </div>
 
@@ -530,50 +550,103 @@
             <label class="auth-label" for="regUsername">Choose Username</label>
             <div class="auth-input-wrapper">
               <svg class="auth-input-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
-                fill="none" stroke="currentColor" stroke-width="2">
+                fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                 <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
                 <circle cx="12" cy="7" r="4" />
               </svg>
               <input type="text" id="regUsername" class="auth-input" placeholder="e.g. Maverick_99"
-                autocomplete="username" required maxlength="20" />
+                autocomplete="username" required minlength="3" maxlength="20" pattern="[A-Za-z0-9_]{3,20}" />
             </div>
-            <span class="auth-hint">3-20 characters: letters, numbers, and underscores only.</span>
+            <span class="auth-hint">3–20 characters: letters, numbers, and underscores only. Publicly visible on
+              leaderboards; offensive or impersonation names are prohibited.</span>
           </div>
 
           <div class="auth-field">
             <label class="auth-label" for="regPassword">Password</label>
             <div class="auth-input-wrapper">
               <svg class="auth-input-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
-                fill="none" stroke="currentColor" stroke-width="2">
+                fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                 <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
                 <path d="M7 11V7a5 5 0 0 1 10 0v4" />
               </svg>
               <input type="password" id="regPassword" class="auth-input" placeholder="At least 6 characters"
-                autocomplete="new-password" required minlength="6" />
+                autocomplete="new-password" required minlength="6" maxlength="100" />
             </div>
           </div>
 
           <button type="submit" id="registerSubmitBtn" class="auth-submit-btn">Create Free Account</button>
 
           <p class="auth-optional-note">
-            🛡️ Secured with cryptographic scrypt hashing, brute-force rate limits, and anti-cheat signature validation.
+            🛡️ Secured with salted scrypt password hashing, essential HttpOnly session cookies, and instant one-click
+            account &amp; score erasure at any time.
           </p>
         </form>
 
-        <!-- View 3: Logged In Profile -->
+        <!-- View 3: Logged In Profile & Self-Service Privacy Controls -->
         <div id="profileView" class="profile-card" style="display:none;">
-          <div id="profileAvatar" class="profile-avatar-large">A</div>
+          <div id="profileAvatar" class="profile-avatar-large" aria-hidden="true">A</div>
           <div>
             <h3 class="profile-name">
               <span id="profileUsername">Player</span>
               <span class="verified-tag">✓ Verified</span>
             </h3>
-            <p id="profileMemberSince" class="profile-meta">Member since today</p>
+            <p id="profileMemberSince" class="profile-meta">Registered Member</p>
           </div>
 
           <div class="profile-actions">
-            <button id="viewMyScoresBtn" class="auth-submit-btn" style="flex:1;">🏆 View Leaderboards</button>
-            <button id="logoutBtn" class="profile-logout-btn">Log Out</button>
+            <button type="button" id="viewMyScoresBtn" class="auth-submit-btn" style="flex:1;">🏆 View
+              Leaderboards</button>
+            <button type="button" id="logoutBtn" class="profile-logout-btn">Log Out</button>
+          </div>
+
+          <div class="profile-manage-divider" role="separator"></div>
+
+          <div class="profile-manage-row">
+            <button type="button" id="toggleChangePasswordBtn" class="profile-secondary-btn" aria-expanded="false"
+              aria-controls="changePasswordPanel">🔑 Change Password</button>
+            <button type="button" id="toggleDeleteAccountBtn" class="profile-danger-outline-btn" aria-expanded="false"
+              aria-controls="deleteAccountPanel">🗑️ Delete Account &amp; My Scores</button>
+          </div>
+
+          <!-- Sub-panel: Change Password -->
+          <form id="changePasswordPanel" class="account-subpanel" style="display:none;">
+            <h4 class="account-subpanel-title">Update Account Password</h4>
+            <div class="auth-field">
+              <label class="auth-label" for="currentPasswordInput">Current Password</label>
+              <input type="password" id="currentPasswordInput" class="auth-input" style="padding-left:14px;"
+                placeholder="Current password" autocomplete="current-password" required maxlength="100" />
+            </div>
+            <div class="auth-field">
+              <label class="auth-label" for="newPasswordInput">New Password</label>
+              <input type="password" id="newPasswordInput" class="auth-input" style="padding-left:14px;"
+                placeholder="New password (6–100 chars)" autocomplete="new-password" required minlength="6"
+                maxlength="100" />
+            </div>
+            <div class="auth-field">
+              <label class="auth-label" for="confirmNewPasswordInput">Confirm New Password</label>
+              <input type="password" id="confirmNewPasswordInput" class="auth-input" style="padding-left:14px;"
+                placeholder="Re-enter new password" autocomplete="new-password" required minlength="6"
+                maxlength="100" />
+            </div>
+            <div class="subpanel-actions">
+              <button type="button" id="cancelChangePasswordBtn" class="subpanel-cancel-btn">Cancel</button>
+              <button type="submit" id="changePasswordSubmitBtn" class="auth-submit-btn"
+                style="padding:9px 16px; font-size:0.85rem;">Update Password</button>
+            </div>
+          </form>
+
+          <!-- Sub-panel: GDPR One-Click Confirmed Account & Score Erasure -->
+          <div id="deleteAccountPanel" class="account-subpanel account-subpanel-danger" style="display:none;">
+            <h4 class="account-subpanel-title">Permanent Account &amp; Data Erasure</h4>
+            <p class="danger-warning-text">
+              This action permanently deletes your account, invalidates all active sessions, and erases all of your
+              leaderboard scores. This cannot be undone.
+            </p>
+            <div class="subpanel-actions">
+              <button type="button" id="cancelDeleteAccountBtn" class="subpanel-cancel-btn">Cancel</button>
+              <button type="button" id="confirmDeleteAccountBtn" class="danger-confirm-btn">Delete Account &amp;
+                Scores</button>
+            </div>
           </div>
         </div>
       </div>
@@ -581,13 +654,14 @@
   </div>
 
   <!-- Global Leaderboards Modal -->
-  <div id="leaderboardModal" class="theme-modal" aria-modal="true" role="dialog">
+  <div id="leaderboardModal" class="theme-modal" aria-modal="true" role="dialog"
+    aria-labelledby="leaderboardModalTitle">
     <div class="theme-modal-backdrop" id="leaderboardModalBackdrop"></div>
     <div class="leaderboard-modal-dialog">
-      <div class="theme-modal-header" style="border-bottom:1px solid rgba(255,255,255,0.08);">
+      <div class="theme-modal-header leaderboard-modal-header">
         <div class="modal-title-group">
           <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" stroke-width="2">
+            stroke="currentColor" stroke-width="2" aria-hidden="true">
             <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
             <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
             <path d="M4 22h16" />
@@ -595,34 +669,109 @@
             <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" />
             <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" />
           </svg>
-          <h3>Astra 13 Global Leaderboards</h3>
+          <h3 id="leaderboardModalTitle">Astra 13 Global Leaderboards</h3>
         </div>
-        <button id="closeLeaderboardModal" class="theme-close-btn">&times;</button>
+        <button type="button" id="closeLeaderboardModal" class="theme-close-btn"
+          aria-label="Close leaderboards">&times;</button>
       </div>
 
       <!-- Game Tabs -->
-      <div class="leaderboard-game-tabs">
-        <button class="leaderboard-game-tab active" data-game="alien-echo">👽 Alien Echo</button>
-        <button class="leaderboard-game-tab" data-game="neon-orbit">⚛️ Neon Orbit</button>
-        <button class="leaderboard-game-tab" data-game="pirate-fishing">🏴‍☠️ Pirate Fishing</button>
-        <button class="leaderboard-game-tab" data-game="sonic-soccer">⚽ Sonic Soccer</button>
-        <button class="leaderboard-game-tab" data-game="shape-wars">⚔️ Shape Wars</button>
+      <div class="leaderboard-game-tabs" role="tablist" aria-label="Ranked games">
+        <button type="button" class="leaderboard-game-tab active" role="tab" aria-selected="true"
+          data-game="alien-echo">👽 Alien Echo</button>
+        <button type="button" class="leaderboard-game-tab" role="tab" aria-selected="false" data-game="neon-orbit">⚛️
+          Neon Orbit</button>
+        <button type="button" class="leaderboard-game-tab" role="tab" aria-selected="false"
+          data-game="pirate-fishing">🏴‍☠️ Pirate Fishing</button>
+        <button type="button" class="leaderboard-game-tab" role="tab" aria-selected="false" data-game="sonic-soccer">⚽
+          Sonic Soccer</button>
+        <button type="button" class="leaderboard-game-tab" role="tab" aria-selected="false" data-game="shape-wars">⚔️
+          Shape Wars</button>
       </div>
 
       <!-- Table Content Area -->
-      <div class="leaderboard-content" id="leaderboardContent">
-        <div style="text-align:center; padding:30px; color:#94a3b8;">Loading global standings...</div>
+      <div class="leaderboard-content" id="leaderboardContent" aria-live="polite">
+        <div class="leaderboard-state-msg">Loading global standings...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Privacy, Cookies & Terms of Use Modal -->
+  <div id="privacyModal" class="theme-modal" aria-modal="true" role="dialog" aria-labelledby="privacyModalTitle">
+    <div class="theme-modal-backdrop" id="privacyModalBackdrop"></div>
+    <div class="privacy-modal-dialog">
+      <div class="theme-modal-header leaderboard-modal-header">
+        <div class="modal-title-group">
+          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+          </svg>
+          <h3 id="privacyModalTitle">Privacy, Cookies &amp; Terms of Use</h3>
+        </div>
+        <button type="button" id="closePrivacyModal" class="theme-close-btn"
+          aria-label="Close Privacy and Terms">&times;</button>
+      </div>
+
+      <div class="privacy-modal-body">
+        <div class="privacy-section">
+          <h4>1. Essential-Only Cookies (Zero Tracking or Ads)</h4>
+          <p>This hub uses strictly necessary first-party <span class="privacy-code-pill">HttpOnly</span> security
+            cookies and local UI preferences — never advertising, analytics, or cross-site tracking cookies:</p>
+          <ul>
+            <li><span class="privacy-code-pill">z340_clearance</span> — Stores anti-bot verification clearance (up to
+              30 days) so you can access hub apps seamlessly.</li>
+            <li><span class="privacy-code-pill">astra_session</span> — Optional login session token (up to 30 days)
+              created only if you sign in.</li>
+            <li><strong>Local Browser Storage</strong> — Stores optional client-side preferences such as RGB background
+              colors and audio mute settings on your device only.</li>
+          </ul>
+        </div>
+
+        <div class="privacy-section">
+          <h4>2. Minimal Data Stored &amp; Self-Service Erasure</h4>
+          <ul>
+            <li><strong>Optional Accounts:</strong> If you register, we store only your chosen username, a salted
+              <span class="privacy-code-pill">scrypt</span> password hash, account timestamps, and submitted game high
+              scores.</li>
+            <li><strong>No Raw IP Database Storage:</strong> Transient rate-limiting counters run in volatile server
+              memory to prevent brute-force abuse and are never persisted to the user database.</li>
+            <li><strong>One-Click Right to Erasure:</strong> Signed-in users can change their password or permanently
+              delete their account, sessions, and all associated leaderboard scores at any time via <em>Account →
+                Delete Account &amp; My Scores</em>.</li>
+          </ul>
+        </div>
+
+        <div class="privacy-section">
+          <h4>3. Public Leaderboard Conduct Rules</h4>
+          <p>Submitted usernames and scores appear on public leaderboards. Usernames containing profanity, slurs, URLs
+            or spam domains, impersonation of staff/system roles, or automated score tampering are blocked and may be
+            removed without notice.</p>
+        </div>
+
+        <div class="privacy-section">
+          <h4>4. Educational &amp; Entertainment "As-Is" Disclaimer</h4>
+          <p>All simulators, chemistry/astronomy tools, circuits, and arcade games on Astra 13's Swiss Knife Hub are
+            interactive digital simulations provided strictly <strong>"as-is"</strong> without warranty of any kind for
+            entertainment and educational exploration. Never attempt real-world chemical or physical experiments based
+            on web simulations.</p>
+        </div>
+      </div>
+
+      <div class="privacy-modal-footer">
+        <button type="button" id="privacyManageAccountBtn" class="profile-secondary-btn" style="flex:0 1 auto;">⚙️
+          Account &amp; Data Controls</button>
+        <button type="button" id="donePrivacyModalBtn" class="apply-btn">Got It</button>
       </div>
     </div>
   </div>
 
   <!-- Z340 Security Clearance Gateway Modal -->
-  <div id="securityModal" class="security-modal" aria-modal="true" role="dialog">
+  <div id="securityModal" class="security-modal" aria-modal="true" role="dialog" aria-labelledby="securityModalTitle">
     <div class="security-modal-backdrop"></div>
     <div class="security-card">
       <div class="security-header">
         <div class="security-brand">
-          <div class="security-radar-icon">
+          <div class="security-radar-icon" aria-hidden="true">
             <div class="radar-sweep"></div>
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
               stroke="currentColor" stroke-width="2">
@@ -630,19 +779,19 @@
             </svg>
           </div>
           <div>
-            <h3>ASTRA 13 SECURITY GATE</h3>
-            <span class="security-badge-sub">QUANTUM-SAFE AES-256-GCM • POST-QUANTUM PROTOCOL</span>
+            <h3 id="securityModalTitle">ASTRA 13 SECURITY GATE</h3>
+            <span class="security-badge-sub">AES-256-GCM AUTHENTICATED • HKDF-SHA-512 &amp; SCRYPT</span>
           </div>
         </div>
-        <button id="securitySoundToggle" class="security-sound-btn" title="Toggle audio feedback"
+        <button type="button" id="securitySoundToggle" class="security-sound-btn" title="Toggle audio feedback"
           aria-label="Toggle Sound">
           <svg id="soundOnIcon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
-            fill="none" stroke="currentColor" stroke-width="2">
+            fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
             <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
             <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
           </svg>
           <svg id="soundOffIcon" style="display:none;" xmlns="http://www.w3.org/2000/svg" width="16" height="16"
-            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
             <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
             <line x1="23" y1="9" x2="17" y2="15"></line>
             <line x1="17" y1="9" x2="23" y2="15"></line>
@@ -650,18 +799,18 @@
         </button>
       </div>
 
-      <!-- Quantum Protection Badge -->
+      <!-- Security Protocol Badge -->
       <div class="quantum-security-banner">
         <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" stroke-width="2.5">
+          stroke="currentColor" stroke-width="2.5" aria-hidden="true">
           <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
         </svg>
-        <span>PROTECTED BY QUANTUM-SAFE AES-256-GCM (NIST LEVEL 5)</span>
+        <span>SECURED WITH AES-256-GCM &amp; HTTPONLY CLEARANCE</span>
       </div>
 
       <!-- Target / Redirect Context Notice -->
       <div id="securityNotice" class="security-notice">
-        <span class="notice-pulse"></span>
+        <span class="notice-pulse" aria-hidden="true"></span>
         <span id="securityNoticeText">Restricted entry: Verify human presence to decrypt hub access.</span>
       </div>
 
@@ -670,16 +819,17 @@
         <div class="puzzle-stage-wrapper">
           <div id="puzzleBgContainer" class="puzzle-bg-box"></div>
           <div id="puzzlePiece" class="puzzle-piece-box"></div>
-          <div class="stage-scanline"></div>
+          <div class="stage-scanline" aria-hidden="true"></div>
         </div>
 
         <!-- Interactive Slider Track -->
         <div class="slider-track-container" id="sliderContainer">
           <div class="slider-track-fill" id="sliderFill"></div>
           <span class="slider-prompt" id="sliderPrompt">Slide energy core into socket ▶▶▶</span>
-          <div class="slider-puck" id="sliderPuck" tabindex="0">
+          <div class="slider-puck" id="sliderPuck" role="slider" tabindex="0"
+            aria-label="Slide energy core into socket" aria-valuemin="0" aria-valuemax="276" aria-valuenow="0">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
-              stroke="currentColor" stroke-width="2.5">
+              stroke="currentColor" stroke-width="2.5" aria-hidden="true">
               <polyline points="9 18 15 12 9 6"></polyline>
             </svg>
           </div>
@@ -693,23 +843,23 @@
         </div>
         <div class="code-input-row">
           <input type="text" id="securityCodeInput" maxlength="4" placeholder="ENTER 4-CHAR KEY" autocomplete="off"
-            autocapitalize="characters" />
-          <button id="verifyCodeBtn" class="code-verify-btn">Verify</button>
+            autocapitalize="characters" aria-label="Enter 4-character verification code" />
+          <button type="button" id="verifyCodeBtn" class="code-verify-btn">Verify</button>
         </div>
       </div>
 
       <!-- Security Status Banner -->
-      <div id="securityStatus" class="security-status-box idle">
-        <span class="status-indicator"></span>
+      <div id="securityStatus" class="security-status-box idle" role="status" aria-live="polite">
+        <span class="status-indicator" aria-hidden="true"></span>
         <span id="securityStatusMsg">WAITING FOR BIOMETRIC ALIGNMENT...</span>
       </div>
 
       <!-- Footer Options -->
       <div class="security-footer">
-        <button id="switchModeBtn" class="security-text-btn">Use Code Matrix</button>
-        <button id="refreshChallengeBtn" class="security-text-btn">
+        <button type="button" id="switchModeBtn" class="security-text-btn">Use Code Matrix</button>
+        <button type="button" id="refreshChallengeBtn" class="security-text-btn">
           <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" stroke-width="2">
+            stroke="currentColor" stroke-width="2" aria-hidden="true">
             <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2" />
           </svg>
           New Challenge
@@ -720,16 +870,264 @@
 
   <script>
     (function () {
-      // --- RGB Gradient Customizer Engine ---
+      'use strict';
+
+      // ========================================================
+      // --- SECURITY SANITIZERS & NETWORK HELPERS ---
+      // ========================================================
+      const SAFE_RELATIVE_PATH_RE = /^\/(?!\/|\\)/;
+      const HEX_COLOR_RE = /^#[0-9a-fA-F]{6}$/;
+      const RESERVED_NAMES = new Set(['admin', 'administrator', 'moderator', 'mod', 'system', 'owner', 'support', 'root', 'staff']);
+
+      const KNOWN_APPS = Object.freeze({
+        'neon-orbit': { name: 'Neon Orbit', path: '/neon-orbit/' },
+        'star-locator': { name: 'Star Locator', path: '/star-locator/' },
+        'chem-lab': { name: 'Chem Lab', path: '/chem-lab/' },
+        'chill-hub': { name: 'Chill Hub', path: '/chill-hub/' },
+        'shape-wars': { name: 'Shape Wars', path: '/shape-wars/' },
+        'sonic-soccer': { name: 'Sonic Soccer', path: '/sonic-soccer/' },
+        'nond_ex': { name: 'nond_ex', path: '/nond_ex/' },
+        'alien-echo': { name: 'Alien Echo', path: '/alien-echo/' },
+        'pirate-fishing': { name: 'Pirate Fishing', path: '/pirate-fishing/' }
+      });
+
+      const VALID_LEADERBOARD_GAMES = new Set([
+        'alien-echo',
+        'neon-orbit',
+        'pirate-fishing',
+        'sonic-soccer',
+        'shape-wars'
+      ]);
+
+      const ALLOWED_SVG_TAGS = new Set([
+        'svg', 'defs', 'lineargradient', 'radialgradient', 'stop', 'pattern',
+        'path', 'circle', 'ellipse', 'rect', 'line', 'polyline', 'polygon',
+        'g', 'text', 'tspan', 'filter', 'fedropshadow', 'fegaussianblur',
+        'feoffset', 'feblend', 'femerge', 'femergenode', 'clippath', 'mask'
+      ]);
+
+      function sanitizeHexColor(val, fallback) {
+        return typeof val === 'string' && HEX_COLOR_RE.test(val.trim()) ? val.trim() : fallback;
+      }
+
+      function sanitizeAngle(val, fallback = 45) {
+        const num = Number(val);
+        if (!Number.isFinite(num)) return fallback;
+        return Math.max(0, Math.min(360, Math.round(num)));
+      }
+
+      /**
+       * Validates that a redirect target is strictly a same-origin local path
+       * matching /^\/(?!\/|\\)/ (blocking https://, //, /\, javascript:, data:, etc.)
+       */
+      function sanitizeRedirectPath(raw) {
+        if (typeof raw !== 'string') return null;
+        const trimmed = raw.trim();
+        if (!trimmed || trimmed.length > 512) return null;
+        if (/[\x00-\x1f\x7f\\]/.test(trimmed)) return null;
+        if (!SAFE_RELATIVE_PATH_RE.test(trimmed)) return null;
+
+        try {
+          const decoded = decodeURIComponent(trimmed);
+          if (/[\x00-\x1f\x7f\\]/.test(decoded) || !SAFE_RELATIVE_PATH_RE.test(decoded)) {
+            return null;
+          }
+        } catch {
+          return null;
+        }
+
+        try {
+          const parsed = new URL(trimmed, window.location.origin);
+          if (parsed.origin !== window.location.origin) return null;
+          if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return null;
+          if (!SAFE_RELATIVE_PATH_RE.test(parsed.pathname)) return null;
+          // Prevent redirect loops back into the verification prompt itself
+          if (parsed.pathname === '/' && new URLSearchParams(parsed.search).get('verify') === 'required') {
+            return null;
+          }
+          return parsed.pathname + parsed.search + parsed.hash;
+        } catch {
+          return null;
+        }
+      }
+
+      /**
+       * Validates the `app` query parameter before using it in UI text or fallback lookup.
+       * Rejects external URLs, protocol-relative paths, HTML, and invalid slugs.
+       */
+      function sanitizeAppParam(raw) {
+        if (typeof raw !== 'string') return null;
+        const trimmed = raw.trim();
+        if (!trimmed || trimmed.length > 64) return null;
+        if (/[\x00-\x1f\x7f\\]/.test(trimmed)) return null;
+
+        let slug = trimmed;
+        if (slug.startsWith('/')) {
+          if (!SAFE_RELATIVE_PATH_RE.test(slug)) return null;
+          slug = slug.replace(/^\/+|\/+$/g, '');
+        }
+        if (!/^[a-zA-Z0-9_-]{1,32}$/.test(slug)) return null;
+        const lower = slug.toLowerCase();
+        if (Object.prototype.hasOwnProperty.call(KNOWN_APPS, lower)) {
+          return KNOWN_APPS[lower].name;
+        }
+        return slug;
+      }
+
+      /**
+       * Safely parses and sanitizes server SVG markup via DOMParser('image/svg+xml')
+       * using safe DOM nodes only.
+       */
+      function renderSafeSvg(container, svgMarkup) {
+        if (!container) return false;
+        container.replaceChildren();
+        if (typeof svgMarkup !== 'string' || !svgMarkup.trim()) return false;
+
+        try {
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(svgMarkup, 'image/svg+xml');
+          if (doc.querySelector('parsererror')) return false;
+
+          const root = doc.documentElement;
+          if (!root || (root.localName || '').toLowerCase() !== 'svg') return false;
+
+          const elements = [root, ...Array.from(root.querySelectorAll('*'))];
+          for (const el of elements) {
+            const tag = (el.localName || '').toLowerCase();
+            if (!ALLOWED_SVG_TAGS.has(tag)) {
+              el.remove();
+              continue;
+            }
+            for (const attr of Array.from(el.attributes)) {
+              const attrName = attr.name.toLowerCase();
+              const attrVal = attr.value.trim();
+              if (
+                attrName.startsWith('on') ||
+                attrName === 'href' ||
+                attrName === 'xlink:href' ||
+                attrName === 'style' ||
+                /javascript:|vbscript:|data:/i.test(attrVal) ||
+                (/url\s*\(/i.test(attrVal) && !/^url\(\s*#[A-Za-z0-9_-]+\s*\)$/.test(attrVal))
+              ) {
+                el.removeAttribute(attr.name);
+              }
+            }
+          }
+
+          container.appendChild(document.importNode(root, true));
+          return true;
+        } catch {
+          return false;
+        }
+      }
+
+      const activeControllers = new Set();
+
+      async function apiFetch(url, options = {}) {
+        const method = (options.method || 'GET').toUpperCase();
+        const timeoutMs = options.timeoutMs || 12000;
+        const controller = new AbortController();
+        activeControllers.add(controller);
+
+        if (options.signal) {
+          if (options.signal.aborted) {
+            controller.abort();
+          } else {
+            options.signal.addEventListener('abort', () => controller.abort(), { once: true });
+          }
+        }
+
+        const timerId = setTimeout(() => controller.abort(), timeoutMs);
+        const isStateChanging = method === 'POST' || method === 'DELETE' || method === 'PUT' || method === 'PATCH';
+        const headers = {
+          Accept: 'application/json',
+          ...(isStateChanging ? { 'Content-Type': 'application/json' } : {}),
+          ...(options.headers || {})
+        };
+
+        try {
+          const res = await fetch(url, {
+            method,
+            credentials: 'same-origin',
+            headers,
+            body: options.body,
+            signal: controller.signal
+          });
+
+          const rawText = await res.text();
+          let data = null;
+          if (rawText) {
+            try {
+              data = JSON.parse(rawText);
+            } catch {
+              data = null;
+            }
+          }
+
+          const headerRetry = parseInt(res.headers.get('Retry-After') || '', 10);
+          const retryAfter = Number.isFinite(headerRetry) && headerRetry > 0
+            ? headerRetry
+            : (Number.isFinite(Number(data?.retryAfter)) ? Number(data.retryAfter) : 0);
+
+          const isRateLimited = res.status === 429;
+          let errorMsg = '';
+          if (!res.ok || (data && data.success === false)) {
+            if (data && typeof data.reason === 'string' && data.reason.trim()) {
+              errorMsg = data.reason.trim();
+            } else if (data && typeof data.message === 'string' && data.message.trim()) {
+              errorMsg = data.message.trim();
+            } else if (data && typeof data.error === 'string' && data.error.trim()) {
+              errorMsg = data.error.trim();
+            } else if (isRateLimited) {
+              errorMsg = retryAfter > 0
+                ? `Too many requests. Please wait ${retryAfter}s before trying again.`
+                : 'Too many requests. Please wait a moment and try again.';
+            } else {
+              errorMsg = `Request failed (HTTP ${res.status}).`;
+            }
+          }
+
+          return {
+            ok: res.ok,
+            status: res.status,
+            isRateLimited,
+            retryAfter,
+            data,
+            errorMsg,
+            aborted: false
+          };
+        } catch {
+          const aborted = Boolean(options.signal && options.signal.aborted);
+          const timedOut = !aborted && controller.signal.aborted;
+          return {
+            ok: false,
+            status: 0,
+            isRateLimited: false,
+            retryAfter: 0,
+            data: null,
+            aborted,
+            errorMsg: timedOut
+              ? 'Request timed out. Please check your connection and try again.'
+              : 'Network connection error. Please check your connection.'
+          };
+        } finally {
+          clearTimeout(timerId);
+          activeControllers.delete(controller);
+        }
+      }
+
+      // ========================================================
+      // --- RGB GRADIENT CUSTOMIZER ENGINE ---
+      // ========================================================
       const STORAGE_KEY = 'swiss_hub_rgb_theme';
-      const DEFAULTS = {
+      const DEFAULTS = Object.freeze({
         c1: '#0b0f19',
         c2: '#1a1a2e',
         c3: '#16213e',
         acc: '#6366f1',
         acc2: '#ec4899',
         angle: 45
-      };
+      });
 
       const elC1 = document.getElementById('colorBg1');
       const elC2 = document.getElementById('colorBg2');
@@ -753,13 +1151,14 @@
       const btnSave = document.getElementById('saveThemeBtn');
       const btnReset = document.getElementById('resetThemeBtn');
 
-      function applyTheme(theme, save = true) {
-        const c1 = theme.c1 || DEFAULTS.c1;
-        const c2 = theme.c2 || DEFAULTS.c2;
-        const c3 = theme.c3 || DEFAULTS.c3;
-        const acc = theme.acc || DEFAULTS.acc;
-        const acc2 = theme.acc2 || DEFAULTS.acc2;
-        const angle = theme.angle != null ? theme.angle : DEFAULTS.angle;
+      function applyTheme(rawTheme, save = true) {
+        const theme = rawTheme && typeof rawTheme === 'object' ? rawTheme : DEFAULTS;
+        const c1 = sanitizeHexColor(theme.c1, DEFAULTS.c1);
+        const c2 = sanitizeHexColor(theme.c2, DEFAULTS.c2);
+        const c3 = sanitizeHexColor(theme.c3, DEFAULTS.c3);
+        const acc = sanitizeHexColor(theme.acc, DEFAULTS.acc);
+        const acc2 = sanitizeHexColor(theme.acc2, DEFAULTS.acc2);
+        const angle = sanitizeAngle(theme.angle, DEFAULTS.angle);
 
         document.documentElement.style.setProperty('--bg-1', c1);
         document.documentElement.style.setProperty('--bg-2', c2);
@@ -773,7 +1172,7 @@
         if (elC3) elC3.value = c3;
         if (elAcc) elAcc.value = acc;
         if (elAcc2) elAcc2.value = acc2;
-        if (elAngle) elAngle.value = angle;
+        if (elAngle) elAngle.value = String(angle);
         if (angleTag) angleTag.textContent = `${angle}°`;
 
         if (lblC1) lblC1.textContent = c1;
@@ -789,7 +1188,7 @@
         if (save) {
           try {
             localStorage.setItem(STORAGE_KEY, JSON.stringify({ c1, c2, c3, acc, acc2, angle }));
-          } catch (e) { }
+          } catch { }
         }
       }
 
@@ -800,19 +1199,20 @@
         } else {
           applyTheme(DEFAULTS, false);
         }
-      } catch (e) {
+      } catch {
         applyTheme(DEFAULTS, false);
       }
 
       function updateFromInputs() {
         const current = {
-          c1: elC1.value,
-          c2: elC2.value,
-          c3: elC3.value,
-          acc: elAcc.value,
-          acc2: elAcc2.value,
-          angle: parseInt(elAngle.value, 10) || 45
+          c1: elC1 ? elC1.value : DEFAULTS.c1,
+          c2: elC2 ? elC2.value : DEFAULTS.c2,
+          c3: elC3 ? elC3.value : DEFAULTS.c3,
+          acc: elAcc ? elAcc.value : DEFAULTS.acc,
+          acc2: elAcc2 ? elAcc2.value : DEFAULTS.acc2,
+          angle: elAngle ? parseInt(elAngle.value, 10) : DEFAULTS.angle
         };
+        document.querySelectorAll('.preset-chip[data-c1]').forEach(b => b.classList.remove('active'));
         applyTheme(current, true);
       }
 
@@ -829,7 +1229,7 @@
             c3: btn.getAttribute('data-c3'),
             acc: btn.getAttribute('data-acc'),
             acc2: btn.getAttribute('data-acc2') || DEFAULTS.acc2,
-            angle: parseInt(btn.getAttribute('data-angle'), 10) || 45
+            angle: parseInt(btn.getAttribute('data-angle') || '45', 10)
           };
           applyTheme(theme, true);
 
@@ -838,25 +1238,64 @@
         });
       });
 
-      const openThemeModal = () => themeModal.classList.add('active');
-      const closeThemeModal = () => themeModal.classList.remove('active');
+      function openThemeModal() {
+        if (!themeModal) return;
+        themeModal.classList.add('active');
+        if (btnClose) btnClose.focus();
+      }
+
+      function closeThemeModal(restoreFocus = false) {
+        if (!themeModal) return;
+        themeModal.classList.remove('active');
+        if (restoreFocus && btnToggle) btnToggle.focus();
+      }
 
       if (btnToggle) btnToggle.addEventListener('click', openThemeModal);
       [btnClose, btnBackdrop, btnSave].forEach(b => {
-        if (b) b.addEventListener('click', closeThemeModal);
+        if (b) b.addEventListener('click', () => closeThemeModal(true));
       });
-      if (btnReset) btnReset.addEventListener('click', () => applyTheme(DEFAULTS, true));
+      if (btnReset) {
+        btnReset.addEventListener('click', () => {
+          document.querySelectorAll('.preset-chip[data-c1]').forEach(b => b.classList.remove('active'));
+          applyTheme(DEFAULTS, true);
+        });
+      }
 
+      // ========================================================
+      // --- PRIVACY, COOKIES & TERMS MODAL CONTROLLER ---
+      // ========================================================
+      const privacyModal = document.getElementById('privacyModal');
+      const privacyTermsBtn = document.getElementById('privacyTermsBtn');
+      const closePrivacyModalBtn = document.getElementById('closePrivacyModal');
+      const donePrivacyModalBtn = document.getElementById('donePrivacyModalBtn');
+      const privacyModalBackdrop = document.getElementById('privacyModalBackdrop');
+      const privacyManageAccountBtn = document.getElementById('privacyManageAccountBtn');
+
+      function openPrivacyModal() {
+        if (!privacyModal) return;
+        privacyModal.classList.add('active');
+        if (closePrivacyModalBtn) closePrivacyModalBtn.focus();
+      }
+
+      function closePrivacyModal(restoreFocus = false) {
+        if (!privacyModal) return;
+        privacyModal.classList.remove('active');
+        if (restoreFocus && privacyTermsBtn) privacyTermsBtn.focus();
+      }
+
+      if (privacyTermsBtn) privacyTermsBtn.addEventListener('click', openPrivacyModal);
+      [closePrivacyModalBtn, donePrivacyModalBtn, privacyModalBackdrop].forEach(el => {
+        if (el) el.addEventListener('click', () => closePrivacyModal(true));
+      });
 
       // ========================================================
       // --- Z340 SECURITY CLEARANCE GATEWAY CONTROLLER ---
       // ========================================================
       const urlParams = new URLSearchParams(window.location.search);
-      const verifyParam = urlParams.get('verify');
-      const targetAppParam = urlParams.get('app');
-      const redirectParam = urlParams.get('redirect');
+      const safeAppLabel = sanitizeAppParam(urlParams.get('app'));
+      const initialRedirectUrl = sanitizeRedirectPath(urlParams.get('redirect'));
       let isUserCleared = false;
-      let targetRedirectUrl = redirectParam || null;
+      let targetRedirectUrl = initialRedirectUrl;
 
       const securityModal = document.getElementById('securityModal');
       const puzzleBgContainer = document.getElementById('puzzleBgContainer');
@@ -880,15 +1319,44 @@
       const soundOnIcon = document.getElementById('soundOnIcon');
       const soundOffIcon = document.getElementById('soundOffIcon');
 
+      // Track timers for clean lifecycle management
+      let shakeTimer = null;
+      let challengeReloadTimer = null;
+      let redirectTimer = null;
+      let authCloseTimer = null;
+
+      function clearSecurityTimers() {
+        if (shakeTimer) { clearTimeout(shakeTimer); shakeTimer = null; }
+        if (challengeReloadTimer) { clearTimeout(challengeReloadTimer); challengeReloadTimer = null; }
+        if (redirectTimer) { clearTimeout(redirectTimer); redirectTimer = null; }
+      }
+
+      function setSecurityNoticeForApp(appLabel) {
+        if (!securityNoticeText) return;
+        const clean = typeof appLabel === 'string' ? appLabel.trim() : '';
+        if (!clean) {
+          securityNoticeText.textContent = 'Restricted hub entry: Verify human presence to decrypt access.';
+          return;
+        }
+        const strong = document.createElement('strong');
+        strong.textContent = clean;
+        securityNoticeText.replaceChildren(
+          document.createTextNode('Restricted Entry: Access to '),
+          strong,
+          document.createTextNode(' requires clearance.')
+        );
+      }
+
       // --- Web Audio Sci-Fi Synthesizer ---
       let audioCtx = null;
       let soundEnabled = true;
       try {
         const savedSound = localStorage.getItem('z340_security_sound');
         if (savedSound !== null) soundEnabled = savedSound === 'true';
-      } catch (e) { }
+      } catch { }
 
       function updateSoundIcon() {
+        if (!soundOnIcon || !soundOffIcon) return;
         if (soundEnabled) {
           soundOnIcon.style.display = 'block';
           soundOffIcon.style.display = 'none';
@@ -896,346 +1364,462 @@
           soundOnIcon.style.display = 'none';
           soundOffIcon.style.display = 'block';
         }
+        if (securitySoundToggle) {
+          securitySoundToggle.setAttribute('aria-pressed', String(soundEnabled));
+        }
       }
       updateSoundIcon();
 
-      securitySoundToggle.addEventListener('click', () => {
-        soundEnabled = !soundEnabled;
-        try { localStorage.setItem('z340_security_sound', soundEnabled); } catch (e) { }
-        updateSoundIcon();
-      });
+      if (securitySoundToggle) {
+        securitySoundToggle.addEventListener('click', () => {
+          soundEnabled = !soundEnabled;
+          try { localStorage.setItem('z340_security_sound', String(soundEnabled)); } catch { }
+          updateSoundIcon();
+        });
+      }
+
+      function playTone(freqStart, freqEnd, type, startTime, duration, peakGain) {
+        if (!audioCtx) return;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freqStart, startTime);
+        if (freqEnd !== freqStart) {
+          osc.frequency.exponentialRampToValueAtTime(Math.max(20, freqEnd), startTime + duration);
+        }
+        gain.gain.setValueAtTime(peakGain, startTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.onended = () => {
+          try { osc.disconnect(); gain.disconnect(); } catch { }
+        };
+        osc.start(startTime);
+        osc.stop(startTime + duration);
+      }
 
       function playSound(type) {
         if (!soundEnabled) return;
         try {
           if (!audioCtx) {
-            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const Ctx = window.AudioContext || window.webkitAudioContext;
+            if (!Ctx) return;
+            audioCtx = new Ctx();
           }
           if (audioCtx.state === 'suspended') {
-            audioCtx.resume();
+            audioCtx.resume().catch(() => { });
           }
           const now = audioCtx.currentTime;
           if (type === 'tick') {
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(800, now);
-            osc.frequency.exponentialRampToValueAtTime(1200, now + 0.05);
-            gain.gain.setValueAtTime(0.08, now);
-            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.start(now);
-            osc.stop(now + 0.05);
+            playTone(800, 1200, 'sine', now, 0.05, 0.08);
           } else if (type === 'grant') {
             [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
-              const osc = audioCtx.createOscillator();
-              const gain = audioCtx.createGain();
-              osc.type = 'triangle';
-              osc.frequency.setValueAtTime(freq, now + i * 0.07);
-              gain.gain.setValueAtTime(0.12, now + i * 0.07);
-              gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.07 + 0.35);
-              osc.connect(gain);
-              gain.connect(audioCtx.destination);
-              osc.start(now + i * 0.07);
-              osc.stop(now + i * 0.07 + 0.35);
+              playTone(freq, freq, 'triangle', now + i * 0.07, 0.35, 0.12);
             });
           } else if (type === 'deny') {
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.type = 'sawtooth';
-            osc.frequency.setValueAtTime(150, now);
-            osc.frequency.linearRampToValueAtTime(90, now + 0.25);
-            gain.gain.setValueAtTime(0.12, now);
-            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.start(now);
-            osc.stop(now + 0.25);
+            playTone(150, 90, 'sawtooth', now, 0.25, 0.12);
           }
-        } catch (e) { }
+        } catch { }
       }
 
       // --- Security State & Challenge Handling ---
+      const STAGE_LOGICAL_WIDTH = 320;
+      const STAGE_LOGICAL_HEIGHT = 160;
+      const PIECE_LOGICAL_SIZE = 44;
+      const MAX_LOGICAL_X = STAGE_LOGICAL_WIDTH - PIECE_LOGICAL_SIZE; // 276
+
       let currentChallengeId = null;
       let currentMode = 'puzzle';
       let isDragging = false;
+      let activePointerId = null;
       let startPointerX = 0;
+      let startLogicalX = 0;
+      let currentLogicalX = 0;
       let dragHistory = [];
       let isVerifying = false;
-      const pieceWidth = 44;
+      let isLoadingChallenge = false;
 
       function setStatus(msg, state = 'idle') {
-        securityStatusMsg.textContent = msg;
-        securityStatusBox.className = 'security-status-box ' + state;
+        if (securityStatusMsg) securityStatusMsg.textContent = msg;
+        if (securityStatusBox) securityStatusBox.className = 'security-status-box ' + state;
       }
 
-      function escapeHtml(str) {
-        return String(str).replace(/[&<>"']/g, s => ({
-          '&': '&amp;',
-          '<': '&lt;',
-          '>': '&gt;',
-          '"': '&quot;',
-          "'": '&#39;'
-        })[s]);
+      function syncSecurityControlsDisabled() {
+        const busy = isVerifying || isLoadingChallenge;
+        if (verifyCodeBtn) verifyCodeBtn.disabled = busy;
+        if (refreshChallengeBtn) refreshChallengeBtn.disabled = busy;
       }
 
-      async function loadSecurityChallenge() {
-        setStatus('GENERATING HIGH-SECURITY CIPHER...', 'verifying');
-        try {
-          const res = await fetch('/api/security/challenge');
-          const data = await res.json();
-          if (!data.success) {
-            setStatus('FAILED TO LOAD CIPHER — RETRYING...', 'error');
-            return;
-          }
-          currentChallengeId = data.challengeId;
-          puzzleBgContainer.innerHTML = data.bgSvg;
-          puzzlePiece.innerHTML = data.pieceSvg;
-          puzzlePiece.style.top = data.targetY + 'px';
-          puzzlePiece.style.left = '0px';
-          puzzlePiece.style.transform = 'translateX(0px)';
+      function getTrackMetrics() {
+        const trackW = (sliderContainer && sliderContainer.getBoundingClientRect().width) || STAGE_LOGICAL_WIDTH;
+        const maxTravel = Math.max(1, trackW - 48); // 42px puck + 3px margins
+        const stageW = (puzzleBgContainer && puzzleBgContainer.getBoundingClientRect().width) || STAGE_LOGICAL_WIDTH;
+        const stageScale = stageW / STAGE_LOGICAL_WIDTH;
+        return { trackW, maxTravel, stageW, stageScale };
+      }
 
-          codeSvgContainer.innerHTML = data.codeSvg;
-          securityCodeInput.value = '';
+      function applySliderLogicalPosition(logicalX, dragging = false) {
+        const clampedX = Math.max(0, Math.min(MAX_LOGICAL_X, logicalX));
+        currentLogicalX = clampedX;
+        const { maxTravel, stageScale } = getTrackMetrics();
+        const ratio = clampedX / MAX_LOGICAL_X;
+        const puckX = ratio * maxTravel;
+        const visualPieceX = clampedX * stageScale;
 
-          // Reset slider state
-          sliderPuck.style.transform = 'translateX(0px)';
-          sliderFill.style.width = '0px';
-          sliderPrompt.style.opacity = '1';
-
-          setStatus('WAITING FOR BIOMETRIC ALIGNMENT...', 'idle');
-        } catch (err) {
-          setStatus('NETWORK ERROR LOADING CHALLENGE', 'error');
+        if (sliderPuck) {
+          sliderPuck.classList.toggle('is-dragging', dragging);
+          sliderPuck.style.transform = `translateX(${puckX}px)`;
+          sliderPuck.setAttribute('aria-valuenow', String(Math.round(clampedX)));
+        }
+        if (sliderFill) {
+          sliderFill.classList.toggle('is-dragging', dragging);
+          sliderFill.style.width = clampedX > 0 ? `${puckX + 24}px` : '0px';
+        }
+        if (puzzlePiece) {
+          puzzlePiece.classList.toggle('is-dragging', dragging);
+          puzzlePiece.style.transform = `translateX(${visualPieceX}px)`;
+        }
+        if (sliderPrompt) {
+          sliderPrompt.style.opacity = clampedX > 4 || dragging ? '0.2' : '1';
         }
       }
 
-      // --- Kinetic Slider Drag Engine (PointerEvents with Mobile Touch Support) ---
-      function getTrackWidth() {
-        return sliderContainer.getBoundingClientRect().width || 320;
+      async function loadSecurityChallenge() {
+        if (isLoadingChallenge) return;
+        if (challengeReloadTimer) {
+          clearTimeout(challengeReloadTimer);
+          challengeReloadTimer = null;
+        }
+
+        isLoadingChallenge = true;
+        currentChallengeId = null;
+        syncSecurityControlsDisabled();
+        setStatus('GENERATING HIGH-SECURITY CIPHER...', 'verifying');
+
+        try {
+          const res = await apiFetch('/api/security/challenge');
+          if (!res.ok || !res.data || !res.data.success) {
+            setStatus(`❌ ${res.errorMsg || 'FAILED TO LOAD CIPHER — PRESS NEW CHALLENGE'}`, 'error');
+            return;
+          }
+
+          const data = res.data;
+          const bgOk = renderSafeSvg(puzzleBgContainer, data.bgSvg);
+          const pieceOk = renderSafeSvg(puzzlePiece, data.pieceSvg);
+          const codeOk = renderSafeSvg(codeSvgContainer, data.codeSvg);
+
+          if (!bgOk || !pieceOk || !codeOk || typeof data.challengeId !== 'string') {
+            setStatus('❌ INVALID CIPHER PAYLOAD — PRESS NEW CHALLENGE', 'error');
+            return;
+          }
+
+          currentChallengeId = data.challengeId;
+          const rawTargetY = Number(data.targetY);
+          const clampedTargetY = Number.isFinite(rawTargetY)
+            ? Math.max(0, Math.min(STAGE_LOGICAL_HEIGHT - PIECE_LOGICAL_SIZE, rawTargetY))
+            : 40;
+
+          if (puzzlePiece) {
+            puzzlePiece.style.top = `${(clampedTargetY / STAGE_LOGICAL_HEIGHT) * 100}%`;
+            puzzlePiece.style.left = '0px';
+          }
+          if (securityCodeInput) securityCodeInput.value = '';
+          dragHistory = [];
+          applySliderLogicalPosition(0, false);
+
+          setStatus('WAITING FOR BIOMETRIC ALIGNMENT...', 'idle');
+        } finally {
+          isLoadingChallenge = false;
+          syncSecurityControlsDisabled();
+        }
+      }
+
+      // --- Kinetic Slider Drag Engine (PointerEvents + Keyboard Accessibility) ---
+      function detachWindowDragListeners() {
+        window.removeEventListener('pointermove', onPointerMove);
+        window.removeEventListener('pointerup', onPointerUp);
+        window.removeEventListener('pointercancel', onPointerCancel);
       }
 
       function onPointerDown(e) {
-        if (!currentChallengeId || isVerifying) return;
+        if (!currentChallengeId || isVerifying || isLoadingChallenge || isDragging) return;
+        if (e.button !== undefined && e.button !== 0) return;
+
         isDragging = true;
+        activePointerId = e.pointerId;
         startPointerX = e.clientX;
+        startLogicalX = 0;
         dragHistory = [{ t: Date.now(), x: e.clientX, y: e.clientY }];
-        try {
-          sliderPuck.setPointerCapture(e.pointerId);
-        } catch (err) { }
-        sliderPrompt.style.opacity = '0.2';
+
+        applySliderLogicalPosition(0, true);
         setStatus('TRACKING KINETIC ALIGNMENT...', 'verifying');
         playSound('tick');
+
+        window.addEventListener('pointermove', onPointerMove, { passive: true });
+        window.addEventListener('pointerup', onPointerUp);
+        window.addEventListener('pointercancel', onPointerCancel);
       }
 
       function onPointerMove(e) {
-        if (!isDragging) return;
-        const trackW = getTrackWidth();
-        const maxTravel = trackW - 48; // 42px puck + margins
+        if (!isDragging || (activePointerId !== null && e.pointerId !== activePointerId)) return;
+        const { maxTravel, stageScale } = getTrackMetrics();
         const deltaX = e.clientX - startPointerX;
-        const currentLeft = Math.max(0, Math.min(maxTravel, deltaX));
+        const travelSpan = e.target === puzzlePiece ? (MAX_LOGICAL_X * stageScale) : maxTravel;
+        const logicalX = startLogicalX + (deltaX / Math.max(1, travelSpan)) * MAX_LOGICAL_X;
 
-        dragHistory.push({ t: Date.now(), x: e.clientX, y: e.clientY });
+        if (dragHistory.length < 120) {
+          dragHistory.push({ t: Date.now(), x: e.clientX, y: e.clientY });
+        }
+        applySliderLogicalPosition(logicalX, true);
+      }
 
-        sliderPuck.style.transform = `translateX(${currentLeft}px)`;
-        sliderFill.style.width = `${currentLeft + 24}px`;
-
-        const stageW = puzzleBgContainer.getBoundingClientRect().width || 320;
-        const maxPieceX = stageW - pieceWidth;
-        const pieceX = (currentLeft / maxTravel) * maxPieceX;
-        puzzlePiece.style.transform = `translateX(${pieceX}px)`;
+      function onPointerCancel(e) {
+        if (!isDragging || (activePointerId !== null && e.pointerId !== activePointerId)) return;
+        isDragging = false;
+        activePointerId = null;
+        detachWindowDragListeners();
+        applySliderLogicalPosition(0, false);
+        setStatus('WAITING FOR BIOMETRIC ALIGNMENT...', 'idle');
       }
 
       async function onPointerUp(e) {
-        if (!isDragging) return;
+        if (!isDragging || (activePointerId !== null && e.pointerId !== activePointerId)) return;
         isDragging = false;
-        try {
-          sliderPuck.releasePointerCapture(e.pointerId);
-        } catch (err) { }
-        sliderPrompt.style.opacity = '1';
+        activePointerId = null;
+        detachWindowDragListeners();
 
-        const trackW = getTrackWidth();
-        const maxTravel = trackW - 48;
-        const deltaX = e.clientX - startPointerX;
-        const currentLeft = Math.max(0, Math.min(maxTravel, deltaX));
+        if (dragHistory.length < 120) {
+          dragHistory.push({ t: Date.now(), x: e.clientX, y: e.clientY });
+        }
 
-        if (currentLeft < 8) {
-          sliderPuck.style.transform = 'translateX(0px)';
-          sliderFill.style.width = '0px';
-          puzzlePiece.style.transform = 'translateX(0px)';
+        if (currentLogicalX < 8) {
+          applySliderLogicalPosition(0, false);
           setStatus('WAITING FOR BIOMETRIC ALIGNMENT...', 'idle');
           return;
         }
 
-        const stageW = puzzleBgContainer.getBoundingClientRect().width || 320;
-        const maxPieceX = stageW - pieceWidth;
-        const pieceX = Math.round((currentLeft / maxTravel) * maxPieceX);
-
-        await submitPuzzleVerification(pieceX);
+        applySliderLogicalPosition(currentLogicalX, false);
+        await submitPuzzleVerification(Math.round(currentLogicalX));
       }
 
-      sliderPuck.addEventListener('pointerdown', onPointerDown);
-      sliderContainer.addEventListener('pointerdown', (e) => {
-        if (e.target !== sliderPuck) {
+      if (sliderPuck) {
+        sliderPuck.addEventListener('pointerdown', onPointerDown);
+        sliderPuck.addEventListener('keydown', async (e) => {
+          if (!currentChallengeId || isVerifying || isLoadingChallenge) return;
+          const step = e.shiftKey ? 18 : 6;
+          if (e.key === 'ArrowRight' || e.key === 'ArrowUp') {
+            e.preventDefault();
+            if (dragHistory.length === 0) {
+              dragHistory.push({ t: Date.now() - 120, x: 0, y: 0 });
+            }
+            const nextX = Math.min(MAX_LOGICAL_X, currentLogicalX + step);
+            dragHistory.push({ t: Date.now(), x: nextX, y: 0 });
+            applySliderLogicalPosition(nextX, false);
+            setStatus('KEYBOARD ALIGNMENT — PRESS ENTER TO VERIFY', 'verifying');
+          } else if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') {
+            e.preventDefault();
+            const nextX = Math.max(0, currentLogicalX - step);
+            dragHistory.push({ t: Date.now(), x: nextX, y: 0 });
+            applySliderLogicalPosition(nextX, false);
+          } else if ((e.key === 'Enter' || e.key === ' ') && currentLogicalX >= 8) {
+            e.preventDefault();
+            dragHistory.push({ t: Date.now(), x: currentLogicalX, y: 0 });
+            await submitPuzzleVerification(Math.round(currentLogicalX));
+          }
+        });
+      }
+
+      if (sliderContainer) {
+        sliderContainer.addEventListener('pointerdown', (e) => {
+          if (sliderPuck && sliderPuck.contains(e.target)) return;
           onPointerDown(e);
+        });
+      }
+
+      if (puzzlePiece) {
+        puzzlePiece.addEventListener('pointerdown', onPointerDown);
+      }
+
+      window.addEventListener('resize', () => {
+        if (securityModal && securityModal.classList.contains('active') && !isDragging) {
+          applySliderLogicalPosition(currentLogicalX, false);
         }
       });
-      window.addEventListener('pointermove', onPointerMove, { passive: true });
-      window.addEventListener('pointerup', onPointerUp);
-      window.addEventListener('pointercancel', onPointerUp);
 
       // --- Submission Handlers ---
       async function submitPuzzleVerification(pieceX) {
+        if (isVerifying || !currentChallengeId) return;
         isVerifying = true;
+        syncSecurityControlsDisabled();
         setStatus('VERIFYING CIPHER WITH SECURITY GATEWAY...', 'verifying');
 
         try {
-          const res = await fetch('/api/security/verify-puzzle', {
+          const res = await apiFetch('/api/security/verify-puzzle', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               challengeId: currentChallengeId,
               x: pieceX,
               dragHistory,
-              redirect: redirectParam || targetRedirectUrl || null
+              redirect: targetRedirectUrl
             })
           });
-          const result = await res.json();
 
-          if (result.success) {
-            handleSuccess(result);
+          if (res.ok && res.data && res.data.success) {
+            handleSuccess(res.data);
           } else {
-            handleFailure(result.reason);
+            currentChallengeId = null;
+            handleFailure(res.errorMsg || 'Alignment failed. Try again.', {
+              reloadChallenge: !res.isRateLimited && res.status !== 0
+            });
           }
-        } catch (err) {
-          handleFailure('Connection error during verification.');
         } finally {
           isVerifying = false;
+          syncSecurityControlsDisabled();
         }
       }
 
       async function submitCodeVerification() {
-        const code = securityCodeInput.value.trim();
+        if (isVerifying || isLoadingChallenge) return;
+        const code = securityCodeInput ? securityCodeInput.value.trim() : '';
         if (!code || code.length < 4) {
-          handleFailure('Please enter the 4-character code.');
+          handleFailure('Please enter the 4-character code.', { reloadChallenge: false });
+          return;
+        }
+        if (!currentChallengeId) {
+          await loadSecurityChallenge();
           return;
         }
 
         isVerifying = true;
+        syncSecurityControlsDisabled();
         setStatus('CHECKING AUTHORIZATION KEY...', 'verifying');
 
         try {
-          const res = await fetch('/api/security/verify-code', {
+          const res = await apiFetch('/api/security/verify-code', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               challengeId: currentChallengeId,
               code,
-              redirect: redirectParam || targetRedirectUrl || null
+              redirect: targetRedirectUrl
             })
           });
-          const result = await res.json();
 
-          if (result.success) {
-            handleSuccess(result);
+          if (res.ok && res.data && res.data.success) {
+            handleSuccess(res.data);
           } else {
-            handleFailure(result.reason);
+            currentChallengeId = null;
+            handleFailure(res.errorMsg || 'Incorrect security code.', {
+              reloadChallenge: !res.isRateLimited && res.status !== 0
+            });
           }
-        } catch (err) {
-          handleFailure('Connection error during verification.');
         } finally {
           isVerifying = false;
+          syncSecurityControlsDisabled();
         }
       }
 
       function handleSuccess(result) {
+        clearSecurityTimers();
+        detachWindowDragListeners();
         playSound('grant');
         isUserCleared = true;
         setStatus('ACCESS GRANTED — CLEARANCE ISSUED', 'success');
 
-        if (result && result.token) {
-          try {
-            document.cookie = `z340_clearance=${encodeURIComponent(result.token)}; path=/; max-age=2592000; SameSite=Lax`;
-          } catch (e) { }
-        }
-
-        const redirectUrl = (result && result.redirect) || targetRedirectUrl;
-        if (redirectUrl) {
-          securityNoticeText.textContent = 'Verification complete! Launching application...';
-          setTimeout(() => {
-            window.location.href = redirectUrl;
+        // Clearance cookie is set HttpOnly via Set-Cookie header on the server response.
+        const verifiedRedirect = sanitizeRedirectPath(result && result.redirect) || targetRedirectUrl;
+        if (verifiedRedirect) {
+          if (securityNoticeText) {
+            securityNoticeText.textContent = 'Verification complete! Launching application...';
+          }
+          redirectTimer = setTimeout(() => {
+            const safeTarget = sanitizeRedirectPath(verifiedRedirect);
+            if (safeTarget) {
+              window.location.assign(safeTarget);
+            }
           }, 600);
         } else {
-          setTimeout(() => {
-            securityModal.classList.remove('active');
-            if (window.history.replaceState) {
+          redirectTimer = setTimeout(() => {
+            if (securityModal) securityModal.classList.remove('active');
+            if (window.history && window.history.replaceState) {
               window.history.replaceState({}, document.title, window.location.pathname);
             }
           }, 600);
         }
       }
 
-      function handleFailure(reason) {
+      function handleFailure(reason, options = { reloadChallenge: true }) {
         playSound('deny');
         setStatus(`❌ ${reason || 'ALIGNMENT FAILED — TRY AGAIN'}`, 'error');
-        securityCard.classList.add('shake');
-        setTimeout(() => securityCard.classList.remove('shake'), 500);
 
-        // Snap back
-        sliderPuck.style.transform = 'translateX(0px)';
-        sliderFill.style.width = '0px';
-        puzzlePiece.style.transform = 'translateX(0px)';
+        if (securityCard) {
+          securityCard.classList.remove('shake');
+          void securityCard.offsetWidth;
+          securityCard.classList.add('shake');
+          if (shakeTimer) clearTimeout(shakeTimer);
+          shakeTimer = setTimeout(() => securityCard.classList.remove('shake'), 500);
+        }
 
-        setTimeout(loadSecurityChallenge, 800);
+        applySliderLogicalPosition(0, false);
+
+        if (options && options.reloadChallenge) {
+          if (challengeReloadTimer) clearTimeout(challengeReloadTimer);
+          challengeReloadTimer = setTimeout(() => {
+            loadSecurityChallenge();
+          }, 950);
+        }
       }
 
       // Mode switch
-      switchModeBtn.addEventListener('click', () => {
-        if (currentMode === 'puzzle') {
-          currentMode = 'code';
-          puzzleSection.style.display = 'none';
-          codeSection.style.display = 'block';
-          switchModeBtn.textContent = 'Use Puzzle Slider';
-          securityCodeInput.focus();
-        } else {
-          currentMode = 'puzzle';
-          puzzleSection.style.display = 'block';
-          codeSection.style.display = 'none';
-          switchModeBtn.textContent = 'Use Code Matrix';
-        }
-      });
-
-      refreshChallengeBtn.addEventListener('click', loadSecurityChallenge);
-      verifyCodeBtn.addEventListener('click', submitCodeVerification);
-      securityCodeInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') submitCodeVerification();
-      });
-
-      // --- Initial Clearance Check on Load ---
-      async function initSecurityCheck() {
-        try {
-          const res = await fetch('/api/security/status');
-          const data = await res.json();
-          const isVerified = data && data.verified;
-
-          if (isVerified) {
-            isUserCleared = true;
-            securityModal.classList.remove('active');
+      if (switchModeBtn) {
+        switchModeBtn.addEventListener('click', () => {
+          if (currentMode === 'puzzle') {
+            currentMode = 'code';
+            if (puzzleSection) puzzleSection.style.display = 'none';
+            if (codeSection) codeSection.style.display = 'block';
+            switchModeBtn.textContent = 'Use Puzzle Slider';
+            if (securityCodeInput) securityCodeInput.focus();
           } else {
-            isUserCleared = false;
-            if (targetAppParam) {
-              securityNoticeText.innerHTML = `Restricted Entry: Access to <strong>${escapeHtml(targetAppParam)}</strong> requires clearance.`;
-            } else {
-              securityNoticeText.textContent = 'Restricted hub entry: Verify human presence to decrypt access.';
-            }
-            securityModal.classList.add('active');
-            loadSecurityChallenge();
+            currentMode = 'puzzle';
+            if (puzzleSection) puzzleSection.style.display = 'block';
+            if (codeSection) codeSection.style.display = 'none';
+            switchModeBtn.textContent = 'Use Code Matrix';
+            if (sliderPuck) sliderPuck.focus();
           }
-        } catch (e) {
-          isUserCleared = false;
-          securityModal.classList.add('active');
-          loadSecurityChallenge();
+        });
+      }
+
+      if (refreshChallengeBtn) refreshChallengeBtn.addEventListener('click', () => loadSecurityChallenge());
+      if (verifyCodeBtn) verifyCodeBtn.addEventListener('click', submitCodeVerification);
+      if (securityCodeInput) {
+        securityCodeInput.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            submitCodeVerification();
+          }
+        });
+      }
+
+      // --- Clearance Status Check via /api/security/status (HttpOnly compatible) ---
+      async function refreshSecurityStatus(openModalIfLocked = true) {
+        const res = await apiFetch('/api/security/status');
+        const isVerified = Boolean(res.ok && res.data && res.data.verified);
+
+        if (isVerified) {
+          isUserCleared = true;
+          if (securityModal) securityModal.classList.remove('active');
+          if (window.location.search && window.history && window.history.replaceState) {
+            window.history.replaceState({}, document.title, window.location.pathname);
+          }
+          return true;
         }
+
+        isUserCleared = false;
+        if (openModalIfLocked && securityModal) {
+          setSecurityNoticeForApp(safeAppLabel);
+          securityModal.classList.add('active');
+          await loadSecurityChallenge();
+        }
+        return false;
       }
 
       // Intercept app card clicks to ensure clearance is present before navigation
@@ -1243,11 +1827,12 @@
         card.addEventListener('click', (e) => {
           if (!isUserCleared && !currentUser) {
             e.preventDefault();
-            const href = card.getAttribute('href');
-            targetRedirectUrl = href;
-            const appName = card.querySelector('h2')?.textContent || href.replace(/\//g, '');
-            securityNoticeText.innerHTML = `Restricted Entry: Access to <strong>${escapeHtml(appName)}</strong> requires clearance.`;
-            securityModal.classList.add('active');
+            const rawHref = card.getAttribute('href') || '';
+            targetRedirectUrl = sanitizeRedirectPath(rawHref);
+            const headingText = card.querySelector('h2')?.textContent || '';
+            const label = headingText.trim() || sanitizeAppParam(rawHref) || '';
+            setSecurityNoticeForApp(label);
+            if (securityModal) securityModal.classList.add('active');
             loadSecurityChallenge();
           }
         });
@@ -1258,6 +1843,8 @@
       // ========================================================
       let currentUser = null;
       let activeLeaderboardGame = 'alien-echo';
+      let leaderboardRequestSeq = 0;
+      let leaderboardAbortController = null;
 
       const accountBtn = document.getElementById('accountBtn');
       const accountBtnText = document.getElementById('accountBtnText');
@@ -1265,7 +1852,10 @@
       const accountDefaultIcon = document.getElementById('accountDefaultIcon');
 
       const authModal = document.getElementById('authModal');
+      const authModalTitle = document.getElementById('authModalTitle');
+      const closeAuthModalBtn = document.getElementById('closeAuthModal');
       const authModalBackdrop = document.getElementById('authModalBackdrop');
+      const authTabsStrip = document.getElementById('authTabsStrip');
       const tabSignIn = document.getElementById('tabSignIn');
       const tabRegister = document.getElementById('tabRegister');
       const signInForm = document.getElementById('signInForm');
@@ -1277,6 +1867,19 @@
       const profileMemberSince = document.getElementById('profileMemberSince');
       const logoutBtn = document.getElementById('logoutBtn');
       const viewMyScoresBtn = document.getElementById('viewMyScoresBtn');
+
+      // Self-service Password Change & Account Deletion elements
+      const toggleChangePasswordBtn = document.getElementById('toggleChangePasswordBtn');
+      const toggleDeleteAccountBtn = document.getElementById('toggleDeleteAccountBtn');
+      const changePasswordPanel = document.getElementById('changePasswordPanel');
+      const deleteAccountPanel = document.getElementById('deleteAccountPanel');
+      const currentPasswordInput = document.getElementById('currentPasswordInput');
+      const newPasswordInput = document.getElementById('newPasswordInput');
+      const confirmNewPasswordInput = document.getElementById('confirmNewPasswordInput');
+      const cancelChangePasswordBtn = document.getElementById('cancelChangePasswordBtn');
+      const changePasswordSubmitBtn = document.getElementById('changePasswordSubmitBtn');
+      const cancelDeleteAccountBtn = document.getElementById('cancelDeleteAccountBtn');
+      const confirmDeleteAccountBtn = document.getElementById('confirmDeleteAccountBtn');
 
       const leaderboardModal = document.getElementById('leaderboardModal');
       const leaderboardModalBackdrop = document.getElementById('leaderboardModalBackdrop');
@@ -1293,124 +1896,192 @@
           return;
         }
         authNotice.textContent = msg;
-        authNotice.className = `auth-banner-msg ${type}`;
+        authNotice.className = type ? `auth-banner-msg ${type}` : 'auth-banner-msg';
         authNotice.style.display = 'block';
       }
 
+      function clearSensitiveAuthFields() {
+        const loginPass = document.getElementById('loginPassword');
+        const regPass = document.getElementById('regPassword');
+        if (loginPass) loginPass.value = '';
+        if (regPass) regPass.value = '';
+        if (currentPasswordInput) currentPasswordInput.value = '';
+        if (newPasswordInput) newPasswordInput.value = '';
+        if (confirmNewPasswordInput) confirmNewPasswordInput.value = '';
+      }
+
+      function hideProfileSubpanels() {
+        if (changePasswordPanel) changePasswordPanel.style.display = 'none';
+        if (deleteAccountPanel) deleteAccountPanel.style.display = 'none';
+        if (toggleChangePasswordBtn) toggleChangePasswordBtn.setAttribute('aria-expanded', 'false');
+        if (toggleDeleteAccountBtn) toggleDeleteAccountBtn.setAttribute('aria-expanded', 'false');
+        if (currentPasswordInput) currentPasswordInput.value = '';
+        if (newPasswordInput) newPasswordInput.value = '';
+        if (confirmNewPasswordInput) confirmNewPasswordInput.value = '';
+      }
+
       function updateAuthUI(user) {
-        currentUser = user;
-        if (user) {
-          accountBtnText.textContent = user.username;
+        currentUser = user && typeof user === 'object' ? user : null;
+        if (currentUser) {
+          const cleanName = typeof currentUser.username === 'string' && currentUser.username.trim()
+            ? currentUser.username.trim()
+            : 'User';
+          const initial = (cleanName[0] || 'U').toUpperCase();
+          const avatarBg = sanitizeHexColor(currentUser.avatarColor, '#6366f1');
+
+          if (accountBtnText) accountBtnText.textContent = cleanName;
           if (accountAvatarBadge) {
             accountAvatarBadge.style.display = 'inline-flex';
-            accountAvatarBadge.style.background = user.avatarColor || '#6366f1';
-            accountAvatarBadge.textContent = (user.username || 'U')[0].toUpperCase();
+            accountAvatarBadge.style.background = avatarBg;
+            accountAvatarBadge.textContent = initial;
           }
           if (accountDefaultIcon) accountDefaultIcon.style.display = 'none';
         } else {
-          accountBtnText.textContent = 'Sign In';
+          if (accountBtnText) accountBtnText.textContent = 'Sign In';
           if (accountAvatarBadge) accountAvatarBadge.style.display = 'none';
           if (accountDefaultIcon) accountDefaultIcon.style.display = 'inline-block';
         }
       }
 
       async function fetchCurrentUser() {
-        try {
-          const res = await fetch('/api/auth/me');
-          const data = await res.json();
-          if (data && data.authenticated && data.user) {
-            updateAuthUI(data.user);
-          } else {
-            updateAuthUI(null);
-          }
-        } catch (e) {
+        const res = await apiFetch('/api/auth/me');
+        if (res.ok && res.data && res.data.authenticated && res.data.user) {
+          updateAuthUI(res.data.user);
+        } else {
           updateAuthUI(null);
         }
       }
 
-      function openAuthModal() {
-        setAuthNotice('');
+      function renderAuthModalState() {
+        hideProfileSubpanels();
         if (currentUser) {
-          // Show Profile view
-          document.getElementById('authTabsStrip').style.display = 'none';
-          signInForm.style.display = 'none';
-          registerForm.style.display = 'none';
-          profileView.style.display = 'flex';
+          if (authModalTitle) authModalTitle.textContent = 'Player Profile & Privacy';
+          if (authTabsStrip) authTabsStrip.style.display = 'none';
+          if (signInForm) signInForm.style.display = 'none';
+          if (registerForm) registerForm.style.display = 'none';
+          if (profileView) profileView.style.display = 'flex';
 
-          profileUsername.textContent = currentUser.username;
-          profileAvatar.textContent = (currentUser.username || 'U')[0].toUpperCase();
-          profileAvatar.style.background = currentUser.avatarColor || '#6366f1';
-          if (currentUser.createdAt) {
-            const dateStr = new Date(currentUser.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
-            profileMemberSince.textContent = `Registered Member • Joined ${dateStr}`;
+          const cleanName = typeof currentUser.username === 'string' && currentUser.username.trim()
+            ? currentUser.username.trim()
+            : 'Player';
+          if (profileUsername) profileUsername.textContent = cleanName;
+          if (profileAvatar) {
+            profileAvatar.textContent = (cleanName[0] || 'U').toUpperCase();
+            profileAvatar.style.background = sanitizeHexColor(currentUser.avatarColor, '#6366f1');
+          }
+          if (profileMemberSince) {
+            let memberLabel = 'Registered Member';
+            if (currentUser.createdAt) {
+              const joined = new Date(currentUser.createdAt);
+              if (!Number.isNaN(joined.getTime())) {
+                const dateStr = joined.toLocaleDateString(undefined, {
+                  year: 'numeric',
+                  month: 'short',
+                  day: 'numeric'
+                });
+                memberLabel = `Registered Member • Joined ${dateStr}`;
+              }
+            }
+            profileMemberSince.textContent = memberLabel;
           }
         } else {
-          document.getElementById('authTabsStrip').style.display = 'flex';
-          profileView.style.display = 'none';
+          if (authModalTitle) authModalTitle.textContent = 'Astra 13 Account';
+          if (authTabsStrip) authTabsStrip.style.display = 'flex';
+          if (profileView) profileView.style.display = 'none';
           switchAuthTab('signIn');
         }
-        authModal.classList.add('active');
       }
 
-      function closeAuthModal() {
+      function openAuthModal() {
+        if (!authModal) return;
+        if (authCloseTimer) {
+          clearTimeout(authCloseTimer);
+          authCloseTimer = null;
+        }
+        setAuthNotice('');
+        renderAuthModalState();
+        authModal.classList.add('active');
+        if (closeAuthModalBtn) closeAuthModalBtn.focus();
+      }
+
+      function closeAuthModal(restoreFocus = false) {
+        if (!authModal) return;
+        if (authCloseTimer) {
+          clearTimeout(authCloseTimer);
+          authCloseTimer = null;
+        }
         authModal.classList.remove('active');
+        clearSensitiveAuthFields();
+        hideProfileSubpanels();
+        if (restoreFocus && accountBtn) accountBtn.focus();
       }
 
       function switchAuthTab(tab) {
         setAuthNotice('');
-        if (tab === 'signIn') {
-          tabSignIn.classList.add('active');
-          tabRegister.classList.remove('active');
-          signInForm.style.display = 'flex';
-          registerForm.style.display = 'none';
-        } else {
-          tabRegister.classList.add('active');
-          tabSignIn.classList.remove('active');
-          registerForm.style.display = 'flex';
-          signInForm.style.display = 'none';
+        const isSignIn = tab === 'signIn';
+        if (tabSignIn) {
+          tabSignIn.classList.toggle('active', isSignIn);
+          tabSignIn.setAttribute('aria-selected', String(isSignIn));
         }
+        if (tabRegister) {
+          tabRegister.classList.toggle('active', !isSignIn);
+          tabRegister.setAttribute('aria-selected', String(!isSignIn));
+        }
+        if (signInForm) signInForm.style.display = isSignIn ? 'flex' : 'none';
+        if (registerForm) registerForm.style.display = isSignIn ? 'none' : 'flex';
       }
 
       if (accountBtn) accountBtn.addEventListener('click', openAuthModal);
-      if (authModalBackdrop) authModalBackdrop.addEventListener('click', closeAuthModal);
+      if (authModalBackdrop) authModalBackdrop.addEventListener('click', () => closeAuthModal(true));
+      if (closeAuthModalBtn) closeAuthModalBtn.addEventListener('click', () => closeAuthModal(true));
       if (tabSignIn) tabSignIn.addEventListener('click', () => switchAuthTab('signIn'));
       if (tabRegister) tabRegister.addEventListener('click', () => switchAuthTab('register'));
+
+      if (privacyManageAccountBtn) {
+        privacyManageAccountBtn.addEventListener('click', () => {
+          closePrivacyModal(false);
+          openAuthModal();
+        });
+      }
 
       // Sign In Form Handler
       if (signInForm) {
         signInForm.addEventListener('submit', async (e) => {
           e.preventDefault();
-          const username = document.getElementById('loginUsername').value.trim();
-          const password = document.getElementById('loginPassword').value;
+          const usernameInput = document.getElementById('loginUsername');
+          const passwordInput = document.getElementById('loginPassword');
           const submitBtn = document.getElementById('signInSubmitBtn');
 
-          if (!username || !password) return;
+          const username = usernameInput ? usernameInput.value.trim() : '';
+          const password = passwordInput ? passwordInput.value : '';
+          if (!username || !password) {
+            setAuthNotice('Username and password are required.', 'error');
+            return;
+          }
+          if (!submitBtn || submitBtn.disabled) return;
+
           submitBtn.disabled = true;
           submitBtn.textContent = 'Verifying...';
           setAuthNotice('');
 
           try {
-            const res = await fetch('/api/auth/login', {
+            const res = await apiFetch('/api/auth/login', {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ username, password })
             });
-            const data = await res.json();
-            if (data.success) {
+
+            if (res.ok && res.data && res.data.success) {
               setAuthNotice('Login successful!', 'success');
-              updateAuthUI(data.user);
-              setTimeout(() => {
-                closeAuthModal();
-                submitBtn.disabled = false;
-                submitBtn.textContent = 'Sign In';
+              updateAuthUI(res.data.user);
+              isUserCleared = true;
+              if (passwordInput) passwordInput.value = '';
+              authCloseTimer = setTimeout(() => {
+                closeAuthModal(false);
               }, 600);
             } else {
-              setAuthNotice(data.reason || 'Login failed.', 'error');
-              submitBtn.disabled = false;
-              submitBtn.textContent = 'Sign In';
+              setAuthNotice(res.errorMsg || 'Login failed.', 'error');
             }
-          } catch (err) {
-            setAuthNotice('Network connection error.', 'error');
+          } finally {
             submitBtn.disabled = false;
             submitBtn.textContent = 'Sign In';
           }
@@ -1421,156 +2092,464 @@
       if (registerForm) {
         registerForm.addEventListener('submit', async (e) => {
           e.preventDefault();
-          const username = document.getElementById('regUsername').value.trim();
-          const password = document.getElementById('regPassword').value;
+          const usernameInput = document.getElementById('regUsername');
+          const passwordInput = document.getElementById('regPassword');
           const submitBtn = document.getElementById('registerSubmitBtn');
 
-          if (!username || !password) return;
+          const username = usernameInput ? usernameInput.value.trim() : '';
+          const password = passwordInput ? passwordInput.value : '';
+          if (!/^[a-zA-Z0-9_]{3,20}$/.test(username)) {
+            setAuthNotice('Username must be 3–20 characters (letters, numbers, underscores).', 'error');
+            return;
+          }
+          if (RESERVED_NAMES.has(username.toLowerCase())) {
+            setAuthNotice('That username is reserved. Please choose another username.', 'error');
+            return;
+          }
+          if (password.length < 6 || password.length > 100) {
+            setAuthNotice('Password must be between 6 and 100 characters.', 'error');
+            return;
+          }
+          if (!submitBtn || submitBtn.disabled) return;
+
           submitBtn.disabled = true;
           submitBtn.textContent = 'Creating Account...';
           setAuthNotice('');
 
           try {
-            const res = await fetch('/api/auth/register', {
+            const res = await apiFetch('/api/auth/register', {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ username, password })
             });
-            const data = await res.json();
-            if (data.success) {
+
+            if (res.ok && res.data && res.data.success) {
               setAuthNotice('Account created successfully!', 'success');
-              updateAuthUI(data.user);
-              setTimeout(() => {
-                closeAuthModal();
-                submitBtn.disabled = false;
-                submitBtn.textContent = 'Create Free Account';
+              updateAuthUI(res.data.user);
+              isUserCleared = true;
+              if (passwordInput) passwordInput.value = '';
+              authCloseTimer = setTimeout(() => {
+                closeAuthModal(false);
               }, 700);
             } else {
-              setAuthNotice(data.reason || 'Registration failed.', 'error');
-              submitBtn.disabled = false;
-              submitBtn.textContent = 'Create Free Account';
+              setAuthNotice(res.errorMsg || 'Registration failed.', 'error');
             }
-          } catch (err) {
-            setAuthNotice('Network connection error.', 'error');
+          } finally {
             submitBtn.disabled = false;
             submitBtn.textContent = 'Create Free Account';
           }
         });
       }
 
-      // Log Out Handler
-      if (logoutBtn) {
-        logoutBtn.addEventListener('click', async () => {
-          try {
-            await fetch('/api/auth/logout', { method: 'POST' });
-          } catch (e) { }
-          updateAuthUI(null);
-          closeAuthModal();
-        });
-      }
-
-      // --- Leaderboard Modal Controller ---
-      function openLeaderboard(gameId = 'alien-echo') {
-        activeLeaderboardGame = gameId;
-        document.querySelectorAll('.leaderboard-game-tab').forEach(tab => {
-          if (tab.getAttribute('data-game') === gameId) {
-            tab.classList.add('active');
-          } else {
-            tab.classList.remove('active');
+      // Self-Service Change Password Panel & Handler (`POST /api/auth/change-password`)
+      if (toggleChangePasswordBtn) {
+        toggleChangePasswordBtn.addEventListener('click', () => {
+          const opening = changePasswordPanel && changePasswordPanel.style.display === 'none';
+          hideProfileSubpanels();
+          setAuthNotice('');
+          if (opening && changePasswordPanel) {
+            changePasswordPanel.style.display = 'flex';
+            toggleChangePasswordBtn.setAttribute('aria-expanded', 'true');
+            if (currentPasswordInput) currentPasswordInput.focus();
           }
         });
-        loadLeaderboard(gameId);
-        leaderboardModal.classList.add('active');
       }
 
-      function closeLeaderboard() {
-        leaderboardModal.classList.remove('active');
+      if (cancelChangePasswordBtn) {
+        cancelChangePasswordBtn.addEventListener('click', () => {
+          hideProfileSubpanels();
+          setAuthNotice('');
+        });
+      }
+
+      if (changePasswordPanel) {
+        changePasswordPanel.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const currentPassword = currentPasswordInput ? currentPasswordInput.value : '';
+          const newPassword = newPasswordInput ? newPasswordInput.value : '';
+          const confirmPassword = confirmNewPasswordInput ? confirmNewPasswordInput.value : '';
+
+          if (!currentPassword || !newPassword) {
+            setAuthNotice('Current password and new password are required.', 'error');
+            return;
+          }
+          if (newPassword.length < 6 || newPassword.length > 100) {
+            setAuthNotice('New password must be between 6 and 100 characters.', 'error');
+            return;
+          }
+          if (newPassword !== confirmPassword) {
+            setAuthNotice('New passwords do not match.', 'error');
+            return;
+          }
+          if (newPassword === currentPassword) {
+            setAuthNotice('New password must differ from your current password.', 'error');
+            return;
+          }
+          if (!changePasswordSubmitBtn || changePasswordSubmitBtn.disabled) return;
+
+          changePasswordSubmitBtn.disabled = true;
+          changePasswordSubmitBtn.textContent = 'Updating...';
+          setAuthNotice('');
+
+          try {
+            const res = await apiFetch('/api/auth/change-password', {
+              method: 'POST',
+              body: JSON.stringify({ currentPassword, newPassword })
+            });
+
+            if (res.ok && res.data && res.data.success) {
+              if (res.data.user) updateAuthUI(res.data.user);
+              hideProfileSubpanels();
+              setAuthNotice(res.data.message || 'Password updated successfully.', 'success');
+            } else {
+              setAuthNotice(res.errorMsg || 'Failed to update password.', 'error');
+            }
+          } finally {
+            changePasswordSubmitBtn.disabled = false;
+            changePasswordSubmitBtn.textContent = 'Update Password';
+          }
+        });
+      }
+
+      // Self-Service GDPR Account & Score Deletion Panel (`DELETE /api/auth/account`)
+      if (toggleDeleteAccountBtn) {
+        toggleDeleteAccountBtn.addEventListener('click', () => {
+          const opening = deleteAccountPanel && deleteAccountPanel.style.display === 'none';
+          hideProfileSubpanels();
+          setAuthNotice('');
+          if (opening && deleteAccountPanel) {
+            deleteAccountPanel.style.display = 'flex';
+            toggleDeleteAccountBtn.setAttribute('aria-expanded', 'true');
+            if (cancelDeleteAccountBtn) cancelDeleteAccountBtn.focus();
+          }
+        });
+      }
+
+      if (cancelDeleteAccountBtn) {
+        cancelDeleteAccountBtn.addEventListener('click', () => {
+          hideProfileSubpanels();
+          setAuthNotice('');
+        });
+      }
+
+      if (confirmDeleteAccountBtn) {
+        confirmDeleteAccountBtn.addEventListener('click', async () => {
+          if (confirmDeleteAccountBtn.disabled) return;
+          confirmDeleteAccountBtn.disabled = true;
+          confirmDeleteAccountBtn.textContent = 'Deleting...';
+          setAuthNotice('');
+
+          try {
+            const res = await apiFetch('/api/auth/account', {
+              method: 'DELETE',
+              body: JSON.stringify({})
+            });
+
+            if (res.ok && res.data && res.data.success) {
+              updateAuthUI(null);
+              renderAuthModalState();
+              setAuthNotice(
+                res.data.message || 'Account and associated leaderboard data permanently deleted.',
+                'success'
+              );
+              await refreshSecurityStatus(false);
+            } else {
+              setAuthNotice(res.errorMsg || 'Failed to delete account.', 'error');
+            }
+          } finally {
+            confirmDeleteAccountBtn.disabled = false;
+            confirmDeleteAccountBtn.textContent = 'Delete Account & Scores';
+          }
+        });
+      }
+
+      // Log Out Handler (explicit JSON POST for CSRF middleware compatibility)
+      if (logoutBtn) {
+        logoutBtn.addEventListener('click', async () => {
+          if (logoutBtn.disabled) return;
+          logoutBtn.disabled = true;
+          try {
+            await apiFetch('/api/auth/logout', {
+              method: 'POST',
+              body: JSON.stringify({})
+            });
+            updateAuthUI(null);
+            closeAuthModal(true);
+            // Re-sync security clearance state in case clearance relied on session cookie
+            await refreshSecurityStatus(false);
+          } finally {
+            logoutBtn.disabled = false;
+          }
+        });
+      }
+
+      // --- Leaderboard Modal Controller (100% safe DOM node rendering) ---
+      function renderLeaderboardMessage(text, isError = false, retryGameId = null) {
+        if (!leaderboardContent) return;
+        const wrap = document.createElement('div');
+        wrap.className = isError ? 'leaderboard-state-msg error' : 'leaderboard-state-msg';
+
+        const msgSpan = document.createElement('span');
+        msgSpan.textContent = text;
+        wrap.appendChild(msgSpan);
+
+        if (isError && retryGameId) {
+          const retryBtn = document.createElement('button');
+          retryBtn.type = 'button';
+          retryBtn.className = 'leaderboard-retry-btn';
+          retryBtn.textContent = 'Retry';
+          retryBtn.addEventListener('click', () => loadLeaderboard(retryGameId));
+          wrap.appendChild(retryBtn);
+        }
+
+        leaderboardContent.replaceChildren(wrap);
+      }
+
+      function renderEmptyLeaderboard() {
+        if (!leaderboardContent) return;
+        const wrap = document.createElement('div');
+        wrap.className = 'empty-leaderboard';
+
+        const icon = document.createElement('div');
+        icon.className = 'empty-leaderboard-icon';
+        icon.setAttribute('aria-hidden', 'true');
+        icon.textContent = '🏆';
+
+        const title = document.createElement('h4');
+        title.className = 'empty-leaderboard-title';
+        title.textContent = 'No Records Yet';
+
+        const desc = document.createElement('p');
+        desc.textContent = 'Be the very first player to conquer this game and immortalize your high score!';
+
+        wrap.append(icon, title, desc);
+        leaderboardContent.replaceChildren(wrap);
+      }
+
+      function renderLeaderboardTable(entries) {
+        if (!leaderboardContent) return;
+        const table = document.createElement('table');
+        table.className = 'leaderboard-table';
+
+        const thead = document.createElement('thead');
+        const headRow = document.createElement('tr');
+        const columns = [
+          { label: 'Rank', width: '50px', align: '' },
+          { label: 'Player', width: '', align: '' },
+          { label: 'High Score', width: '', align: '' },
+          { label: 'Date', width: '', align: 'right' }
+        ];
+        columns.forEach(col => {
+          const th = document.createElement('th');
+          th.textContent = col.label;
+          if (col.width) th.style.width = col.width;
+          if (col.align) th.style.textAlign = col.align;
+          headRow.appendChild(th);
+        });
+        thead.appendChild(headRow);
+
+        const tbody = document.createElement('tbody');
+        const myUsernameLower = currentUser && typeof currentUser.username === 'string'
+          ? currentUser.username.trim().toLowerCase()
+          : '';
+
+        entries.forEach((entry, index) => {
+          const tr = document.createElement('tr');
+          const rankNum = Number.isFinite(Number(entry?.rank)) && Number(entry.rank) > 0
+            ? Math.floor(Number(entry.rank))
+            : index + 1;
+          const rankClass = rankNum === 1
+            ? 'rank-1'
+            : rankNum === 2
+              ? 'rank-2'
+              : rankNum === 3
+                ? 'rank-3'
+                : 'rank-other';
+
+          const playerName = typeof entry?.username === 'string' && entry.username.trim()
+            ? entry.username.trim()
+            : 'Anonymous';
+          const isMe = Boolean(myUsernameLower && myUsernameLower === playerName.toLowerCase());
+          if (isMe) tr.className = 'leaderboard-row-me';
+
+          // Rank cell
+          const tdRank = document.createElement('td');
+          const rankBadge = document.createElement('span');
+          rankBadge.className = `rank-badge ${rankClass}`;
+          rankBadge.textContent = `#${rankNum}`;
+          tdRank.appendChild(rankBadge);
+
+          // Player cell
+          const tdPlayer = document.createElement('td');
+          const playerCol = document.createElement('div');
+          playerCol.className = 'player-col';
+
+          const nameSpan = document.createElement('span');
+          nameSpan.textContent = playerName;
+          playerCol.appendChild(nameSpan);
+
+          if (!entry?.isGuest) {
+            const verifiedSpan = document.createElement('span');
+            verifiedSpan.className = 'verified-star';
+            verifiedSpan.title = 'Registered & Verified Player';
+            verifiedSpan.textContent = '✓';
+            playerCol.appendChild(verifiedSpan);
+          } else {
+            const guestSpan = document.createElement('span');
+            guestSpan.className = 'guest-tag';
+            guestSpan.textContent = 'Guest';
+            playerCol.appendChild(guestSpan);
+          }
+
+          if (isMe) {
+            const youSpan = document.createElement('span');
+            youSpan.className = 'you-tag';
+            youSpan.textContent = '(You)';
+            playerCol.appendChild(youSpan);
+          }
+          tdPlayer.appendChild(playerCol);
+
+          // Score cell
+          const tdScore = document.createElement('td');
+          tdScore.className = 'score-col';
+          const numericScore = Number(entry?.score);
+          tdScore.textContent = Number.isFinite(numericScore) ? numericScore.toLocaleString() : '0';
+
+          // Date cell
+          const tdDate = document.createElement('td');
+          tdDate.className = 'date-col';
+          tdDate.style.textAlign = 'right';
+          let dateStr = '-';
+          if (entry?.date) {
+            const parsedDate = new Date(entry.date);
+            if (!Number.isNaN(parsedDate.getTime())) {
+              dateStr = parsedDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+            }
+          }
+          tdDate.textContent = dateStr;
+
+          tr.append(tdRank, tdPlayer, tdScore, tdDate);
+          tbody.appendChild(tr);
+        });
+
+        table.append(thead, tbody);
+        leaderboardContent.replaceChildren(table);
       }
 
       async function loadLeaderboard(gameId) {
         if (!leaderboardContent) return;
-        leaderboardContent.innerHTML = '<div style="text-align:center; padding:30px; color:#94a3b8;">Loading standings...</div>';
+        const safeGameId = VALID_LEADERBOARD_GAMES.has(gameId) ? gameId : 'alien-echo';
+        activeLeaderboardGame = safeGameId;
 
-        try {
-          const res = await fetch(`/api/leaderboard/${encodeURIComponent(gameId)}?limit=50`);
-          const data = await res.json();
-
-          if (!data || !data.success || !Array.isArray(data.leaderboard) || data.leaderboard.length === 0) {
-            leaderboardContent.innerHTML = `
-              <div class="empty-leaderboard">
-                <div class="empty-leaderboard-icon">🏆</div>
-                <h4 style="color:#fff; margin-bottom:6px;">No Records Yet</h4>
-                <p>Be the very first player to conquer this game and immortalize your high score!</p>
-              </div>
-            `;
-            return;
-          }
-
-          let html = `
-            <table class="leaderboard-table">
-              <thead>
-                <tr>
-                  <th style="width:50px;">Rank</th>
-                  <th>Player</th>
-                  <th>High Score</th>
-                  <th style="text-align:right;">Date</th>
-                </tr>
-              </thead>
-              <tbody>
-          `;
-
-          data.leaderboard.forEach(entry => {
-            const rankClass = entry.rank === 1 ? 'rank-1' : entry.rank === 2 ? 'rank-2' : entry.rank === 3 ? 'rank-3' : 'rank-other';
-            const isMe = currentUser && currentUser.username.toLowerCase() === entry.username.toLowerCase();
-            const dateStr = entry.date ? new Date(entry.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '-';
-
-            html += `
-              <tr style="${isMe ? 'background:rgba(99,102,241,0.15); font-weight:bold;' : ''}">
-                <td><span class="rank-badge ${rankClass}">#${entry.rank}</span></td>
-                <td>
-                  <div class="player-col">
-                    <span>${escapeHtml(entry.username)}</span>
-                    ${!entry.isGuest ? '<span class="verified-star" title="Registered & Verified Player">✓</span>' : '<span class="guest-tag">Guest</span>'}
-                    ${isMe ? '<span style="color:#6366f1; font-size:0.75rem;">(You)</span>' : ''}
-                  </div>
-                </td>
-                <td class="score-col">${Number(entry.score).toLocaleString()}</td>
-                <td class="date-col" style="text-align:right;">${dateStr}</td>
-              </tr>
-            `;
-          });
-
-          html += `</tbody></table>`;
-          leaderboardContent.innerHTML = html;
-        } catch (e) {
-          leaderboardContent.innerHTML = '<div style="text-align:center; padding:30px; color:#ef4444;">Failed to load leaderboard data.</div>';
+        if (leaderboardAbortController) {
+          leaderboardAbortController.abort();
         }
+        leaderboardAbortController = new AbortController();
+        const reqId = ++leaderboardRequestSeq;
+
+        renderLeaderboardMessage('Loading standings...');
+
+        const res = await apiFetch(`/api/leaderboard/${encodeURIComponent(safeGameId)}?limit=50`, {
+          signal: leaderboardAbortController.signal
+        });
+
+        if (reqId !== leaderboardRequestSeq || res.aborted) return;
+
+        if (!res.ok || !res.data || !res.data.success) {
+          renderLeaderboardMessage(res.errorMsg || 'Failed to load leaderboard data.', true, safeGameId);
+          return;
+        }
+
+        if (!Array.isArray(res.data.leaderboard) || res.data.leaderboard.length === 0) {
+          renderEmptyLeaderboard();
+          return;
+        }
+
+        renderLeaderboardTable(res.data.leaderboard);
+      }
+
+      function setActiveLeaderboardTab(gameId) {
+        document.querySelectorAll('.leaderboard-game-tab').forEach(tab => {
+          const isMatch = tab.getAttribute('data-game') === gameId;
+          tab.classList.toggle('active', isMatch);
+          tab.setAttribute('aria-selected', String(isMatch));
+        });
+      }
+
+      function openLeaderboard(gameId = activeLeaderboardGame || 'alien-echo') {
+        if (!leaderboardModal) return;
+        const safeGameId = VALID_LEADERBOARD_GAMES.has(gameId) ? gameId : 'alien-echo';
+        setActiveLeaderboardTab(safeGameId);
+        loadLeaderboard(safeGameId);
+        leaderboardModal.classList.add('active');
+        if (closeLeaderboardModal) closeLeaderboardModal.focus();
+      }
+
+      function closeLeaderboard(restoreFocus = false) {
+        if (!leaderboardModal) return;
+        if (leaderboardAbortController) {
+          leaderboardAbortController.abort();
+          leaderboardAbortController = null;
+        }
+        leaderboardModal.classList.remove('active');
+        if (restoreFocus && leaderboardToggleBtn) leaderboardToggleBtn.focus();
       }
 
       document.querySelectorAll('.leaderboard-game-tab').forEach(tab => {
         tab.addEventListener('click', () => {
-          document.querySelectorAll('.leaderboard-game-tab').forEach(t => t.classList.remove('active'));
-          tab.classList.add('active');
-          const game = tab.getAttribute('data-game');
+          const game = tab.getAttribute('data-game') || 'alien-echo';
+          setActiveLeaderboardTab(game);
           loadLeaderboard(game);
         });
       });
 
-      if (leaderboardToggleBtn) leaderboardToggleBtn.addEventListener('click', () => openLeaderboard('alien-echo'));
-      if (viewMyScoresBtn) viewMyScoresBtn.addEventListener('click', () => {
-        closeAuthModal();
-        openLeaderboard('alien-echo');
-      });
-      if (leaderboardModalBackdrop) leaderboardModalBackdrop.addEventListener('click', closeLeaderboard);
-      if (closeLeaderboardModal) closeLeaderboardModal.addEventListener('click', closeLeaderboard);
+      if (leaderboardToggleBtn) leaderboardToggleBtn.addEventListener('click', () => openLeaderboard(activeLeaderboardGame));
+      if (viewMyScoresBtn) {
+        viewMyScoresBtn.addEventListener('click', () => {
+          closeAuthModal(false);
+          openLeaderboard(activeLeaderboardGame);
+        });
+      }
+      if (leaderboardModalBackdrop) leaderboardModalBackdrop.addEventListener('click', () => closeLeaderboard(true));
+      if (closeLeaderboardModal) closeLeaderboardModal.addEventListener('click', () => closeLeaderboard(true));
 
-      // Initialize clearance verification and auth
-      initSecurityCheck();
+      // Global Escape key handler for dismissible modals
+      document.addEventListener('keydown', (e) => {
+        if (e.key !== 'Escape') return;
+        if (privacyModal && privacyModal.classList.contains('active')) {
+          e.preventDefault();
+          closePrivacyModal(true);
+        } else if (leaderboardModal && leaderboardModal.classList.contains('active')) {
+          e.preventDefault();
+          closeLeaderboard(true);
+        } else if (authModal && authModal.classList.contains('active')) {
+          e.preventDefault();
+          closeAuthModal(true);
+        } else if (themeModal && themeModal.classList.contains('active')) {
+          e.preventDefault();
+          closeThemeModal(true);
+        }
+      });
+
+      // Clean up timers, active controllers, listeners, and Web Audio on page unload
+      window.addEventListener('pagehide', () => {
+        clearSecurityTimers();
+        if (authCloseTimer) { clearTimeout(authCloseTimer); authCloseTimer = null; }
+        detachWindowDragListeners();
+        activeControllers.forEach(c => c.abort());
+        activeControllers.clear();
+        if (audioCtx && typeof audioCtx.close === 'function') {
+          audioCtx.close().catch(() => { });
+          audioCtx = null;
+        }
+      });
+
+      // Initialize clearance verification and auth state via HttpOnly-safe APIs
+      refreshSecurityStatus(true);
       fetchCurrentUser();
 
       // Dynamic copyright year update
       const yrEl = document.getElementById('copyrightYear');
-      if (yrEl) yrEl.textContent = new Date().getFullYear();
+      if (yrEl) yrEl.textContent = String(new Date().getFullYear());
     })();
   </script>
 </body>

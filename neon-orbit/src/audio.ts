@@ -3,143 +3,198 @@ import { Vector2 } from './math';
 export class AudioEngine {
   private ctx: AudioContext | null = null;
   private masterGain: GainNode | null = null;
+  private muted = false;
+  private defaultVolume = 0.32;
 
   // BGM Elements
   private bgmBuffer: AudioBuffer | null = null;
   private bgmSource: AudioBufferSourceNode | null = null;
   private bgmFilter: BiquadFilterNode | null = null;
+  private bgmStarted = false;
+
+  public isMuted(): boolean {
+    return this.muted;
+  }
+
+  public toggleMute(): boolean {
+    this.muted = !this.muted;
+    if (this.masterGain && this.ctx) {
+      this.masterGain.gain.setTargetAtTime(this.muted ? 0 : this.defaultVolume, this.ctx.currentTime, 0.03);
+    }
+    return this.muted;
+  }
 
   public async init() {
-    if (this.ctx) return;
+    if (typeof window === 'undefined') return;
 
-    this.ctx = new AudioContext();
-    this.masterGain = this.ctx.createGain();
-    this.masterGain.gain.value = 0.5;
-    this.masterGain.connect(this.ctx.destination);
+    if (!this.ctx || this.ctx.state === 'closed') {
+      const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+      if (!AudioCtx) return;
+      try {
+        this.ctx = new AudioCtx();
+        this.masterGain = this.ctx.createGain();
+        this.masterGain.gain.value = this.muted ? 0 : this.defaultVolume;
+        this.masterGain.connect(this.ctx.destination);
+        this.bgmStarted = false;
+      } catch {
+        this.ctx = null;
+        return;
+      }
+    }
 
-    await this.initBGM();
+    if (this.ctx.state === 'suspended') {
+      await this.ctx.resume().catch(() => {});
+    }
+
+    if (!this.bgmStarted) {
+      await this.initBGM();
+    }
   }
 
   private async initBGM() {
-    if (!this.ctx || !this.masterGain) return;
+    if (!this.ctx || !this.masterGain || this.bgmStarted) return;
 
     try {
-      // Fetch and decode for perfectly seamless looping
-      const response = await fetch('bgm.mp3');
-      const arrayBuffer = await response.arrayBuffer();
-      this.bgmBuffer = await this.ctx.decodeAudioData(arrayBuffer);
+      if (!this.bgmBuffer) {
+        const bgmUrl = `${import.meta.env.BASE_URL}bgm.mp3`;
+        const response = await fetch(bgmUrl);
+        if (!response.ok) return;
+        const arrayBuffer = await response.arrayBuffer();
+        this.bgmBuffer = await this.ctx.decodeAudioData(arrayBuffer);
+      }
+
+      if (!this.ctx || !this.masterGain || this.bgmStarted) return;
 
       this.bgmSource = this.ctx.createBufferSource();
       this.bgmSource.buffer = this.bgmBuffer;
-      this.bgmSource.loop = true; // Seamless loop
+      this.bgmSource.loop = true;
 
-      // Route BGM through a low-pass filter for gameplay responsiveness
       this.bgmFilter = this.ctx.createBiquadFilter();
       this.bgmFilter.type = 'lowpass';
-      this.bgmFilter.frequency.value = 22050; // Max open by default
+      this.bgmFilter.frequency.value = 22050;
 
-      // Add volume control for BGM specifically
       const bgmGain = this.ctx.createGain();
-      bgmGain.gain.value = 0.4;
+      bgmGain.gain.value = 0.35;
 
       this.bgmSource.connect(this.bgmFilter);
       this.bgmFilter.connect(bgmGain);
       bgmGain.connect(this.masterGain);
 
       this.bgmSource.start();
-    } catch (e) {
-      console.warn('Background music could not be loaded or played. Place bgm.mp3 in public/ folder.', e);
+      this.bgmStarted = true;
+    } catch {
+      // Optional BGM may be absent or blocked; continue silently
     }
   }
 
-  // Make BGM responsive: lower health applies a low-pass muffle effect
   public updateBGMFilter(healthPercent: number) {
+    const clamped = Math.max(0, Math.min(1, Number.isFinite(healthPercent) ? healthPercent : 1));
     if (this.bgmFilter && this.ctx) {
-      // Map health (0.0 to 1.0) to frequency (500Hz to 22050Hz)
-      const targetFreq = 500 + (21550 * healthPercent);
-      // Smoothly transition filter
+      const targetFreq = 500 + 21550 * clamped;
       this.bgmFilter.frequency.setTargetAtTime(targetFreq, this.ctx.currentTime, 0.1);
     }
 
-    // Also increase playback rate slightly based on intensity (inverse of health or based on score?)
     if (this.bgmSource && this.ctx) {
-      const targetRate = 1.0 + (1.0 - healthPercent) * 0.2; // Speeds up to 1.2x on low health
+      const targetRate = 1.0 + (1.0 - clamped) * 0.2;
       this.bgmSource.playbackRate.setTargetAtTime(targetRate, this.ctx.currentTime, 0.1);
     }
   }
 
   public playShootSound(dir: Vector2) {
-    if (!this.ctx || !this.masterGain) return;
+    if (this.muted || !this.ctx || !this.masterGain || this.ctx.state !== 'running') return;
 
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
+    try {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
 
-    // Frequency based on vector angle (math-based sound)
-    const angle = Math.atan2(dir.y, dir.x);
-    const baseFreq = 400 + ((angle + Math.PI) / (Math.PI * 2)) * 400; // 400Hz to 800Hz
+      const angle = Math.atan2(dir.y, dir.x);
+      const rawFreq = 400 + ((angle + Math.PI) / (Math.PI * 2)) * 400;
+      const baseFreq = Number.isFinite(rawFreq) ? Math.max(200, Math.min(1200, rawFreq)) : 500;
 
-    osc.type = 'square';
-    osc.frequency.setValueAtTime(baseFreq, this.ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(baseFreq * 0.1, this.ctx.currentTime + 0.1);
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(baseFreq, this.ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(Math.max(30, baseFreq * 0.1), this.ctx.currentTime + 0.1);
 
-    gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.1);
+      gain.gain.setValueAtTime(0.08, this.ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.1);
 
-    osc.connect(gain);
-    gain.connect(this.masterGain);
+      osc.connect(gain);
+      gain.connect(this.masterGain);
+      osc.onended = () => {
+        osc.disconnect();
+        gain.disconnect();
+      };
 
-    osc.start();
-    osc.stop(this.ctx.currentTime + 0.1);
+      osc.start();
+      osc.stop(this.ctx.currentTime + 0.1);
+    } catch {
+      // Ignore transient WebAudio errors
+    }
   }
 
   public playImpactSound(force: number, determinant: number, destroyed: boolean) {
-    if (!this.ctx || !this.masterGain) return;
+    if (this.muted || !this.ctx || !this.masterGain || this.ctx.state !== 'running') return;
 
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
+    try {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
 
-    // Pitch based on matrix structural integrity (determinant)
-    // Determinant for 2x2 with values [-1,1] ranges roughly from 0 to 2.
-    const freq = 100 + (Math.abs(determinant) * 400);
+      const safeDet = Number.isFinite(determinant) ? Math.abs(determinant) : 0.5;
+      const freq = Math.max(60, Math.min(4000, 100 + safeDet * 400));
+      const safeForce = Number.isFinite(force) ? Math.max(0.02, force) : 0.2;
+      const duration = destroyed ? 0.3 : 0.1;
 
-    osc.type = destroyed ? 'sawtooth' : 'sine';
-    osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+      osc.type = destroyed ? 'sawtooth' : 'sine';
+      osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
 
-    // Volume based on physical force of collision
-    const volume = Math.min(0.5, force * 0.1);
-    gain.gain.setValueAtTime(volume, this.ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + (destroyed ? 0.3 : 0.1));
+      const volume = Math.max(0.005, Math.min(0.35, safeForce * 0.08));
+      gain.gain.setValueAtTime(volume, this.ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
 
-    if (destroyed) {
-      // Add frequency instability for destruction
-      osc.frequency.linearRampToValueAtTime(freq * 0.2, this.ctx.currentTime + 0.3);
+      if (destroyed) {
+        osc.frequency.linearRampToValueAtTime(Math.max(30, freq * 0.2), this.ctx.currentTime + duration);
+      }
+
+      osc.connect(gain);
+      gain.connect(this.masterGain);
+      osc.onended = () => {
+        osc.disconnect();
+        gain.disconnect();
+      };
+
+      osc.start();
+      osc.stop(this.ctx.currentTime + duration);
+    } catch {
+      // Ignore transient WebAudio errors
     }
-
-    osc.connect(gain);
-    gain.connect(this.masterGain);
-
-    osc.start();
-    osc.stop(this.ctx.currentTime + (destroyed ? 0.3 : 0.1));
   }
 
   public playEMPSound() {
-    if (!this.ctx || !this.masterGain) return;
+    if (this.muted || !this.ctx || !this.masterGain || this.ctx.state !== 'running') return;
 
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
+    try {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
 
-    osc.type = 'triangle';
-    osc.frequency.setValueAtTime(150, this.ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(20, this.ctx.currentTime + 1.5);
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(150, this.ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(25, this.ctx.currentTime + 1.2);
 
-    gain.gain.setValueAtTime(0.6, this.ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 1.5);
+      gain.gain.setValueAtTime(0.32, this.ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 1.2);
 
-    osc.connect(gain);
-    gain.connect(this.masterGain);
+      osc.connect(gain);
+      gain.connect(this.masterGain);
+      osc.onended = () => {
+        osc.disconnect();
+        gain.disconnect();
+      };
 
-    osc.start();
-    osc.stop(this.ctx.currentTime + 1.5);
+      osc.start();
+      osc.stop(this.ctx.currentTime + 1.2);
+    } catch {
+      // Ignore transient WebAudio errors
+    }
   }
 }
 

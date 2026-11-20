@@ -155,6 +155,7 @@ body {
   background: rgba(255,255,255,0.2);
 }
 .calc-btn.op { background: rgba(56, 189, 248, 0.2); color: #38bdf8; }
+.calc-btn.zero { grid-column: span 2; }
 .calc-btn.eq { background: #38bdf8; color: #000; grid-column: span 2; font-weight: bold; }
 
 /* --- Weather --- */

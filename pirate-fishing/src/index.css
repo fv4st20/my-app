@@ -510,7 +510,7 @@ body {
   font-weight: 900;
   font-size: 1rem;
   letter-spacing: 0.5px;
-  animation: blinkAlert 0.4s infinite alternate;
+  animation: blinkAlert 0.9s infinite alternate;
 }
 @keyframes blinkAlert {
   from { opacity: 0.8; }
@@ -1590,4 +1590,29 @@ body {
 }
 ::-webkit-scrollbar-thumb:hover {
   background: var(--gold);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sun,
+  .void-singularity,
+  .cloud,
+  .wave,
+  .wave2,
+  .boat,
+  .pulse-dot,
+  .bite-alert,
+  .fish-sprite-emoji,
+  .reeling-widget,
+  .caught-modal-banner,
+  .zone-toast,
+  .modal-card {
+    animation: none;
+  }
+  .ocean-view,
+  .sea,
+  .reel-bar-fill,
+  .reel-fish-sprite,
+  .progress-bar-fill {
+    transition: none;
+  }
 }
